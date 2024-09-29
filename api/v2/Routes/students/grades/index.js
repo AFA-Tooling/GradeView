@@ -27,6 +27,7 @@ router.get('/', async (req, res) => {
     } catch (error) {
         switch (error.constructor.name) {
             case 'StudentNotEnrolledError':
+            case 'KeyNotFoundError':
                 return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
             default:
                 return res.status(500).json({ message: "Internal server error." });

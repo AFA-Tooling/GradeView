@@ -47,13 +47,13 @@ async function getMasteryString(userTopicPoints, maxTopicPoints) {
 
 router.get('/', async (req, res) => {
     const { id } = req.params;
-    let masteryNum
     try {
         const maxScores = await getMaxScores();
         const studentScores = await getStudentScores(id);
         const userTopicPoints = getTopicsFromUser(studentScores);
         const maxTopicPoints = getTopicsFromUser(maxScores);
-        masteryNum = await getMasteryString(userTopicPoints, maxTopicPoints);
+        const masteryNum = await getMasteryString(userTopicPoints, maxTopicPoints);
+        return res.status(200).json(masteryNum);
     } catch (error) {
         switch (error.constructor.name) {
             case 'StudentNotEnrolledError':
@@ -62,7 +62,6 @@ router.get('/', async (req, res) => {
                 return res.status(500).json({ message: "Internal server error." });
         }
     }
-    return res.status(200).json(masteryNum);
 });
 
 export default router;

@@ -1,9 +1,10 @@
 import config from 'config';
 import dotenv from 'dotenv';
 import MisformedKeyError from '../errors/redis/MisformedKeyError.js';
-import StudentNotFoundError from '../lib/HttpErrors/StudentNotFoundError.js';
+import KeyNotFoundError from '../errors/redis/KeyNotFound.js';
+import StudentNotEnrolledError from '../errors/redis/StudentNotEnrolled.js';
+
 import { createClient } from 'redis';
-import NotFoundError from './HttpErrors/NotFoundError.js';
 
 dotenv.config();
 
@@ -25,27 +26,26 @@ export function getClient(databaseIndex = 0) {
 
 /**
  * Gets the value of a specified key in the database.
- * @param {string} key the key of the entry to get.
- * @param {number} databaseIndex the index the entry is stored in.
- * @throws {NotFoundError} if the key is not in the database.
+ * @param {string} key - the key of the entry to get.
+ * @param {number} [databaseIndex=0] - the index the entry is stored in.
  * @returns {object} the entry's information.
+ * @throws {KeyNotFoundError} if the key is not in the database.
  */
 export async function getEntry(key, databaseIndex = 0) {
     const client = getClient(databaseIndex);
     await client.connect();
 
-    let res;
     try {
-        res = await client.get(key);
-        // Check if the key exists, otherwise throw a custom error
+        const res = await client.get(key);
         if (res === null) {
-            console.error('Error while fetching key "%s": %s', key, error.message);
-            throw new NotFoundError(`Key "${key}" not found in database ${databaseIndex}`);
+            const err = new KeyNotFoundError("failed to get entry", key, databaseIndex);
+            console.error(err.message);
+            throw err;
         }
+        return JSON.parse(res);
     } finally {
         await client.quit();
     }
-    return JSON.parse(res);
 }
 
 /**
@@ -57,10 +57,11 @@ export async function getCategories() {
 }
 
 /**
- * Gets a specified student's information from the Redis database. 
- * @param {string} email the email of the student whose information to get. 
- * @returns {object} the student's information.
- * @throws {StudentNotFoundError} If the student is not in the database, meaning
+ * Gets a specified student's information from the Redis database.
+ * @param {string} email - The email of the student whose information to get.
+ * @returns {object} The student's information.
+ * @throws {MisformedKeyError} If the key is not a valid type.
+ * @throws {StudentNotEnrolledError} If the student is not in the database, meaning
  * the student is not enrolled in the class.
  */
 export async function getStudent(email) {
@@ -70,15 +71,17 @@ export async function getStudent(email) {
             { expectedType: 'string', email },
         );
     }
-    let student;
     try {
-        student = await getEntry(email);
-    } catch (error) {
-        throw new StudentNotFoundError(`Student ${email} is not in the database.`);
-    } finally {
-        //TODO: record metrics?
+        const student = await getEntry(email);
+        return student;
+    } catch (err) {
+        switch (typeof err) {
+            case 'KeyNotFoundError':
+                throw new StudentNotEnrolledError("Student is not in the database.", email, err);
+            default:
+                throw err;
+        }
     }
-    return student;
 }
 
 /**

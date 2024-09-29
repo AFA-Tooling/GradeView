@@ -16,13 +16,16 @@ router.get('/', async (req, res) => {
         const authEmail = await getEmailFromAuth(authHeader);
         adminStatus = await isAdmin(authEmail);
     } catch (error) {
-        if (error instanceof AuthorizationError) {
-            return res.status(401).json({ message: error.message });
+        switch (error.constructor.name) {
+            case 'AuthorizationError':
+                console.error('AuthorizationError:', error);
+                return res.status(401).json({ message: error.message });
+            default:
+                console.error('Internal Server Error:', error);
+                return res.status(500).json({ message: 'Internal Server Error' });
         }
-        console.error('Error:', error);
-        return res.status(500).json({ message: 'Internal Server Error' });
     }
-    res.status(200).json({ isAdmin: adminStatus });
+    return res.status(200).json({ isAdmin: adminStatus });
     
 });
 

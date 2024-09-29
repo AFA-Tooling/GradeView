@@ -23,12 +23,15 @@ router.get('/', async (req, res) => {
             // Attempt to get student scores
             studentScores = await getStudentScores(id);
         }
+        return res.status(200).json(getStudentScoresWithMaxPoints(studentScores, maxScores));
     } catch (error) {
-        return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
-    } finally {
-        // record metrics?
+        switch (error.constructor.name) {
+            case 'StudentNotEnrolledError':
+                return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
+            default:
+                return res.status(500).json({ message: "Internal server error." });
+        }
     }
-    res.status(200).json(getStudentScoresWithMaxPoints(studentScores, maxScores));
 });
 
 /**

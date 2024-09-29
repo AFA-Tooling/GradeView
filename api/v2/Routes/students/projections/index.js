@@ -8,18 +8,17 @@ const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
     const { email } = req.params;
-    console.debug(email);
     let maxPoints;
     try {
         maxPoints = await getTotalPossibleScore();
     } catch (error) {
-        return res.status(500).json({ message: "Bins not found."});
+        return res.status(500).json({ message: "Bins not found." });
     }
     let maxScores;
     try {
         maxScores = await getMaxScores();
     } catch (error) {
-        return res.status(500).json({ message: "Max scores not found."});
+        return res.status(500).json({ message: "Max scores not found." });
     }
     let studentTotalScore;
     let userGrades;
@@ -29,10 +28,15 @@ router.get('/', async (req, res) => {
     } else {
         try {
             userGrades = await getStudentScores(email);
+            studentTotalScore = await getStudentTotalScore(email);
         } catch (error) {
-            return res.status(404).json({ message: "Student not found."});
+            switch (error.constructor.name) {
+                case 'StudentNotEnrolledError':
+                    return res.status(404).json({ message: "Error fetching student."});
+                default:
+                    return res.status(500).json({ message: "Internal server error." });
+            }
         }
-        studentTotalScore = await getStudentTotalScore(email);
     }
     const maxPointsSoFar = getMaxPointsSoFar(userGrades, maxScores);
 

@@ -1,3 +1,7 @@
+/** DEPRECATED: This entire file is deprecated and should no longer be used.
+ *  Please use the api/v2 folder to interact with API endpoints.
+*/
+
 import express, { json } from 'express';
 import cors from 'cors';
 import { google } from 'googleapis';
@@ -34,6 +38,7 @@ const ENDBIN = config.get('spreadsheet.pages.binpage.endcell'); // The cell that
  * @param {String} token 
  * @returns {Promise<String>} user's email
  * @throws {AuthenticationError} if token is invalid
+ * @deprecated
  */
 async function getEmailFromIdToken(oauthClient, token) {
     try {
@@ -57,6 +62,7 @@ async function getEmailFromIdToken(oauthClient, token) {
  * @param {String} token 
  * @returns {String} url of current user profile picture
  * @throws {AuthenticationError} if token is invalid
+ * @deprecated
  */
 async function getProfilePictureFromIdToken(oauthClient, token) {
     try {
@@ -79,7 +85,8 @@ async function getProfilePictureFromIdToken(oauthClient, token) {
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @param {String} email 
  * @returns {Promise<Boolean>} the user's row, null if invalid
- */
+ * @deprecated
+*/
 async function getUserRow(apiAuthClient, email) {
     if (email === MAXGRADEROW) {
         return MAXGRADEROW;
@@ -108,6 +115,7 @@ async function getUserRow(apiAuthClient, email) {
  * @param {String} email 
  * @returns {Promise<Object>} dictionary of user's grades
  * @throws {AuthenticationError} if user is not found
+ * @deprecated
  */
 async function getUserGrades(apiAuthClient, email) {
     const userRow = await getUserRow(apiAuthClient, email);
@@ -152,6 +160,7 @@ async function getUserGrades(apiAuthClient, email) {
  * @param {OAuth2Client} oauthClient 
  * @param {String} token 
  * @returns {Promise<Object>} of user's grades
+ * @deprecated
  */
 async function getUserGradesFromToken(apiAuthClient, oauthClient, token) {
     return await getUserGrades(apiAuthClient, await getEmailFromIdToken(oauthClient, token));
@@ -162,6 +171,7 @@ async function getUserGradesFromToken(apiAuthClient, oauthClient, token) {
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @param {String} email 
  * @returns {Promise<Object>} dictionary of user's grades
+ * @deprecated
  */
 async function getUserGradesAsFraction(apiAuthClient, email) {
     const userGrades = await getUserGrades(apiAuthClient, email);
@@ -181,6 +191,7 @@ async function getUserGradesAsFraction(apiAuthClient, email) {
  * @param {String} oauthClient 
  * @param {String} token 
  * @returns {Promise<Object>} dictionary of user's grades
+ * @deprecated
  */
 async function getUserGradesFromTokenAsFraction(apiAuthClient, oauthClient, token) {
     return await getUserGradesAsFraction(apiAuthClient, await getEmailFromIdToken(oauthClient, token));
@@ -191,6 +202,7 @@ async function getUserGradesFromTokenAsFraction(apiAuthClient, oauthClient, toke
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @param {String} email 
  * @returns {Promise<boolean>} user's total points
+ * @deprecated
  */
 async function getUserPoints(apiAuthClient, email) {
     const userPointData = await getUserGrades(apiAuthClient, email);
@@ -212,6 +224,7 @@ async function getUserPoints(apiAuthClient, email) {
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @param {String} email 
  * @returns {Promise<Object>} projections for users grades
+ * @deprecated
  */
 async function getProjectedGrades(apiAuthClient, email) {
     let projections = { 'zeros': null, 'pace': null, 'perfect': null };
@@ -231,6 +244,7 @@ async function getProjectedGrades(apiAuthClient, email) {
  * @param {OAuth2Client} oauthClient 
  * @param {String} token 
  * @returns {Promise<Object>} projections for users grades
+ * @deprecated
  */
 async function getProjectedGradesFromToken(apiAuthClient, oauthClient, token) {
     return await getProjectedGrades(apiAuthClient, await getEmailFromIdToken(oauthClient, token));
@@ -241,6 +255,7 @@ async function getProjectedGradesFromToken(apiAuthClient, oauthClient, token) {
  * @param {OAuth2Client} oauthClient 
  * @param {token} token 
  * @returns whether or not the current user is an admin
+ * @deprecated
  */
 async function hasAdminStatus(oauthClient, token) {
     const ticket = await oauthClient.verifyIdToken({
@@ -254,7 +269,8 @@ async function hasAdminStatus(oauthClient, token) {
 /**
  * Admin access checking function for middleware.
  * @param {OAuth2Client} oauthClient 
- * @param {String} token 
+ * @param {String} token
+ * @deprecated
  */
 async function confirmAdminAccount(oauthClient, token) {
     try {
@@ -281,6 +297,7 @@ async function confirmAdminAccount(oauthClient, token) {
  * Gets a list of all of the students in the class.
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @returns list of lists with the first value of legal name and second of email
+ * @deprecated
  */
 async function getStudents(apiAuthClient) {
     const sheets = google.sheets({ version: 'v4', auth: apiAuthClient });
@@ -295,6 +312,7 @@ async function getStudents(apiAuthClient) {
  * Gets the buckets for the current class.
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient 
  * @returns list of lists with the first value being the low end bucket val and the second being the grade
+ * @deprecated
  */
 async function getBins(apiAuthClient) {
     const sheets = google.sheets({ version: 'v4', auth: apiAuthClient });
@@ -309,6 +327,7 @@ async function getBins(apiAuthClient) {
  * Calculates the total amount of points a user has achieved so far for each topic.
  * @param {Array<object>} userGradeData the total user's grade data.
  * @returns {object} a dictionary of topics to sum of those grades.
+ * @deprecated
  */
 function mapTopicsToGrades(userGradeData) {
     const topicsToGradesTable = {};
@@ -325,7 +344,8 @@ function mapTopicsToGrades(userGradeData) {
  * Gets the user's progress for each of the topics taught so far.
  * @param {Promise<Compute | JSONClient | T>} apiAuthClient
  * @param {string} email the email of the user to look up.
- * @returns {string} the query parameter consumed by the progress report encoding student mastery. 
+ * @returns {string} the query parameter consumed by the progress report encoding student mastery.
+ * @deprecated
  */
 async function getProgressReportQueryParameter(apiAuthClient, email) {
     const userGrades = await getUserGrades(apiAuthClient, email);
@@ -391,6 +411,7 @@ async function main() {
      * @param {any} res 
      * @param {any} next 
      * @returns a response message for an error if there is one
+     * @deprecated
      */
     async function verificationMiddleWare(req, res, next) {
         let auth = req.headers['authorization'];
@@ -416,6 +437,7 @@ async function main() {
      * @param {any} res 
      * @param {any} next 
      * @returns a response message for an error if there is one
+     * @deprecated
      */
     async function adminVerificationMiddleWare(req, res, next) {
         let auth = req.headers.authorization;
@@ -490,6 +512,7 @@ async function main() {
      * @param {Request} req authenticated request.
      * @param {Response} res
      * @returns {Promise<Response<string>>} the user's progress report query string.
+     * @deprecated
      */
     app.get('/api/progressquerystring', async (req, res) => {
         const email = await getEmailFromIdToken(oauthClient, req.headers.authorization.split(' ')[1]);

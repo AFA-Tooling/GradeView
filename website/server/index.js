@@ -17,7 +17,7 @@ app.use('/api', proxy);
 app.use(limit(10));
 
 // Serve static files from the React app
-app.get('/*', (req, res) => {
+app.get('/*', (_, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

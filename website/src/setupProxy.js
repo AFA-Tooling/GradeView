@@ -6,6 +6,6 @@ module.exports = function(app) {
         createProxyMiddleware({
             target: process.env.REACT_APP_PROXY_SERVER || 'http://localhost:8000',
             changeOrigin: true,
-        })
+        }),
     );
 };

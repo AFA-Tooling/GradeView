@@ -1,7 +1,6 @@
 import React from 'react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Loader from '../components/Loader';
-import PageHeader from '../components/PageHeader';
 import './css/conceptMap.css';
 import jwtDecode from 'jwt-decode';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
@@ -15,7 +14,7 @@ import apiv2 from "../utils/apiv2";
  * and displays the concept map within an iframe.
  * 2. The concept map iframe src takes in a string of numbers to display a concept map,
  *    a. This makes an API call to the Python Flask application to create the concept map.
- *    b. Each number represents a student's mastery level for a particular concept. 
+ *    b. Each number represents a student's mastery level for a particular concept.
  * 3. The concept nodes are arranged vertically from top to bottom.
  * 4. The list of numerical strings associated with each node is sorted horizontally from left to right.
  *    a. This numerical string is calculated through the Google Sheets data in the JavaScript API call.
@@ -26,8 +25,8 @@ export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
     const [studentMastery, setStudentMastery] = useState('000000');
 
-    /** The iframeRef is initially set to null. Once the HTML webpage is loaded 
-     * for the concept map, the iframeRef is dynamically set to the fetched 
+    /** The iframeRef is initially set to null. Once the HTML webpage is loaded
+     * for the concept map, the iframeRef is dynamically set to the fetched
      * progress report query string iframe for the selected student.
     */
     const iframeRef = useRef(null);
@@ -46,7 +45,7 @@ export default function ConceptMap() {
 
     /**
      * Fetch the logged-in student's mastery data on component mount (student view).
-     * This effect fetches data based on the JWT token stored 
+     * This effect fetches data based on the JWT token stored
      * in localStorage and updates the component's state.
      */
     useEffect(() => {
@@ -89,12 +88,12 @@ export default function ConceptMap() {
 
     /**
      * Render the concept map iframe with the fetched mastery data.
-     * This iframe src takes in a string of numbers 
+     * This iframe src takes in a string of numbers
      * (progressQueryString) to display a concept map.
      */
     return (
         <>
-            <PageHeader>Concept Map</PageHeader>
+            {/* <PageHeader>Concept Map</PageHeader> */}
             <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
                 <iframe
                     ref={iframeRef}

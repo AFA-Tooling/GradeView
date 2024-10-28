@@ -8,8 +8,8 @@ exports.proxy = createProxyMiddleware({ target: process.env.REACT_APP_PROXY_SERV
 
 /**
  * Use to exclude a route from being verified with middleware.
- * @param {String} path 
- * @param {Function} middleware 
+ * @param {String} path
+ * @param {Function} middleware
  * @returns Function
  */
 exports.unless = (path, middleware) => {
@@ -25,7 +25,7 @@ exports.unless = (path, middleware) => {
 
 /**
  * Use to limit the number of requests made per minute.
- * @param {int} requests 
+ * @param {int} requests
  * @returns {RateLimit} rate limiter middleware
  */
 exports.limit = (requests) => {

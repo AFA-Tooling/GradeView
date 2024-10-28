@@ -51,7 +51,7 @@ services:
       - concept_map_integration
     ports:
       - 8080:${PROGRESS_REPORT_PORT}
-    restart: unless-stopped 
+    restart: unless-stopped
   redis:
     image: redis:latest
     networks:

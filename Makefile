@@ -38,4 +38,7 @@ clean-images:
 	done
 
 clean: clean-containers clean-images
-	docker system prune
+	@rm -rf **/__pycache__
+	@docker system prune
+
+rebuild: clean docker

@@ -12,14 +12,16 @@ import {
     MenuItem,
     IconButton,
     useMediaQuery,
-    FormControl, InputLabel, Select
+    FormControl,
+    InputLabel,
+    Select,
 } from '@mui/material'
 import {
     LoginOutlined,
     StorageOutlined,
     AccountCircleOutlined,
     AccountTree,
-    Logout
+    Logout,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import apiv2 from '../utils/apiv2';

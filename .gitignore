@@ -1,16 +1,15 @@
 # dependencies
-/website/node_modules
-/website/server/node_modules
-/api/node_modules
-**/__pycache__
+**/node_modules/
+**/__pycache__/
+**/venv/
+**/.venv/
 
 # Environment variables
-*.env
+**/*.env
 
 # production
-/website/server/build
+/website/server/build/
 
 # misc
-.DS_Store
-*/.DS_Store
+**/.DS_Store
 .vscode/

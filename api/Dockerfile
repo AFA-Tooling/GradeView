@@ -2,6 +2,6 @@ FROM node:20-alpine3.17
 WORKDIR /api
 ENV PATH="./node_modules/.bin:$PATH"
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

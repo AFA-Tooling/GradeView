@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
         const adminStatus = await isAdmin(authEmail);
         return res.status(200).json({ isAdmin: adminStatus });
     } catch (err) {
-        switch (typeof err) {
+        switch (err.name) {
             case 'AuthorizationError':
                 console.error('AuthorizationError:', err);
                 return res.status(401).json({ message: err.message });

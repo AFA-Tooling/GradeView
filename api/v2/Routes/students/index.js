@@ -29,8 +29,9 @@ router.get('/', validateAdminMiddleware, async (_, res) => {
         const students = await getStudents();
         return res.status(200).json({ students });
     } catch (err) {
-        switch (typeof err) {
+        switch (err.name) {
             case 'StudentNotEnrolledError':
+            case 'KeyNotFoundError':
                 console.error(`Error fetching student with id ${id}`, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:

@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
         }
         return res.status(200).json(getStudentScoresWithMaxPoints(studentScores, maxScores));
     } catch (err) {
-        switch (typeof err) {
+        switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
                 console.error(`Error fetching scores for student with id ${id}`, err);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import BinsRouter from './Routes/bins/index.js';
-import StudentsRouter from './Routes/students/index.js'; 
+import StudentsRouter from './Routes/students/index.js';
 import VerifyAccessRouter from './Routes/verifyaccess/index.js';
 import IsAdminRouter from './Routes/isadmin/index.js';
 import LoginRouter from "./Routes/login/index.js";

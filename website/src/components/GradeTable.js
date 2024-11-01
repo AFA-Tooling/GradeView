@@ -5,8 +5,8 @@ export default function GradeTable({ assignments, headerLeft, headerRight }) {
 
     /**
      * Gets the formatting for the font-weight.
-     * @param {Float} student 
-     * @param {Float} max 
+     * @param {Float} student
+     * @param {Float} max
      * @returns {String} 'bold' or 'normal'
      */
     function isBold(student, max) {

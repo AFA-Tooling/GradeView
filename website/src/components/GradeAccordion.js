@@ -23,8 +23,8 @@ export default function GradeAccordion({ category, assignments }) {
 
     /**
      * Returns the formatting for the font-weight.
-     * @param {Float} student 
-     * @param {Float} max 
+     * @param {Float} student
+     * @param {Float} max
      * @returns {String} 'bold' or 'normal'
      */
     function isBold(student, max) {

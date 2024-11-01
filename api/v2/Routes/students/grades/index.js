@@ -24,10 +24,10 @@ router.get('/', async (req, res) => {
         switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
-                console.error(`Error fetching scores for student with id ${id}`, err);
+                console.error("Error fetching scores for student with id %s", id, err);
                 return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
             default:
-                console.error(`Internal service error for student with id ${id}`, err);
+                console.error("Internal service error for student with id %s", id, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

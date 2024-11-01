@@ -9,8 +9,8 @@ const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
     const { id } = req.params; // the id is the student's email
-    let studentScores;
     try {
+        let studentScores;
         const maxScores = await getMaxScores();
         if (isAdmin(id)) {
             studentScores = maxScores;

@@ -32,10 +32,10 @@ router.get('/', validateAdminMiddleware, async (_, res) => {
         switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
-                console.error(`Error fetching student with id ${id}`, err);
+                console.error(`Error fetching all students. `, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:
-                console.error(`Internal service error fetching student with id ${id}`, err);
+                console.error(`Internal service error fetching all students. `, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

@@ -1,6 +1,8 @@
 import { Router } from 'express';
-import { getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
-import 'express-async-errors';
+import {
+    getMaxScores,
+    getStudentScores,
+} from '../../../../lib/redisHelper.mjs';
 import { isAdmin } from '../../../../lib/userlib.mjs';
 
 const router = Router({ mergeParams: true });
@@ -15,7 +17,9 @@ router.get('/', async (req, res) => {
         studentScores = await getStudentScores(id);
     }
 
-    res.status(200).json(getStudentScoresWithMaxPoints(studentScores, maxScores));
+    res.status(200).json(
+        getStudentScoresWithMaxPoints(studentScores, maxScores),
+    );
 });
 
 /**
@@ -26,14 +30,15 @@ router.get('/', async (req, res) => {
  */
 function getStudentScoresWithMaxPoints(studentScores, maxScores) {
     return Object.keys(studentScores).reduce((assignmentsDict, assignment) => {
-        assignmentsDict[assignment] = Object.entries(studentScores[assignment])
-            .reduce((scoresDict, [category, pointsScored]) => {
-                scoresDict[category] = {
-                    student: pointsScored,
-                    max: maxScores[assignment][category]
-                };
-                return scoresDict;
-            }, {});
+        assignmentsDict[assignment] = Object.entries(
+            studentScores[assignment],
+        ).reduce((scoresDict, [category, pointsScored]) => {
+            scoresDict[category] = {
+                student: pointsScored,
+                max: maxScores[assignment][category],
+            };
+            return scoresDict;
+        }, {});
         return assignmentsDict;
     }, {});
 }

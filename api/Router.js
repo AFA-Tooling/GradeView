@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import V2Router from './v2/index.js';
-import 'express-async-errors';
+
 
 const router = Router();
 router.use('/v2', V2Router);

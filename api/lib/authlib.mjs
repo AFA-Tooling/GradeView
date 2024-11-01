@@ -6,7 +6,7 @@ import { isAdmin, isStudent } from './userlib.mjs';
 /**
  * Validates that the requester is either an admin or a student.
  * @param {Request} req request to validate.
- * @param {*} _ 
+ * @param {*} _
  * @param {Function} next trigger the next middleware / request.
  */
 export async function validateAdminOrStudentMiddleware(req, _, next) {
@@ -52,14 +52,14 @@ export async function validateAdminMiddleware(req, _, next) {
 export async function validateStudentMiddleware(req, _, next) {
     validateAuthenticatedRequestFormat(req);
 
-    const { email } = req.params
+    const { email } = req.params;
 
     const authEmail = await getEmailFromAuth(req.headers['authorization']);
     const studentExists = await isStudent(authEmail);
     if (!studentExists) {
         throw new AuthorizationError('You are not a registered student.');
     }
-    if (email && (authEmail !== email)) {
+    if (email && authEmail !== email) {
         throw new UnauthorizedAccessError('not permitted');
     }
     next();

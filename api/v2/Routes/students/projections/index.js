@@ -1,7 +1,11 @@
 import { Router } from 'express';
-import { getTotalPossibleScore, getMaxScores, getStudentTotalScore, getStudentScores } from '../../../../lib/redisHelper.mjs';
+import {
+    getTotalPossibleScore,
+    getMaxScores,
+    getStudentTotalScore,
+    getStudentScores,
+} from '../../../../lib/redisHelper.mjs';
 import { getMaxPointsSoFar } from '../../../../lib/studentHelper.mjs';
-import 'express-async-errors';
 import { isAdmin } from '../../../../lib/userlib.mjs';
 
 const router = Router({ mergeParams: true });
@@ -23,12 +27,10 @@ router.get('/', async (req, res) => {
     const maxPointsSoFar = getMaxPointsSoFar(userGrades, maxScores);
 
     return res.status(200).json({
-        "zeros": Math.round(studentTotalScore),
-        "pace": Math.round((studentTotalScore / maxPointsSoFar) * maxPoints),
-        "perfect": Math.round(studentTotalScore + (maxPoints - maxPointsSoFar))
+        zeros: Math.round(studentTotalScore),
+        pace: Math.round((studentTotalScore / maxPointsSoFar) * maxPoints),
+        perfect: Math.round(studentTotalScore + (maxPoints - maxPointsSoFar)),
     });
 });
-
-
 
 export default router;

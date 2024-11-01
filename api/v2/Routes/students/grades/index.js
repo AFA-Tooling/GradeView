@@ -8,18 +8,30 @@ import { isAdmin } from '../../../../lib/userlib.mjs';
 const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
-    const { id } = req.params;
-    const maxScores = await getMaxScores();
-    let studentScores;
-    if (isAdmin(id)) {
-        studentScores = maxScores;
-    } else {
-        studentScores = await getStudentScores(id);
+    const { id } = req.params; // the id is the student's email
+    try {
+        let studentScores;
+        const maxScores = await getMaxScores();
+        if (isAdmin(id)) {
+            studentScores = maxScores;
+        } else {
+            // Attempt to get student scores
+            studentScores = await getStudentScores(id);
+        }
+        return res.status(200).json(
+            getStudentScoresWithMaxPoints(studentScores, maxScores)
+        );
+    } catch (err) {
+        switch (err.name) {
+            case 'StudentNotEnrolledError':
+            case 'KeyNotFoundError':
+                console.error("Error fetching scores for student with id %s", id, err);
+                return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
+            default:
+                console.error("Internal service error for student with id %s", id, err);
+                return res.status(500).json({ message: "Internal server error." });
+        }
     }
-
-    res.status(200).json(
-        getStudentScoresWithMaxPoints(studentScores, maxScores),
-    );
 });
 
 /**

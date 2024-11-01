@@ -54,11 +54,13 @@ router.get('/', async (req, res) => {
         const maxTopicPoints = getTopicsFromUser(maxScores);
         const masteryNum = await getMasteryString(userTopicPoints, maxTopicPoints);
         return res.status(200).json(masteryNum);
-    } catch (error) {
-        switch (error.constructor.name) {
+    } catch (err) {
+        switch (typeof err) {
             case 'StudentNotEnrolledError':
+                console.error(`Error fetching student with id ${id}`, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:
+                console.error(`Internal service error fetching student with id ${id}`, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

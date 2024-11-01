@@ -7,16 +7,9 @@ const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
     const { id } = req.params; // the id is the student's email
-    let maxScores;
-    try {
-        // Attempt to get max scores, if fails, return 404
-        maxScores = await getMaxScores();
-    } catch (error) {
-        return res.status(404).json({ message: 'Error fetching max scores' });
-    }
-
     let studentScores;
     try {
+        const maxScores = await getMaxScores();
         if (isAdmin(id)) {
             studentScores = maxScores;
         } else {
@@ -24,12 +17,14 @@ router.get('/', async (req, res) => {
             studentScores = await getStudentScores(id);
         }
         return res.status(200).json(getStudentScoresWithMaxPoints(studentScores, maxScores));
-    } catch (error) {
-        switch (error.constructor.name) {
+    } catch (err) {
+        switch (typeof err) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
+                console.error(`Error fetching scores for student with id ${id}`, err);
                 return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
             default:
+                console.error(`Internal service error for student with id ${id}`, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

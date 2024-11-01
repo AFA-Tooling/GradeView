@@ -25,8 +25,19 @@ router.use('/:email/projections', ProjectionsRouter);
 router.use('/:id/progressquerystring', ProgressQueryStringRouter);
 
 router.get('/', validateAdminMiddleware, async (_, res) => {
-    const students = await getStudents();
-    return res.status(200).json({ students });
+    try {
+        const students = await getStudents();
+        return res.status(200).json({ students });
+    } catch (err) {
+        switch (typeof err) {
+            case 'StudentNotEnrolledError':
+                console.error(`Error fetching student with id ${id}`, err);
+                return res.status(404).json({ message: "Error fetching student."});
+            default:
+                console.error(`Internal service error fetching student with id ${id}`, err);
+                return res.status(500).json({ message: "Internal server error." });
+        }
+    }
 });
 
 export default router;

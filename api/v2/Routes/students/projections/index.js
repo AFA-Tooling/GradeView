@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { 
+import {
     getTotalPossibleScore,
     getMaxScores,
     getStudentTotalScore,
-    getStudentScores 
+    getStudentScores,
 } from '../../../../lib/redisHelper.mjs';
 import { getMaxPointsSoFar } from '../../../../lib/studentHelper.mjs';
 import { isAdmin } from '../../../../lib/userlib.mjs';

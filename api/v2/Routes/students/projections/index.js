@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
         switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
-                console.error(`Error fetching student with id ${email}`, err);
+                console.error("Error fetching student with id %s", email, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:
                 console.error("Internal service error fetching student with id %s", email, err);

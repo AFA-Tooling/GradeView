@@ -59,7 +59,7 @@ export async function validateStudentMiddleware(req, _, next) {
     if (!studentExists) {
         throw new AuthorizationError('You are not a registered student.');
     }
-    if (email && authEmail !== email) {
+    if (email && (authEmail !== email)) {
         throw new UnauthorizedAccessError('not permitted');
     }
     next();

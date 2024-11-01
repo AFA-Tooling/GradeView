@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import 'express-async-errors';
 import { isAdmin } from '../../../lib/userlib.mjs';
 import { getEmailFromAuth } from '../../../lib/googleAuthHelper.mjs';
 import AuthorizationError from '../../../lib/HttpErrors/AuthorizationError.js';

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { validateAdminOrStudentMiddleware } from '../../../lib/authlib.mjs';
-import 'express-async-errors';
 import RateLimit from 'express-rate-limit';
 
 const router = Router({ mergeParams: true });

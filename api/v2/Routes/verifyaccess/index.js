@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { getEmailFromAuth } from '../../../lib/googleAuthHelper.mjs';
 import { getStudent } from '../../../lib/redisHelper.mjs';
-import 'express-async-errors';
 
 const router = Router();
 

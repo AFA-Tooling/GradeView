@@ -1,7 +1,11 @@
 import { Router } from 'express';
-import { getTotalPossibleScore, getMaxScores, getStudentTotalScore, getStudentScores } from '../../../../lib/redisHelper.mjs';
+import { 
+    getTotalPossibleScore,
+    getMaxScores,
+    getStudentTotalScore,
+    getStudentScores 
+} from '../../../../lib/redisHelper.mjs';
 import { getMaxPointsSoFar } from '../../../../lib/studentHelper.mjs';
-import 'express-async-errors';
 import { isAdmin } from '../../../../lib/userlib.mjs';
 
 const router = Router({ mergeParams: true });

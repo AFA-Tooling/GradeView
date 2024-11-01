@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
+import { 
+    getMaxScores, getStudentScores
+} from '../../../../lib/redisHelper.mjs';
 import ProgressReportData from '../../../../assets/progressReport/CS10.json' assert {type: 'json'};
-import 'express-async-errors';
 
 const router = Router({ mergeParams: true });
 
@@ -10,13 +11,13 @@ function getTopicsFromUser(gradeData) {
     Object.entries(gradeData).forEach(([assignment, topics]) => {
         Object.entries(topics).forEach(([topic, score]) => {
             if (topic in topicsTable) {
-                topicsTable[topic] += +(score ?? 0)
+                topicsTable[topic] += +(score ?? 0);
             } else {
-                topicsTable[topic] = +(score ?? 0)
+                topicsTable[topic] = +(score ?? 0);
             }
-        })
-    })
-    return topicsTable
+        });
+    });
+    return topicsTable;
 }
 
 async function getMasteryString(userTopicPoints, maxTopicPoints) {
@@ -30,7 +31,7 @@ async function getMasteryString(userTopicPoints, maxTopicPoints) {
             userTopicPoints[topic] = numMasteryLevels + 1;
             return;
         }
-        const unBoundedMasteryLevel = userPoints / maxAchievablePoints * numMasteryLevels;
+        const unBoundedMasteryLevel = (userPoints / maxAchievablePoints) * numMasteryLevels;
         if (unBoundedMasteryLevel === numMasteryLevels) {
             userTopicPoints[topic] = numMasteryLevels;
         } else if (unBoundedMasteryLevel % 1 === 0) {

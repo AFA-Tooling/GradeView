@@ -4,13 +4,14 @@ const currentUrl = window.location.href;
 
 const targetPageUrl = 'https://ucberkeleysandbox.instructure.com/courses/141/pages/concept-map?module_item_id=418';
 const alternateTargetPageUrl = 'https://ucberkeleysandbox.instructure.com/courses/141/pages/concept-map';
+// Paste Canvas API key here
+const accessToken = '';
+const courseId = '141';
+const studentId = ENV.current_user_id;    // Replace with the actual student ID
 
 
 // Check if the current URL matches the target page URL
 if (currentUrl === targetPageUrl || currentUrl === alternateTargetPageUrl) {
-    const accessToken = '26530~etwvNZ2z3WXDxP9CXDeDNCmKN3MCWEKtDaYrQ7JRVGJ6nkBUcR8V4VURDVMBuLeW';
-    const courseId = '141';
-    const studentId = ENV.current_user_id;    // Replace with the actual student ID
 
     let mastery_string = ""
 

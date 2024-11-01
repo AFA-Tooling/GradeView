@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
                 console.error(`Error fetching student with id ${email}`, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:
-                console.error(`Internal service error fetching student with id ${email}`, err);
+                console.error("Internal service error fetching student with id %s", email, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

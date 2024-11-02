@@ -10,6 +10,7 @@ import mimeTypes from '../config/mime.mjs';
 export default class UploadHandler {
     /**
      * Creates a new file handler.
+     * @constructor
      * @param {string} fieldName the name of field in which the file is sent.
      * @param {string} directory the path to store the file in.
      * @param {string} mimeType the mime type of the file.
@@ -50,20 +51,23 @@ export default class UploadHandler {
      * @param {function} cb the callback to use.
      */
     fileFilter(_req, file, cb) {
+        if (file.originalname?.length && file.originalname.length > 100) {
+            return cb(new Error('File name too long.'), false);
+        }
         if (mimeTypes.getType(file.originalname) === this.mimeType) {
-            cb(null, true);
+            return cb(null, true);
         } else {
-            cb(
-                new Error(
+            return res
+                .status(415)
+                .send(
                     `Invalid file type. Only ${this.mimeType} files are allowed.`,
-                ),
-                false,
-            );
+                );
         }
     }
 
     /**
      * The file handler middleware.
+     * @return {function} the middleware function.
      */
     get handler() {
         return (req, res, next) => {

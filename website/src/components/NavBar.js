@@ -190,7 +190,10 @@ export default function ButtonAppBar() {
                                     </FormControl>
                                 </Box>
                             )}
-                            <IconButton onClick={handleMenu}>
+                            <IconButton 
+                                        aria-label="user profile"
+                                        onClick={handleMenu}
+                                        >
                                 <Avatar
                                     src={profilePicture}
                                     imgProps={{ referrerPolicy: 'no-referrer' }}

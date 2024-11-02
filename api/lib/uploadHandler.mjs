@@ -8,6 +8,8 @@ import mimeTypes from '../config/mime.mjs';
  * Native file handling utility.
  */
 export default class UploadHandler {
+    sanitizedFileName = undefined;
+
     /**
      * Creates a new file handler.
      * @constructor
@@ -25,13 +27,15 @@ export default class UploadHandler {
         fileNameTransformer = (f) => sanitize(f.originalname),
     ) {
         this.mimeType = mimeType;
+        this.filePath = directory;
 
         const storage = multer.diskStorage({
             destination: (_req, _file, cb) => {
                 cb(null, directory);
             },
             filename: (_req, file, cb) => {
-                cb(null, fileNameTransformer(file));
+                this.sanitizedFileName = sanitize(fileNameTransformer(file));
+                cb(null, this.sanitizedFileName);
             },
         });
 
@@ -86,12 +90,18 @@ export default class UploadHandler {
                     );
                     return next();
                 }
-                if (req.file) {
-                    unlink(req.file.path, (unlinkError) => {
-                        if (unlinkError) {
-                            console.error('Error deleting file:', unlinkError);
-                        }
-                    });
+                if (req.file && this.sanitizedFileName) {
+                    unlink(
+                        `${this.filePath}/${this.sanitizedFileName}`,
+                        (unlinkError) => {
+                            if (unlinkError) {
+                                console.error(
+                                    'Error deleting file:',
+                                    unlinkError,
+                                );
+                            }
+                        },
+                    );
                 }
                 return res.status(400).send({ error: err.message });
             });

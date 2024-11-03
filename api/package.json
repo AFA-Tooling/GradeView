@@ -21,6 +21,7 @@
     "express": "^5.0.1",
     "express-rate-limit": "^7.4.0",
     "google-auth-library": "^9.14.2",
+    "morgan": "^1.10.0",
     "redis": "^4.6.13"
   },
   "devDependencies": {

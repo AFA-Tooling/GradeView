@@ -11,7 +11,7 @@ export default class StudentNotEnrolledError extends Base {
      * @param {string} studentEmail - The queried student email.
      * @param {Error|null} err [err=null] - the existing error that was thrown if any.
      */
-    constructor(message, studentEmail, err=null) {
+    constructor(message, studentEmail, err = null) {
         super(`${message}; student '${studentEmail}' is not enrolled`, err);
         this.name = 'StudentNotEnrolledError';
         this.studentEmail = studentEmail;

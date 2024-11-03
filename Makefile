@@ -2,17 +2,18 @@
 .DEFAULT_GOAL := docker
 
 init:
-	clear
-	cd website && npm install
-	cd api && npm install
-	cd website/server && npm install
+	@cd website && npm install
+	@cd api && npm install
+	@cd website/server && npm install
+	@cd website && npm run build
 
-npm:
-	clear
-	cd api && npm run server
+dev-up:
+	@docker compose -f docker-compose.dev.yml up -dV
+
+dev-down:
+	@docker compose -f docker-compose.dev.yml down
 
 docker:
-	@clear
 	@cd website && npm run build
 	@docker compose build
 	@docker compose up -dV

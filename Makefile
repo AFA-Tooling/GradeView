@@ -7,8 +7,6 @@ init:
 	@cd website/server && npm install
 	@cd website && npm run build
 
-dev-up:
-	@docker compose -f docker-compose.dev.yml up -dV
 
 dev-down:
 	@docker compose -f docker-compose.dev.yml down

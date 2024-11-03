@@ -1,8 +1,8 @@
 import config from 'config';
 import dotenv from 'dotenv';
-import MisformedKeyError from '../errors/redis/MisformedKeyError.js';
-import KeyNotFoundError from '../errors/redis/KeyNotFound.js';
-import StudentNotEnrolledError from '../errors/redis/StudentNotEnrolled.js';
+import MisformedKeyError from './errors/redis/MisformedKeyError.js';
+import KeyNotFoundError from './errors/redis/KeyNotFound.js';
+import StudentNotEnrolledError from './errors/redis/StudentNotEnrolled.js';
 import { createClient } from 'redis';
 
 dotenv.config();

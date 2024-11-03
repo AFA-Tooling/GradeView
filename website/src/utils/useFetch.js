@@ -8,19 +8,25 @@ import apiv2 from './apiv2';
  * @param {AxiosInstance} api the axios api you wish to use.
  * @returns {object} values for loading, data, and error.
  */
-export default function useFetch(stub, { method, api } = { method: 'GET', api: apiv2 }) {
+export default function useFetch(
+    stub,
+    { method, api } = { method: 'GET', api: apiv2 },
+) {
     const [data, setData] = useState(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(undefined);
 
     useEffect(() => {
-        api[method.toLowerCase()](stub).then((res) => {
-            setData(res.data);
-        }).catch((err) => {
-            setError(err);
-        }).finally(() => {
-            setLoading(false);
-        });
+        api[method.toLowerCase()](stub)
+            .then((res) => {
+                setData(res.data);
+            })
+            .catch((err) => {
+                setError(err);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, [stub, method, api]);
 
     return { loading, data, error };

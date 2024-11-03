@@ -7,7 +7,7 @@ export default function PrivateRoutes() {
     const [loaded, setLoaded] = useState(false);
     const [authorized, setAuthorized] = useState(false);
     useEffect(() => {
-        if(localStorage.getItem('token') === ''){
+        if (localStorage.getItem('token') === '') {
             setAuthorized(false);
             setLoaded(true);
             return;
@@ -19,10 +19,16 @@ export default function PrivateRoutes() {
             }
             setLoaded(true);
         });
-        return () => mounted = false;
+        return () => (mounted = false);
     }, []);
 
-    return (
-        loaded ? authorized ? <Outlet /> : <Navigate to='/login'/> : <Loader />
-    )
+    return loaded ? (
+        authorized ? (
+            <Outlet />
+        ) : (
+            <Navigate to='/login' />
+        )
+    ) : (
+        <Loader />
+    );
 }

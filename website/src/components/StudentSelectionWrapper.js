@@ -2,19 +2,20 @@ import { createContext, useState } from 'react';
 
 export const StudentSelectionContext = createContext({
     selectedStudent: '',
-    setSelectedStudent: () => { }
+    setSelectedStudent: () => {},
 });
 
 export default function StudentSelectionWrapper({ children }) {
     const [selectedStudent, setSelectedStudent] = useState('');
 
     return (
-        <StudentSelectionContext.Provider value={{
-            selectedStudent,
-            setSelectedStudent,
-        }}>
+        <StudentSelectionContext.Provider
+            value={{
+                selectedStudent,
+                setSelectedStudent,
+            }}
+        >
             {children}
         </StudentSelectionContext.Provider>
-    )
-
+    );
 }

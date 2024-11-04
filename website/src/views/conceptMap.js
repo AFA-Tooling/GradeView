@@ -3,8 +3,8 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Loader from '../components/Loader';
 import './css/conceptMap.css';
 import jwtDecode from 'jwt-decode';
-import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
-import apiv2 from "../utils/apiv2";
+import { StudentSelectionContext } from '../components/StudentSelectionWrapper';
+import apiv2 from '../utils/apiv2';
 
 /**
  * The ConceptMap component renders a concept map based on student progress data from the progressQueryString API.
@@ -25,19 +25,24 @@ export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
     const [studentMastery, setStudentMastery] = useState('000000');
 
-    /** The iframeRef is initially set to null. Once the HTML webpage is loaded
+    /**
+     * The iframeRef is initially set to null. Once the HTML webpage is loaded
      * for the concept map, the iframeRef is dynamically set to the fetched
      * progress report query string iframe for the selected student.
-    */
+     */
     const iframeRef = useRef(null);
 
     const { selectedStudent } = useContext(StudentSelectionContext);
 
-    /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
-     * This function is called when the iframe starts to load. */
-    const handleLoad = useCallback(() =>{
-        if(iframeRef.current) {
-            const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
+    /**
+     * This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
+     * This function is called when the iframe starts to load.
+     */
+    const handleLoad = useCallback(() => {
+        if (iframeRef.current) {
+            const iframeDocument =
+                iframeRef.current.contentDocument ||
+                iframeRef.current.contentWindow.document;
             const height = iframeDocument.body.scrollHeight;
             iframeRef.current.style.height = `${height}px`;
         }
@@ -51,40 +56,51 @@ export default function ConceptMap() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        if (mounted && localStorage.getItem('token')) {
-            let email = jwtDecode(localStorage.getItem('token')).email;
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${email}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
-                setLoading(false);
-            });
+        const token = localStorage.getItem('token');
+        if (mounted && token) {
+            const { email } = jwtDecode(token);
+            apiv2
+                .get(
+                    `/students/${selectedStudent || email}/progressquerystring`,
+                )
+                .then((res) => {
+                    setStudentMastery(res.data);
+                    setLoading(false);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    setLoading(false);
+                });
         } else {
             setLoading(false);
         }
-        return () => mounted = false;
-    }, []);
+        return () => (mounted = false);
+    }, [selectedStudent]);
 
     /**
      * Fetch the selected student's mastery data whenever the selected student
      * changes for the instructor view.
      * This effect depends on the `selectedStudent` from the context.
      */
-    useEffect(() => {
-        let mounted = true;
-        if (mounted) {
-            setLoading(true);
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${selectedStudent}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
-                setLoading(false);
-            });
-        }
-        return () => mounted = false;
-    }, [selectedStudent])
+    // useEffect(() => {
+    //     if (!selectedStudent) {
+    //         return;
+    //     }
+    //     let mounted = true;
+    //     if (mounted) {
+    //         setLoading(true);
+    //         // Fetch the student progressQueryString
+    //         apiv2.get(`/students/${selectedStudent}/progressquerystring`).then((res) => {
+    //             setStudentMastery(res.data);
+    //             setLoading(false);
+    //         });
+    //     }
+    //     return () => mounted = false;
+    // }, [selectedStudent])
 
-    if (loading) {
-        return <Loader />;
-    }
+    // if (loading) {
+    //     return <Loader />;
+    // }
 
     /**
      * Render the concept map iframe with the fetched mastery data.
@@ -94,12 +110,15 @@ export default function ConceptMap() {
     return (
         <>
             {/* <PageHeader>Concept Map</PageHeader> */}
-            <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
+            <div
+                style={{ textAlign: 'center', height: '100%' }}
+                overflow='hidden'
+            >
                 <iframe
                     ref={iframeRef}
-                    className="concept_map_iframe"
-                    id="ConceptMap"
-                    title="Concept Map"
+                    className='concept_map_iframe'
+                    id='ConceptMap'
+                    title='Concept Map'
                     src={`${window.location.origin}/progress?show_legend=false&student_mastery=${studentMastery}`}
                     onLoad={handleLoad}
                     scrolling='no'

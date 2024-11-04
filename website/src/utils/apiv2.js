@@ -2,35 +2,24 @@ import axios from 'axios';
 
 const URL = window.location.origin;
 
-let api;
+const api = axios.create({
+    baseURL: `${URL}/api/v2`,
+});
 
-if (localStorage.getItem('token')) {
-    api = axios.create({
-        baseURL: `${URL}/api/v2`,
-        headers: { Authorization: localStorage.getItem('token') },
-    });
-} else {
-    api = axios.create({
-        baseURL: `${URL}/api/v2`,
-    });
-}
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = token;
+    }
+    return config;
+});
 
 api.interceptors.response.use(undefined, (err) => {
-    try {
-        const errorCode = err.response.status;
-        switch (errorCode) {
-            case 401:
-                localStorage.setItem('token', '');
-                window.location.href = `${URL}/login`;
-                break;
-            default:
-                return Promise.reject(err);
-        }
-    } catch (axiosErr) {
-        console.log(axiosErr);
+    if (err.response?.status === 401) {
         localStorage.setItem('token', '');
         window.location.href = `${URL}/login`;
     }
+    return Promise.reject(err);
 });
 
 export default api;

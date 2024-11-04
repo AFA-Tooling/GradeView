@@ -4,12 +4,11 @@ import useFetch from '../utils/useFetch';
 import Loader from '../components/Loader';
 import GradeAccordion from '../components/GradeAccordion';
 import GradeGrid from '../components/GradeGrid';
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid2';
 // import ProjectionTable from '../components/ProjectionTable';
-import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
+import { StudentSelectionContext } from '../components/StudentSelectionWrapper';
 
 function Home() {
-
     // const [binsData, setBinsData] = useState([]);
 
     const mobileView = useMediaQuery('(max-width:600px)');
@@ -31,34 +30,51 @@ function Home() {
     // }, [binsInfo.data]);
 
     if (gradeInfo.loading /*|| binsInfo.loading || projectionsInfo.loading */) {
-        return (<Loader />);
+        return <Loader />;
     }
 
     return (
         <Box sx={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
-            {mobileView ?
+            {mobileView ? (
                 <>
-                    {Object.entries(gradeInfo.data).map(([assignmentName, breakdown]) => (
-                        <GradeAccordion
-                            key={assignmentName}
-                            category={assignmentName}
-                            assignments={breakdown}
-                        />
-                    ))}
-                </>
-                :
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4, width: '100%' }}>
-                    <Grid container sx={{ width: '100%' }} spacing={{ xs: 3, md: 5 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                        {Object.entries(gradeInfo.data).map(([assignmentName, breakdown]) => (
-                            <GradeGrid
+                    {Object.entries(gradeInfo.data).map(
+                        ([assignmentName, breakdown]) => (
+                            <GradeAccordion
                                 key={assignmentName}
                                 category={assignmentName}
                                 assignments={breakdown}
                             />
-                        ))}
+                        ),
+                    )}
+                </>
+            ) : (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        marginTop: 4,
+                        width: '100%',
+                    }}
+                >
+                    <Grid
+                        container
+                        sx={{ width: '100%' }}
+                        spacing={{ xs: 3, md: 5 }}
+                        columns={{ xs: 4, sm: 8, md: 12 }}
+                    >
+                        {Object.entries(gradeInfo.data).map(
+                            ([assignmentName, breakdown]) => (
+                                <GradeGrid
+                                    key={assignmentName}
+                                    category={assignmentName}
+                                    assignments={breakdown}
+                                />
+                            ),
+                        )}
                     </Grid>
                 </Box>
-            }
+            )}
             {/* {localStorage.getItem('token') &&
                 <Box>
                     <Typography variant='h5' component='div' sx={{ mt: 6, mb: 2, fontWeight: 500, textAlign: 'center' }}>Grade Projections</Typography>

@@ -38,6 +38,7 @@ services:
             - db
         depends_on:
             - dbcron
+        entrypoint: ["npm", "run", "dev"]
         restart: unless-stopped
     dtgui-progress-report:
         container_name: dtgui-progress-report

@@ -12,8 +12,11 @@ export default class KeyNotFoundError extends Base {
      * @param {int} databaseIndex - The index of the db that was queried.
      * @param {Error|null} [err=null] - the existing error that was thrown if any.
      */
-    constructor(message, keyName, databaseIndex, err=null) {
-        super(`${message}; key '${keyName}' not found in database with index ${databaseIndex}`, err);
+    constructor(message, keyName, databaseIndex, err = null) {
+        super(
+            `${message}; key '${keyName}' not found in database with index ${databaseIndex}`,
+            err,
+        );
         this.name = 'KeyNotFoundError';
         this.keyName = keyName;
         this.databaseIndex = databaseIndex;

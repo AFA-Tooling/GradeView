@@ -1,5 +1,5 @@
-import AuthorizationError from './HttpErrors/AuthorizationError.js';
-import UnauthorizedAccessError from './HttpErrors/UnauthorizedAccessError.js';
+import AuthorizationError from './errors/http/AuthorizationError.js';
+import UnauthorizedAccessError from './errors/http/UnauthorizedAccessError.js';
 import { getEmailFromAuth } from './googleAuthHelper.mjs';
 import { isAdmin, isStudent } from './userlib.mjs';
 

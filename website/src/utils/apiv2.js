@@ -7,7 +7,7 @@ let api;
 if (localStorage.getItem('token')) {
     api = axios.create({
         baseURL: `${URL}/api/v2`,
-        headers: { 'Authorization': localStorage.getItem('token') }
+        headers: { Authorization: localStorage.getItem('token') },
     });
 } else {
     api = axios.create({
@@ -18,8 +18,8 @@ if (localStorage.getItem('token')) {
 api.interceptors.response.use(undefined, (err) => {
     try {
         const errorCode = err.response.status;
-        switch (true) {
-            case errorCode === 401:
+        switch (errorCode) {
+            case 401:
                 localStorage.setItem('token', '');
                 window.location.href = `${URL}/login`;
                 break;
@@ -32,6 +32,5 @@ api.interceptors.response.use(undefined, (err) => {
         window.location.href = `${URL}/login`;
     }
 });
-
 
 export default api;

@@ -7,13 +7,13 @@ init:
 	@cd website/server && npm install
 	@cd website && npm run build
 
+dev-up:
+	@docker compose -f docker-compose.dev.yml up -dV
 
-npm:
-	clear
-	cd api && npm run server
+dev-down:
+	@docker compose -f docker-compose.dev.yml down
 
 docker:
-	@clear
 	@cd website && npm run build
 	@docker compose build
 	@docker compose up -dV

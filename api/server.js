@@ -1,12 +1,12 @@
-import express, { json } from 'express';
 import cors from 'cors';
-import esMain from 'es-main';
 import dotenv from 'dotenv';
+import esMain from 'es-main';
+import express, { json } from 'express';
+
 import ApiV2Router from './Router.js';
 
 dotenv.config(); // Load environment variables from .env file
 const PORT = process.env.PORT || 8000;
-
 
 async function main() {
     const app = express();

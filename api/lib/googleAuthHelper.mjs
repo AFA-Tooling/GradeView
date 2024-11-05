@@ -1,6 +1,6 @@
 import config from 'config';
 import { OAuth2Client } from 'google-auth-library';
-import AuthorizationError from './HttpErrors/AuthorizationError.js';
+import AuthorizationError from './errors/http/AuthorizationError.js';
 
 /**
  * Gets an email from a google auth token.
@@ -22,7 +22,9 @@ export async function getEmailFromAuth(token) {
         return payload['email'];
     } catch (err) {
         console.error('Error during Google authorization:', err);
-        throw new AuthorizationError('Could not authenticate authorization token.');
+        throw new AuthorizationError(
+            'Could not authenticate authorization token.',
+        );
     }
 }
 
@@ -33,8 +35,9 @@ export async function getEmailFromAuth(token) {
  * @deprecated
  */
 export function verifyBerkeleyEmail(email) {
-    return email.split("@").length === 2
-            && email.split("@")[1] === "berkeley.edu";
+    return (
+        email.split('@').length === 2 && email.split('@')[1] === 'berkeley.edu'
+    );
 }
 
 // TODO: check if the user is included in the list of users (in the db);

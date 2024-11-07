@@ -191,9 +191,9 @@ export default function ButtonAppBar() {
                                 </Box>
                             )}
                             <IconButton 
-                                        aria-label="user profile"
-                                        onClick={handleMenu}
-                                        >
+                                    aria-label="user profile"
+                                    onClick={handleMenu}
+                            >
                                 <Avatar
                                     src={profilePicture}
                                     imgProps={{ referrerPolicy: 'no-referrer' }}

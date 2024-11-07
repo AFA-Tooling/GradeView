@@ -191,8 +191,8 @@ export default function ButtonAppBar() {
                                 </Box>
                             )}
                             <IconButton 
-                                    aria-label="user profile"
-                                    onClick={handleMenu}
+                                aria-label="user profile"
+                                onClick={handleMenu}
                             >
                                 <Avatar
                                     src={profilePicture}
@@ -214,7 +214,7 @@ export default function ButtonAppBar() {
                                 open={Boolean(anchorEl)}
                                 onClose={handleClose}
                             >
-                                {mobileView && renderMenuItems()} 
+                                {mobileView && renderMenuItems()}
                                 <NavMenuItem
                                     icon={<Logout />}
                                     text={'Logout'}

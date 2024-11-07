@@ -1,9 +1,9 @@
 import React from 'react';
 import { MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 
-function NavigationMenuItem({ icon, text, onClick }) {
+function NavigationMenuItem({ icon, text, onClick, ...Props}) {
     return (
-        <MenuItem onClick={onClick} disableRipple>
+        <MenuItem onClick={onClick} disableRipple {...Props}>
             <ListItemIcon>
                 {icon}
             </ListItemIcon>

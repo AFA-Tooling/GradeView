@@ -106,7 +106,13 @@ export default function Login() {
                     }
                     <Button variant='contained' size="large" onClick={handleLogin}>Login</Button>
                     <p><i>or</i></p>
-                    <div id="googleSignInButton"></div>
+                    <div 
+                    tabIndex={-1}
+                    onClick={(event) => {
+                        event.preventDefault();
+                    }}
+                    id="googleSignInButton">
+                    </div>
                 </Stack>
             </form>
         </>

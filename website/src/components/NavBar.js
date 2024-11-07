@@ -71,7 +71,6 @@ export default function ButtonAppBar() {
     function renderMenuItems() {
         return tabs.map((tab) => (
             <NavMenuItem
-                tabIndex={0}
                 icon={tab.icon}
                 text={tab.name}
                 onClick={() => {
@@ -215,11 +214,8 @@ export default function ButtonAppBar() {
                                 open={Boolean(anchorEl)}
                                 onClose={handleClose}
                             >
-
                                 {mobileView && renderMenuItems()} 
                                 <NavMenuItem
-                                    autofocus={true} 
-                                    tabindex={0}
                                     icon={<Logout />}
                                     text={'Logout'}
                                     onClick={doLogout}

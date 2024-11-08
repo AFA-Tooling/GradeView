@@ -105,8 +105,11 @@ export default function ButtonAppBar() {
         if (isAdmin) {
             apiv2.get('/students').then((res) => {
                 if (mounted) {
-                    setStudents(res.data.students);
-                    setSelectedStudent(res.data.students[0][1]);
+                    const sortedStudents = res.data.students.sort((a, b) =>
+                        a[0].localeCompare(b[0])
+                    );
+                    setStudents(sortedStudents);
+                    setSelectedStudent(sortedStudents[0][1]);
                 }
             });
         }

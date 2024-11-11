@@ -1,5 +1,6 @@
 import re
 import json
+import bleach
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
@@ -226,9 +227,9 @@ def validate_json(data):
     }
     try:
         validate(instance=data, schema=schema)
-        print("Data is valid.")
     except ValidationError as e:
-        print("Data is invalid:", e.message)
+        # Not sure how we should handle the error, so just raising it for now.
+        raise e
 
 def generate_map(school_name, course_name, render=False):
     print("Log: {}_{}".format(school_name, course_name))

@@ -146,87 +146,96 @@ def to_json(school_name, course_name, term, start_date, class_levels, student_le
     with open('data/{}_{}.json'.format(school_name, course_name), 'w', encoding='utf-8') as json_out_file:
         json.dump(json_out, json_out_file, indent=4)
 
-def validate_json(data):
-    schema = {
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "term": {"type": "string"},
-            "start date": {"type": "string", "pattern": "^(\\d{1,2}/\\d{1,2}/\\d{4})$"},
-            "class levels": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
-                    },
-                    "required": ["name", "color"]
-                }
-            },
-            "student levels": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
-                    },
-                    "required": ["name", "color"]
-                }
-            },
-            "count": {"type": "integer"},
-            "nodes": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "parent": {"type": ["string", "null"]},
-                    "children": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/node"
-                        }
-                    },
-                    "data": {
+def validate_json(json_out):
+    try:
+        json_out_as_string = json.dumps(json_out)
+        if len(json_out_as_string) > 6144:
+            raise ValidationError("Content greater than 6kb")
+        schema = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "term": {"type": "string"},
+                "start date": {"type": "string", "pattern": "^(\\d{1,2}/\\d{1,2}/\\d{4})$"},
+                "class levels": {
+                    "type": "array",
+                    "items": {
                         "type": "object",
                         "properties": {
-                            "week": {"type": "integer"}
+                            "name": {"type": "string"},
+                            "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
                         },
-                        "required": ["week"]
+                        "required": ["name", "color"]
                     }
                 },
-                "required": ["id", "name", "parent", "children", "data"]
-            }
-        },
-        "required": ["name", "term", "start date", "class levels", "student levels", "count", "nodes"],
-        "definitions": {
-            "node": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "parent": {"type": ["string", "null"]},
-                    "children": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/node"
-                        }
-                    },
-                    "data": {
+                "student levels": {
+                    "type": "array",
+                    "items": {
                         "type": "object",
                         "properties": {
-                            "week": {"type": "integer"}
+                            "name": {"type": "string"},
+                            "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
                         },
-                        "required": ["week"]
+                        "required": ["name", "color"]
                     }
                 },
-                "required": ["id", "name", "parent", "children", "data"]
+                "count": {"type": "integer"},
+                "nodes": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "parent": {"type": ["string", "null"]},
+                        "children": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/node"
+                            }
+                        },
+                        "data": {
+                            "type": "object",
+                            "properties": {
+                                "week": {"type": "integer"}
+                            },
+                            "required": ["week"]
+                        }
+                    },
+                    "required": ["id", "name", "parent", "children", "data"]
+                }
+            },
+            "required": ["name", "term", "start date", "class levels", "student levels", "count", "nodes"],
+            "definitions": {
+                "node": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "parent": {"type": ["string", "null"]},
+                        "children": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/node"
+                            }
+                        },
+                        "data": {
+                            "type": "object",
+                            "properties": {
+                                "week": {"type": "integer"}
+                            },
+                            "required": ["week"]
+                        }
+                    },
+                    "required": ["id", "name", "parent", "children", "data"]
+                }
             }
         }
-    }
-    try:
-        validate(instance=data, schema=schema)
+        # raises ValidationError if json_out does not conform to the proper schema
+        validate(instance=json_out, schema=schema)
+        sanitized_json_out_as_string = bleach.clean(json_out_as_string)
+        # If the sanitized string does not match the original string, there likely is malicious content in json_out
+        if sanitized_json_out_as_string != json_out_as_string:
+            raise ValidationError("Malicious content detected")
+
     except ValidationError as e:
         # Not sure how we should handle the error, so just raising it for now.
         raise e

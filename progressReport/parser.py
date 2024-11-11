@@ -1,9 +1,11 @@
 import re
 import json
 import bleach
+import os
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
+INPUT_FILE_SIZE_LIMIT = 10000
 
 class Node:
     count = 0
@@ -146,104 +148,105 @@ def to_json(school_name, course_name, term, start_date, class_levels, student_le
     with open('data/{}_{}.json'.format(school_name, course_name), 'w', encoding='utf-8') as json_out_file:
         json.dump(json_out, json_out_file, indent=4)
 
+def scan_text_file_for_injection(f):
+    input_data = f.read()
+    sanitized_input_data = bleach.clean(input_data)
+    # If the sanitized user input does not match the original input, there likely is malicious content in the original input
+    if sanitized_input_data != input_data:
+        raise ValidationError("Malicious content detected")
+    f.seek(0)
+
 def validate_json(json_out):
-    try:
-        json_out_as_string = json.dumps(json_out)
-        if len(json_out_as_string) > 6144:
-            raise ValidationError("Content greater than 6kb")
-        schema = {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "term": {"type": "string"},
-                "start date": {"type": "string", "pattern": "^(\\d{1,2}/\\d{1,2}/\\d{4})$"},
-                "class levels": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
-                        },
-                        "required": ["name", "color"]
-                    }
-                },
-                "student levels": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
-                        },
-                        "required": ["name", "color"]
-                    }
-                },
-                "count": {"type": "integer"},
-                "nodes": {
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "term": {"type": "string"},
+            "start date": {"type": "string", "pattern": "^(\\d{1,2}/\\d{1,2}/\\d{4})$"},
+            "class levels": {
+                "type": "array",
+                "items": {
                     "type": "object",
                     "properties": {
-                        "id": {"type": "integer"},
                         "name": {"type": "string"},
-                        "parent": {"type": ["string", "null"]},
-                        "children": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/node"
-                            }
-                        },
-                        "data": {
-                            "type": "object",
-                            "properties": {
-                                "week": {"type": "integer"}
-                            },
-                            "required": ["week"]
-                        }
+                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
                     },
-                    "required": ["id", "name", "parent", "children", "data"]
+                    "required": ["name", "color"]
                 }
             },
-            "required": ["name", "term", "start date", "class levels", "student levels", "count", "nodes"],
-            "definitions": {
-                "node": {
+            "student levels": {
+                "type": "array",
+                "items": {
                     "type": "object",
                     "properties": {
-                        "id": {"type": "integer"},
                         "name": {"type": "string"},
-                        "parent": {"type": ["string", "null"]},
-                        "children": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/node"
-                            }
-                        },
-                        "data": {
-                            "type": "object",
-                            "properties": {
-                                "week": {"type": "integer"}
-                            },
-                            "required": ["week"]
+                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
+                    },
+                    "required": ["name", "color"]
+                }
+            },
+            "count": {"type": "integer"},
+            "nodes": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "parent": {"type": ["string", "null"]},
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/node"
                         }
                     },
-                    "required": ["id", "name", "parent", "children", "data"]
-                }
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "week": {"type": "integer"}
+                        },
+                        "required": ["week"]
+                    }
+                },
+                "required": ["id", "name", "parent", "children", "data"]
+            }
+        },
+        "required": ["name", "term", "start date", "class levels", "student levels", "count", "nodes"],
+        "definitions": {
+            "node": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "parent": {"type": ["string", "null"]},
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/node"
+                        }
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "week": {"type": "integer"}
+                        },
+                        "required": ["week"]
+                    }
+                },
+                "required": ["id", "name", "parent", "children", "data"]
             }
         }
-        # raises ValidationError if json_out does not conform to the proper schema
-        validate(instance=json_out, schema=schema)
-        sanitized_json_out_as_string = bleach.clean(json_out_as_string)
-        # If the sanitized string does not match the original string, there likely is malicious content in json_out
-        if sanitized_json_out_as_string != json_out_as_string:
-            raise ValidationError("Malicious content detected")
+    }
+    # raises ValidationError if json_out does not conform to the proper schema
+    validate(instance=json_out, schema=schema)
 
-    except ValidationError as e:
-        # Not sure how we should handle the error, so just raising it for now.
-        raise e
 
 def generate_map(school_name, course_name, render=False):
     print("Log: {}_{}".format(school_name, course_name))
     try:
-        with open("meta/{}_{}.txt".format(school_name, course_name), "r") as f:
+        file_path = "meta/{}_{}.txt".format(school_name, course_name)
+        if os.path.getsize(file_path) > INPUT_FILE_SIZE_LIMIT:
+            raise ValidationError("File size exceeds limit")
+        with open(file_path, "r") as f:
+            scan_text_file_for_injection(f)
             name, orientation, start_date, term, class_levels, student_levels, styles, root = read_meta(f)
             to_json(school_name, course_name, term, start_date, class_levels, student_levels, root, render)
     except FileNotFoundError:

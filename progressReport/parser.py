@@ -1,5 +1,7 @@
 import re
 import json
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 
 
 class Node:
@@ -138,8 +140,95 @@ def to_json(school_name, course_name, term, start_date, class_levels, student_le
         "nodes": nodes_to_json(root)
     }
 
+    validate_json(json_out)
+
     with open('data/{}_{}.json'.format(school_name, course_name), 'w', encoding='utf-8') as json_out_file:
         json.dump(json_out, json_out_file, indent=4)
+
+def validate_json(data):
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "term": {"type": "string"},
+            "start date": {"type": "string", "pattern": "^(\\d{1,2}/\\d{1,2}/\\d{4})$"},
+            "class levels": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
+                    },
+                    "required": ["name", "color"]
+                }
+            },
+            "student levels": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "color": {"type": "string", "pattern": "^#([A-Fa-f0-9]{6})$"}
+                    },
+                    "required": ["name", "color"]
+                }
+            },
+            "count": {"type": "integer"},
+            "nodes": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "parent": {"type": ["string", "null"]},
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/node"
+                        }
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "week": {"type": "integer"}
+                        },
+                        "required": ["week"]
+                    }
+                },
+                "required": ["id", "name", "parent", "children", "data"]
+            }
+        },
+        "required": ["name", "term", "start date", "class levels", "student levels", "count", "nodes"],
+        "definitions": {
+            "node": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "parent": {"type": ["string", "null"]},
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/node"
+                        }
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "week": {"type": "integer"}
+                        },
+                        "required": ["week"]
+                    }
+                },
+                "required": ["id", "name", "parent", "children", "data"]
+            }
+        }
+    }
+    try:
+        validate(instance=data, schema=schema)
+        print("Data is valid.")
+    except ValidationError as e:
+        print("Data is invalid:", e.message)
 
 def generate_map(school_name, course_name, render=False):
     print("Log: {}_{}".format(school_name, course_name))

@@ -1,3 +1,6 @@
 Flask
 gunicorn
 Werkzeug
+bleach
+jsonschema
+os

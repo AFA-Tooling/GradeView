@@ -24,7 +24,6 @@
         .node circle {
             stroke-width: 3px;
         }
-
         {% for i in range(student_levels|length) %}
             .level{{ i }} circle {
                 fill: {{ student_levels[i]["color"] }};

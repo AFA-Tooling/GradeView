@@ -6,6 +6,16 @@
     <title>{{ course_name }} Progress Report</title>
 
     <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+        }
 
         .node {
             cursor: pointer;
@@ -19,12 +29,12 @@
             .level{{ i }} circle {
                 fill: {{ student_levels[i]["color"] }};
                 stroke: {{ student_levels[i]["color"] }};
-                stroke-width: 10px;
+                stroke-width: 5px;
             }
         {% endfor %}
 
         .node text {
-            font: 12px sans-serif;
+            font: 8px sans-serif;
         }
 
         .link {
@@ -33,33 +43,33 @@
 
         .link-not-taught {
             stroke: {{ class_levels[0]["color"] }};
-            stroke-width: 2px;
+            stroke-width: 1px;
         }
 
         .link-taught {
             stroke: {{ class_levels[1]["color"] }};
-            stroke-width: 3px;
+            stroke-width: 1.5px;
         }
 
         #legends-wrapper {
             display: flex;
             justify-content: center;
             justify-items: center;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .legend {
-            margin: 10px;
-            padding: 5px;
+            margin: 5px;
+            padding: 3px;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            font: 15px sans-serif;
+            font: 10px sans-serif;
         }
 
         .legend-text {
-            padding: 5px;
+            padding: 3px;
             background-color: white;
             opacity: 0.8;
             border-radius: 50%;
@@ -69,36 +79,33 @@
         }
 
         .legend-node {
-            height: 80px;
-            width: 80px;
+            height: 40px;
+            width: 40px;
             border-radius: 50%;
         }
 
         .legend-link {
-            height: 10px;
-            width: 100px;
-            border-bottom: solid 5px;
+            height: 5px;
+            width: 50px;
+            border-bottom: solid 2px;
         }
 
-
         .legend-node-text {
-            height: 60px;
-            width: 60px;
+            height: 30px;
+            width: 30px;
         }
 
         .legend-link-text {
             background-color: transparent;
-            height: 25px;
-            width: 200px;
+            height: 15px;
+            width: 100px;
         }
 
         h5 {
             text-align: center;
             vertical-align: middle;
         }
-
     </style>
-
 </head>
 
 <body>
@@ -119,16 +126,22 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"
             integrity="sha256-dsOXGNHAo/syFnazt+KTBsCQeRmlcW1XKL0bCK4Baec="
-	        crossorigin="anonymous">
+            crossorigin="anonymous">
     </script>
 
     <script>
         let courseData = {{ course_data|tojson|safe }};
         var student_levels = {{ student_levels|tojson|safe }};
 
-        let margin = {top: 100, right: innerWidth/3 + 100, bottom: 100, left: innerWidth/3 + 100},
+        let margin = {
+    top: innerHeight * 0.1, 
+    right: innerWidth * 0.25, 
+    bottom: innerHeight * 0.1, 
+    left: innerWidth * 0.25 + 300 
+};
+
             width = innerWidth - margin.right - margin.left,
-            height = 50 * {{ course_node_count }};
+            height = 15 * {{ course_node_count }};
 
         let i = 0,
             duration = 750,
@@ -141,10 +154,13 @@
             .projection(function(d) { return [d.y, d.x]; });
 
         let svg = d3.select("body").append("svg")
-            .attr("width", width + margin.right + margin.left)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("display", "block")
+    .style("margin", "0 auto")
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .attr("transform-origin", "center");
 
         let studentMastery = "{{ student_mastery }}";
 
@@ -167,13 +183,12 @@
         }
 
         function update(source) {
-
             // Compute the new tree layout.
             let nodes = tree.nodes(root).reverse(),
                 links = tree.links(nodes);
 
             // Normalize for fixed-depth.
-            nodes.forEach(function(d) { d.y = width - (d.depth * 180); });
+            nodes.forEach(function(d) { d.y = d.depth * 80; });
 
             // Update the nodes…
             let node = svg.selectAll("g.node")
@@ -193,10 +208,9 @@
                     return d._children ? student_levels[d["student_level"]]["color"] : "white";
                 });
 
-            nodeEnter.append("text")
-                .attr("x", function(d) { return d.children || d._children ? 15 : -15; })
-                .attr("dy", "1.5em")
-                .attr("text-anchor", function(d) { return d.children || d._children ? "start" : "end"; })
+            nodeEnter.append("text").attr("x", function(d) { return d.children || d._children ? -15 : 15; })
+                .attr("dy", "1em")
+                .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
                 .text(function(d) { return d.name; })
                 .style("fill-opacity", 1e-6)
                 .style("fill", "black");
@@ -207,7 +221,7 @@
                 .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
             nodeUpdate.select("circle")
-                .attr("r", 10)
+                .attr("r", 6)
                 .style("fill",  function(d) {
                     return d._children ? student_levels[d["student_level"]]["color"] : "white";
                 });
@@ -325,29 +339,29 @@
                 parseNodeClass_InProcess(node["children"][i])
             }
         }
+
         function resizeSVG() {
-        margin = {top: 100, right: window.innerWidth / 3 + 100, bottom: 100, left: window.innerWidth / 3 + 100};
-        width = window.innerWidth - margin.right - margin.left;
-        height = 50 * {{ course_node_count }};
-        
-        // Update the SVG dimensions
-        d3.select("svg")
-            .attr("width", width + margin.right + margin.left)
-            .attr("height", height + margin.top + margin.bottom);
-        
-        // Update the group transform
-        svg.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        
-        // Update the positions of nodes and links
-        update(root);
-    }
+            margin = {top: 50, right: window.innerWidth / 6 + 50, bottom: 50, left: window.innerWidth / 6 + 50};
+            width = window.innerWidth - margin.right - margin.left;
+            height = 15 * {{ course_node_count }};
 
-    // Add event listener for window resize
-    window.addEventListener("resize", resizeSVG);
+            // Update the SVG dimensions
+            d3.select("svg")
+                .attr("width", width + margin.right + margin.left)
+                .attr("height", height + margin.top + margin.bottom);
 
-    // Load the initial course data and setup the diagram
+            // Update the group transform
+            svg.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Update the positions of nodes and links
+            update(root);
+        }
+
+        // Add event listener for window resize
+        window.addEventListener("resize", resizeSVG);
+
+        // Load the initial course data and setup the diagram
         loadCourseData(courseData);
-
     </script>
 </body>
 </html>

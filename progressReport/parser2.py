@@ -18,7 +18,7 @@ class Node:
         Node.count += 1
 
 
-def read_meta(f):
+def read_meta(content):
     Node.count = 0
     name = ""
     term = ""
@@ -35,7 +35,7 @@ def read_meta(f):
     cur_node_parent = None
     cur_node_parent_depth = 0
 
-    for line in f.readlines():
+    for line in content.splitlines():
         if line.startswith("name:"):
             name = re.search(r"name: ([A-Za-z0-9\-_]+)", line).group(1)
         if line.startswith("term:"):
@@ -99,8 +99,6 @@ def read_meta(f):
                 cur_node_parent = new_children
                 cur_node_parent_depth += 1
 
-    f.close()
-
     root.label = name
 
     return name, orientation, start_date, term, class_levels, student_levels, styles, root
@@ -139,8 +137,14 @@ def to_json(school_name, course_name, term, start_date, class_levels, student_le
         "nodes": nodes_to_json(root)
     }
 
-    with open('data/{}_{}.json'.format(school_name, course_name), 'w', encoding='utf-8') as json_out_file:
+    output_path = 'data/{}_{}.json'.format(school_name, course_name)
+    with open(output_path, 'w', encoding='utf-8') as json_out_file:
         json.dump(json_out, json_out_file, indent=4)
+    
+    return json_out, output_path
+
+    # with open('data/{}_{}.json'.format(school_name, course_name), 'w', encoding='utf-8') as json_out_file:
+    #     json.dump(json_out, json_out_file, indent=4)
 
 def generate_map(school_name, course_name, render=False):
     print("Log: {}_{}".format(school_name, course_name))

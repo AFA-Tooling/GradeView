@@ -1,8 +1,10 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 import json
 import os
 import parser
+import parser2
+import re
 
 """
 Dream Team GUI
@@ -126,11 +128,24 @@ def index():
                            course_data=course_nodes)
 
 
+@app.route('/parse-cm', methods=['POST'])
+def parse_text():
+    content = request.data.decode('utf-8')
+    school_name = request.args.get("school_name", "Berkeley")
+    course_name = request.args.get("course_name", "CS10")
+    try:
+        name, orientation, start_date, term, class_levels, student_levels, styles, root = parser2.read_meta(content)
+        parsed_json, output_path = parser2.to_json(school_name, course_name, term, start_date, class_levels, student_levels, root)
+        return jsonify({"parsed_data": parsed_json, "file_saved": output_path}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
 @app.route('/parse', methods=["POST"])
 def parse():
     school_name = request.args.get("school_name", "Berkeley")
     course_name = request.form.get("course_name", "CS10")
-    parser.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=False)
+    parser2.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=False)
     try:
         with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
             course_data = json.load(data_file)

@@ -10,8 +10,6 @@ jest.mock('../../../lib/authlib.mjs', () => ({
     validateAdminOrStudentMiddleware: jest.fn(),
 }));
 
-// Import the mocked middleware
-
 
 describe('api/v2/login/index.js', () => {
     let app;

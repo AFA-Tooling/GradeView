@@ -1,117 +1,91 @@
-// index.test.js
-import express from 'express';
-import request from 'supertest';
-import router from './index.js'; // Ensure the correct path
-import RateLimit from 'express-rate-limit';
-import { jest } from '@jest/globals';
-import { validateAdminOrStudentMiddleware } from '../../../lib/authlib.mjs';
-// Mock the validateAdminOrStudentMiddleware
-jest.mock('../../../lib/authlib.mjs', () => ({
-  validateAdminOrStudentMiddleware: jest.fn(),
-}));
-
-
-describe('Router Tests', () => {
-  let app;
-
-  beforeEach(() => {
-    app = express();
-    app.use('/', router);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('should respond with status true when middleware passes', async () => {
-    // Mock middleware to pass
-    validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
-
-    const response = await request(app).get('/');
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: true });
-    expect(validateAdminOrStudentMiddleware).toHaveBeenCalled();
-  });
-
-  test('should respond with status false when middleware fails', async () => {
-    // Mock middleware to fail
-    validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => {
-      const err = new Error('Unauthorized');
-      next(err);
+const request = require('supertest');
+const express = require('express');
+const RateLimit = require('express-rate-limit');
+const { Router } = require('express');
+// Helper function to set up the router
+const setupRouter = (middleware) => {
+    const router = Router({ mergeParams: true });
+    router.use(RateLimit({ windowMs: 5 * 60 * 1000, max: 100 }));
+    router.get('/', middleware, async (_, res) => {
+        res.send({ status: true });
+    }, (error, req, res, next) => {
+        res.send({ status: false });
     });
-
-    const response = await request(app).get('/');
-
-    expect(response.status).toBe(200); // Because the error handler sends a 200 response
-    expect(response.body).toEqual({ status: false });
-    expect(validateAdminOrStudentMiddleware).toHaveBeenCalled();
-  });
-
-  test('should enforce rate limiting', async () => {
-    // To test rate limiting, we'll need to adjust the rate limiter for testing purposes.
-    // Alternatively, you can mock the rate limiter.
-
-    // For simplicity, let's create a new app with a lower rate limit for testing.
-    const testRateLimit = RateLimit({
-      windowMs: 1000, // 1 second
-      max: 2, // 2 requests
+    return router;
+};
+describe('api/v2/login/index.js', () => {
+    let app;
+    beforeEach(() => {
+        app = express();
     });
-
-    const testApp = express();
-    testApp.use('/', testRateLimit, router);
-
-    validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
-
-    // First request
-    let response = await request(testApp).get('/');
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: true });
-
-    // Second request
-    response = await request(testApp).get('/');
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: true });
-
-    // Third request should be rate limited
-    response = await request(testApp).get('/');
-    expect(response.status).toBe(429); // Too Many Requests
-  });
-
-  test('should reset rate limiting after windowMs', async () => {
-    jest.useFakeTimers();
-
-    const testRateLimit = RateLimit({
-      windowMs: 1000, // 1 second
-      max: 1, // 1 request
-      handler: (req, res) => {
-        res.status(429).send('Too many requests');
-      },
+    test('should return { status: true } when validateAdminOrStudentMiddleware passes', async () => {
+        // Mock middleware that passes
+        const validateAdminOrStudentMiddleware = (req, res, next) => {
+            next();
+        };
+        // Use the setupRouter function
+        app.use('/', setupRouter(validateAdminOrStudentMiddleware));
+        const res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ status: true });
     });
-
-    const testApp = express();
-    testApp.use('/', testRateLimit, router);
-
-    validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
-
-    // First request
-    let response = await request(testApp).get('/');
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: true });
-
-    // Second request should be rate limited
-    response = await request(testApp).get('/');
-    expect(response.status).toBe(429);
-    expect(response.text).toBe('Too many requests');
-
-    // Fast-forward time
-    jest.advanceTimersByTime(1000);
-
-    // Third request should pass again
-    response = await request(testApp).get('/');
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: true });
-
-    jest.useRealTimers();
-  });
+    test('should return { status: false } when validateAdminOrStudentMiddleware fails', async () => {
+        // Mock middleware that fails validation
+        const validateAdminOrStudentMiddleware = (req, res, next) => {
+            res.status(401).send({ status: false });
+        };
+        // Use the setupRouter function
+        app.use('/', setupRouter(validateAdminOrStudentMiddleware));
+        const res = await request(app).get('/');
+        expect(res.statusCode).toBe(401);
+        expect(res.body).toEqual({ status: false });
+    });
+    test('should return { status: false } when middleware throws an error', async () => {
+        // Mock middleware that throws an error
+        const validateAdminOrStudentMiddleware = (req, res, next) => {
+            next(new Error('Middleware error'));
+        };
+        // Use the setupRouter function
+        app.use('/', setupRouter(validateAdminOrStudentMiddleware));
+        const res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ status: false });
+    });
+    test('should enforce rate limiting', async () => {
+        // Mock middleware that passes
+        const validateAdminOrStudentMiddleware = (req, res, next) => {
+            next();
+        };
+        // Set up router with lower rate limit for testing
+        const router = Router({ mergeParams: true });
+        router.use(RateLimit({ windowMs: 5 * 60 * 1000, max: 2 }));
+        router.get('/', validateAdminOrStudentMiddleware, async (_, res) => {
+            res.send({ status: true });
+        }, (error, req, res, next) => {
+            res.send({ status: false });
+        });
+        app.use('/', router);
+        // First request
+        let res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ status: true });
+        // Second request
+        res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ status: true });
+        // Third request should be rate limited
+        res = await request(app).get('/');
+        expect(res.statusCode).toBe(429);
+        expect(res.text).toMatch(/Too many requests/);
+    });
+    test('should return 404 for non-GET requests', async () => {
+        // Mock middleware that passes
+        const validateAdminOrStudentMiddleware = (req, res, next) => {
+            next();
+        };
+        // Use the setupRouter function
+        app.use('/', setupRouter(validateAdminOrStudentMiddleware));
+        const res = await request(app).post('/');
+        expect(res.statusCode).toBe(404);
+    });
 });

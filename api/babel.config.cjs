@@ -4,8 +4,11 @@ module.exports = {
     [
       '@babel/preset-env',
       {
-        targets: { node: 'current' }, // Ensures compatibility with your current Node version
+        targets: {
+          node: 'current', // Transpile for your current Node.js version
+        },
       },
     ],
   ],
 };
+

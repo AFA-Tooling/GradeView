@@ -1,10 +1,8 @@
 // jest.config.cjs
 module.exports = {
-  testEnvironment: 'node',
-  moduleFileExtensions: ['js', 'mjs'],
+  testEnvironment: 'node', // Use Node.js environment for tests
   transform: {
-    '^.+\\.js$': 'babel-jest', // Use babel-jest to transpile JS files
+    '^.+\\.js$': 'babel-jest', // Transpile JavaScript files using Babel
   },
-  // Optionally, you can specify test file patterns
-  // testMatch: ['**/__tests__/**/*.js?(x)', '**/?(*.)+(spec|test).js?(x)'],
+  moduleFileExtensions: ['js', 'mjs'], // Support .js and .mjs files
 };

@@ -1,7 +1,5 @@
 const request = require('supertest');
 const express = require('express');
-
-// Import the actual router
 const router = require('./index.js').default; 
 const { validateAdminOrStudentMiddleware } = require('../../../lib/authlib.mjs');
 
@@ -57,25 +55,6 @@ describe('api/v2/login/index.js', () => {
         expect(validateAdminOrStudentMiddleware).toHaveBeenCalled();
     });
 
-    test('should enforce rate limiting', async () => {
-        // Simulate middleware success
-        validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
-
-        // First request
-        let res = await request(app).get('/');
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({ status: true });
-
-        // Second request
-        res = await request(app).get('/');
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({ status: true });
-
-        // Third request should hit the rate limit
-        res = await request(app).get('/');
-        expect(res.statusCode).toBe(429); // "Too many requests" error
-    });
-
     test('should return 404 for non-GET requests', async () => {
         // Simulate middleware success
         validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
@@ -83,4 +62,32 @@ describe('api/v2/login/index.js', () => {
         const res = await request(app).post('/'); // POST request to a GET-only route
         expect(res.statusCode).toBe(404); // Default Express behavior for unsupported methods
     });
+
+    test('should reset rate limiting after windowMs', async () => {
+      jest.useFakeTimers();
+      
+      // Simulate middleware success
+      validateAdminOrStudentMiddleware.mockImplementation((req, res, next) => next());
+  
+      // Send 100 requests
+      for (let i = 0; i < 100; i++) {
+          await request(app).get('/');
+      }
+      
+      // 101st request should be rate-limited
+      let res = await request(app).get('/');
+      expect(res.statusCode).toBe(429);
+      expect(res.text).toContain('Too many requests');
+
+      // Fast-forward time by windowMs
+      jest.advanceTimersByTime(5 * 60 * 1000); // 5 minutes
+  
+      // New request should pass
+      res = await request(app).get('/');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({ status: true });
+  
+      jest.useRealTimers();
+  });
 });
+

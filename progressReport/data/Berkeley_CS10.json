@@ -1,0 +1,386 @@
+{
+    "name": "CS10",
+    "term": "Spring 2024",
+    "start date": "1/15/2024",
+    "class levels": [
+        {
+            "name": "Not Taught",
+            "color": "#dddddd"
+        },
+        {
+            "name": "Taught",
+            "color": "#8fbc8f"
+        }
+    ],
+    "student levels": [
+        {
+            "name": "First Steps",
+            "color": "#dddddd"
+        },
+        {
+            "name": "Needs Practice",
+            "color": "#a3d7fc"
+        },
+        {
+            "name": "In Progress",
+            "color": "#59b0f9"
+        },
+        {
+            "name": "Almost There",
+            "color": "#3981c1"
+        },
+        {
+            "name": "Mastered",
+            "color": "#20476a"
+        }
+    ],
+    "count": 38,
+    "nodes": {
+        "id": 1,
+        "name": "CS10",
+        "parent": "null",
+        "children": [
+            {
+                "id": 2,
+                "name": "Quest",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 3,
+                        "name": "Abstraction",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 1
+                        }
+                    },
+                    {
+                        "id": 4,
+                        "name": "Number Representation",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 2
+                        }
+                    },
+                    {
+                        "id": 5,
+                        "name": "Iteration",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 3
+                        }
+                    },
+                    {
+                        "id": 6,
+                        "name": "Domain and Range",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 4
+                        }
+                    },
+                    {
+                        "id": 7,
+                        "name": "Booleans",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 5
+                        }
+                    },
+                    {
+                        "id": 8,
+                        "name": "Functions",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 6
+                        }
+                    },
+                    {
+                        "id": 9,
+                        "name": "HOFs I",
+                        "parent": "Quest",
+                        "children": [],
+                        "data": {
+                            "week": 6
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 1
+                }
+            },
+            {
+                "id": 10,
+                "name": "Midterm No Code",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 11,
+                        "name": "Algorithms",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 6
+                        }
+                    },
+                    {
+                        "id": 12,
+                        "name": "Computers and Education",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 7
+                        }
+                    },
+                    {
+                        "id": 13,
+                        "name": "Testing",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 7
+                        }
+                    },
+                    {
+                        "id": 14,
+                        "name": "Programming Paradigms",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    },
+                    {
+                        "id": 15,
+                        "name": "Computing",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    },
+                    {
+                        "id": 16,
+                        "name": "Debugging",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 5
+                        }
+                    },
+                    {
+                        "id": 17,
+                        "name": "Scope",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 5
+                        }
+                    },
+                    {
+                        "id": 18,
+                        "name": "Iteration",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 5
+                        }
+                    },
+                    {
+                        "id": 19,
+                        "name": "Recursion",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    },
+                    {
+                        "id": 20,
+                        "name": "Complexity",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 7
+                        }
+                    },
+                    {
+                        "id": 21,
+                        "name": "HOFs II",
+                        "parent": "Midterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 8
+                }
+            },
+            {
+                "id": 22,
+                "name": "Midterm Code",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 23,
+                        "name": "Fractal",
+                        "parent": "Midterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 8
+                }
+            },
+            {
+                "id": 24,
+                "name": "Postterm No Code",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 25,
+                        "name": "AI",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 14
+                        }
+                    },
+                    {
+                        "id": 26,
+                        "name": "HCI",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 13
+                        }
+                    },
+                    {
+                        "id": 27,
+                        "name": "Ethics",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 14
+                        }
+                    },
+                    {
+                        "id": 28,
+                        "name": "GenAI",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 14
+                        }
+                    },
+                    {
+                        "id": 29,
+                        "name": "Alumni",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 15
+                        }
+                    },
+                    {
+                        "id": 30,
+                        "name": "Base Conversion",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 2
+                        }
+                    },
+                    {
+                        "id": 31,
+                        "name": "Concurrency",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 14
+                        }
+                    },
+                    {
+                        "id": 32,
+                        "name": "HOFs III",
+                        "parent": "Postterm No Code",
+                        "children": [],
+                        "data": {
+                            "week": 15
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 15
+                }
+            },
+            {
+                "id": 33,
+                "name": "Postterm Code",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 34,
+                        "name": "Snap",
+                        "parent": "Postterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 8
+                        }
+                    },
+                    {
+                        "id": 35,
+                        "name": "Data Stuctures",
+                        "parent": "Postterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 13
+                        }
+                    },
+                    {
+                        "id": 36,
+                        "name": "Python HOFs",
+                        "parent": "Postterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 13
+                        }
+                    },
+                    {
+                        "id": 37,
+                        "name": "Python OOP",
+                        "parent": "Postterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 13
+                        }
+                    },
+                    {
+                        "id": 38,
+                        "name": "Tree Recursion",
+                        "parent": "Postterm Code",
+                        "children": [],
+                        "data": {
+                            "week": 14
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 15
+                }
+            }
+        ],
+        "data": {
+            "week": 15
+        }
+    }
+}

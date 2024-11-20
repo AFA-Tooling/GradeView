@@ -1,0 +1,106 @@
+{
+    "name": "CS61C",
+    "term": "Spring 2024",
+    "start date": "1/15/2024",
+    "class levels": [
+        {
+            "name": "Not Taught",
+            "color": "#dddddd"
+        },
+        {
+            "name": "Taught",
+            "color": "#8fbc8f"
+        }
+    ],
+    "student levels": [
+        {
+            "name": "First Steps",
+            "color": "#dddddd"
+        },
+        {
+            "name": "Needs Practice",
+            "color": "#a3d7fc"
+        },
+        {
+            "name": "In Progress",
+            "color": "#59b0f9"
+        },
+        {
+            "name": "Almost There",
+            "color": "#3981c1"
+        },
+        {
+            "name": "Mastered",
+            "color": "#20476a"
+        }
+    ],
+    "count": 8,
+    "nodes": {
+        "id": 1,
+        "name": "CS61C",
+        "parent": "null",
+        "children": [
+            {
+                "id": 2,
+                "name": "C",
+                "parent": "null",
+                "children": [
+                    {
+                        "id": 3,
+                        "name": "C Intro",
+                        "parent": "C",
+                        "data": {
+                            "week": 1
+                        }
+                    },
+                    {
+                        "id": 4,
+                        "name": "C Pointers Arrays Strings",
+                        "parent": "C",
+                        "data": {
+                            "week": 2
+                        }
+                    },
+                    {
+                        "id": 5,
+                        "name": "Number Representation",
+                        "parent": "C",
+                        "data": {
+                            "week": 3
+                        }
+                    },
+                    {
+                        "id": 6,
+                        "name": "C Memory Management",
+                        "parent": "C",
+                        "data": {
+                            "week": 4
+                        }
+                    },
+                    {
+                        "id": 7,
+                        "name": "Floating Point",
+                        "parent": "C",
+                        "data": {
+                            "week": 5
+                        }
+                    },
+                    {
+                        "id": 8,
+                        "name": "C Generics Function Pointers",
+                        "parent": "C",
+                        "data": {
+                            "week": 6
+                        }
+                    }
+                ],
+                "data": {
+                    "week": 1
+                }
+            }
+        ],
+        "data": {
+            "week": 6
+        }
+    }
+}

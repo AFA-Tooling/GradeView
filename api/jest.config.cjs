@@ -7,8 +7,5 @@ module.exports = {
     },
     transformIgnorePatterns: [
         '/node_modules/(?!.*).+\\.js$', // This will transpile all node_modules
-      ],
-    //moduleFileExtensions: ['js', 'mjs'], 
-    // testEnvironment: 'node',  // Use Node.js environment for tests
-    // verbose: true, // Optional: make Jest output more detailed
+      ]
   };

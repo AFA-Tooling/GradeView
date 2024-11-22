@@ -1,9 +1,13 @@
-// babel.config.js
+// babel.config.cjs
 module.exports = {
-    presets: [
-      '@babel/preset-env',  // Transpile modern JS to older versions based on target environment
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        targets: {
+          node: 'current', // Transpile for your current Node.js version
+        },
+      },
     ],
-    plugins: [
-      '@babel/plugin-transform-modules-commonjs',  // Convert ESM (import/export) to CJS (require/module.exports)
-    ],
-  };
+  ],
+};

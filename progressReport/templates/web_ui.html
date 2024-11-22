@@ -135,7 +135,7 @@
     top: innerHeight * 0.1, 
     right: innerWidth * 0.25, 
     bottom: innerHeight * 0.1,  
-    left: innerWidth * 0.25 + 300 
+    left: innerWidth * 0.25 
         };
 
             width = innerWidth - margin.right - margin.left,
@@ -349,7 +349,10 @@
                 .attr("height", height + margin.top + margin.bottom);
 
             // Update the group transform
-            svg.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            //svg.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            svg.attr("transform", "translate(" + ((width+ margin.right) / 2) + "," + margin.top + ")")
+
+
 
             // Update the positions of nodes and links
             update(root);

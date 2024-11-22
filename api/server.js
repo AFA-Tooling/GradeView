@@ -1,17 +1,19 @@
-import express, { json } from 'express';
 import cors from 'cors';
-import esMain from 'es-main';
 import dotenv from 'dotenv';
+import logger from './lib/logger.mjs';
+import esMain from 'es-main';
+import express, { json } from 'express';
 import ApiV2Router from './Router.js';
 
 dotenv.config(); // Load environment variables from .env file
 const PORT = process.env.PORT || 8000;
 
-
 async function main() {
     const app = express();
+    app.use(logger);
     app.use(cors());
     app.use(json());
+
     app.use('/api', ApiV2Router);
     // Initialize middleware
 

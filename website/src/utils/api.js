@@ -7,7 +7,7 @@ let api;
 if (localStorage.getItem('token')) {
     api = axios.create({
         baseURL: `${URL}/api/`,
-        headers: {'Authorization': localStorage.getItem('token')}
+        headers: { Authorization: localStorage.getItem('token') },
     });
 } else {
     api = axios.create({
@@ -33,4 +33,7 @@ api.interceptors.response.use(undefined, (err) => {
     }
 });
 
-export default api
+/**
+ * @deprecated use apiv2 instead.
+ */
+export default api;

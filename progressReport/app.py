@@ -1,7 +1,9 @@
 from flask import Flask, request, render_template
 from werkzeug.utils import secure_filename
+from jsonschema import validate, ValidationError
 import json
 import os
+# import course_parser as parser
 import parser
 
 """
@@ -67,32 +69,6 @@ app = Flask(__name__)
 
 @app.route('/', methods=["GET"])
 def index():
-    def assign_node_levels(node, student_levels_count, class_levels_count):
-        nonlocal student_mastery, class_mastery
-        if not node["children"]:
-            if student_mastery:
-                node["student_level"] = int(student_mastery[0]) if int(student_mastery[0]) < student_levels_count \
-                    else student_levels_count - 1
-            else:
-                node["student_level"] = 0
-            if class_mastery:
-                node["class_level"] = int(class_mastery[0]) if int(class_mastery[0]) < class_levels_count \
-                    else class_levels_count - 1
-            else:
-                node["class_level"] = 0
-            student_mastery = student_mastery[1:] if len(student_mastery) > 1 else ""
-            class_mastery = class_mastery[1:] if len(class_mastery) > 1 else ""
-        else:
-            children_student_levels = []
-            children_class_levels = []
-            for child in node["children"]:
-                student_level, class_level = assign_node_levels(child, student_levels_count, class_levels_count)
-                children_student_levels.append(student_level)
-                children_class_levels.append(class_level)
-            node["student_level"] = sum(children_student_levels) // len(children_student_levels)
-            node["class_level"] = sum(children_class_levels) // len(children_class_levels)
-        return node["student_level"], node["class_level"]
-
     school_name = request.args.get("school", "Berkeley")
     course_name = request.args.get("class", "CS10")
     student_mastery = request.args.get("student_mastery", "000000")
@@ -114,7 +90,7 @@ def index():
     student_levels = course_data["student levels"]
     course_node_count = course_data["count"]
     course_nodes = course_data["nodes"]
-    assign_node_levels(course_nodes, len(student_levels), len(class_levels))
+    parser.assign_node_levels(course_nodes, len(student_levels), len(class_levels), student_mastery, class_mastery)
     return render_template("web_ui.html",
                            start_date=start_date,
                            course_name=course_name,
@@ -138,6 +114,66 @@ def parse():
         return "Class not found", 400
     return course_data
 
+@app.route('/update_concept_map', methods=['POST'])
+def update_concept_map():
+    try:
+
+        # Load existing course data
+        school_name = request.args.get("school", "Berkeley")
+        course_name = request.args.get("class", "CS10")
+
+        parser.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=True)
+        try:
+            with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
+                course_data = json.load(data_file)
+        except FileNotFoundError:
+            return "Class not found", 400
+        
+        # Parse JSON input and validates it 
+        input_data = request.get_json()
+        schema = {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+
+        validate(instance=input_data, schema=schema)
+        # if not input_data:
+        #     return 'Invalid JSON input', 400
+        
+        course_nodes = course_data["nodes"]
+        class_levels = course_data["class levels"]
+        student_levels = course_data["student levels"]
+        student_mastery = request.args.get("student_mastery", "000000")
+        class_mastery = request.args.get("class_mastery", "")
+        #Create the "Student_level" and "Class_level" variables and set them to 0
+        parser.assign_node_levels(course_nodes, len(student_levels), len(class_levels), "0", "")
+
+        # Update node mastery levels
+        parser.update_node_mastery(course_data['nodes'], input_data)
+
+        # Calculate class levels by averaging student levels
+        parser.calculate_class_level(course_data['nodes'])
+    
+        # Render updated HTML
+        html_content = render_template("web_ui.html",
+                                       start_date=course_data["start date"],
+                                       course_name=course_name,
+                                       course_term=course_data["term"],
+                                       class_levels=course_data["class levels"],
+                                       student_levels=course_data["student levels"],
+                                       use_url_class_mastery=False,
+                                       course_node_count=course_data["count"],
+                                       course_data=course_data["nodes"],
+                                       student_mastery="",
+                                       )
+
+        return html_content
+
+    except Exception as e:
+        # Handle exceptions
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run()

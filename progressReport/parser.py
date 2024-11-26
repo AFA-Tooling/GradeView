@@ -149,3 +149,105 @@ def generate_map(school_name, course_name, render=False):
             to_json(school_name, course_name, term, start_date, class_levels, student_levels, root, render)
     except FileNotFoundError:
         return
+    
+#This is a function pulled out from app.route('/', methods=["GET"])
+#I pulled it out because I want to reuse it
+def assign_node_levels(node, student_levels_count, class_levels_count, student_mastery, class_mastery):
+        """
+        node(json)
+        student_levels_count(int)
+        class_levels_count(int)
+        student_mastery(str)
+        class_mastery(str)
+        """
+        if not node["children"]:
+            if student_mastery:
+                node["student_level"] = int(student_mastery[0]) if int(student_mastery[0]) < student_levels_count \
+                    else student_levels_count - 1
+            else:
+                node["student_level"] = 0
+            if class_mastery:
+                node["class_level"] = int(class_mastery[0]) if int(class_mastery[0]) < class_levels_count \
+                    else class_levels_count - 1
+            else:
+                node["class_level"] = 0
+            student_mastery = student_mastery[1:] if len(student_mastery) > 1 else ""
+            class_mastery = class_mastery[1:] if len(class_mastery) > 1 else ""
+        else:
+            children_student_levels = []
+            children_class_levels = []
+            for child in node["children"]:
+                student_level, class_level = assign_node_levels(child, student_levels_count, class_levels_count, student_mastery, class_mastery)
+                children_student_levels.append(student_level)
+                children_class_levels.append(class_level)
+            node["student_level"] = sum(children_student_levels) // len(children_student_levels)
+            node["class_level"] = sum(children_class_levels) // len(children_class_levels)
+        return node["student_level"], node["class_level"]
+
+def update_node_mastery(node, mastery_dict):
+    """
+    Recursively update the 'student_level' of leaf nodes based on the mastery_dict.
+    Arguments:
+        -node: 
+            JSON
+        -mastery_dict: 
+            JSON with the format:
+            {
+                "Name of Concept1": "Mastery Level", 
+                "Name of Concept2": "Mastery Level",
+                ....
+            }
+    """
+    concept_name = node.get('name')
+    if not node.get('children'): 
+        if concept_name in mastery_dict:
+            mastery_level = mastery_dict[concept_name]
+            node['student_level'] = mastery_level_to_index(mastery_level)
+        else:
+            node['student_level'] = 0
+    else:
+        for child in node.get('children', []):
+            update_node_mastery(child, mastery_dict)
+
+def calculate_class_level(node):
+    """
+    Recursively calculate the 'class_level' for each node by averaging the 'student_level' of its children.
+    Arguments:
+        -node (JSON)
+    """
+    if not node.get('children'):
+        node['class_level'] = node['student_level']
+        return node['student_level']
+    else:
+        student_levels = []
+        for child in node['children']:
+            child_student_level = calculate_class_level(child)
+            student_levels.append(child_student_level)
+        average_level = sum(student_levels) / len(student_levels)
+        node['class_level'] = average_level
+        return average_level
+
+def mastery_level_to_index(mastery_level):
+    """
+    Map the mastery level string to an index corresponding to 'student_levels'.
+
+    Arguments:
+        - mastery_level: str
+
+    Return:
+        - index corresponding to the mastery level.
+
+    Note:
+        The mastery levels are currently hardcoded in this function.
+        If new mastery levels are added or existing ones are renamed, this function
+        must also be updated manually to include those changes. Otherwise, any mastery level 
+        not listed here will default to an index of 0.
+    """
+    mastery_levels = {
+        "first steps": 0,
+        "needs practice": 1,
+        "in progress": 2, 
+        "almost there": 3, 
+        "mastered": 4
+    }
+    return mastery_levels.get(mastery_level.lower(), 0)

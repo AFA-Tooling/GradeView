@@ -117,7 +117,6 @@ def parse():
 @app.route('/update_concept_map', methods=['POST'])
 def update_concept_map():
     try:
-
         # Load existing course data
         school_name = request.args.get("school", "Berkeley")
         course_name = request.args.get("class", "CS10")
@@ -129,18 +128,19 @@ def update_concept_map():
         except FileNotFoundError:
             return "Class not found", 400
         
-        # Parse JSON input and validates it 
+        # Parse JSON input
         input_data = request.get_json()
+        if not input_data:
+            return 'Invalid JSON input', 400
+        
+        #Validates JSON input 
         schema = {
             "type": "object",
             "additionalProperties": {
                 "type": "string"
             }
         }
-
         validate(instance=input_data, schema=schema)
-        # if not input_data:
-        #     return 'Invalid JSON input', 400
         
         course_nodes = course_data["nodes"]
         class_levels = course_data["class levels"]
@@ -170,10 +170,14 @@ def update_concept_map():
                                        )
 
         return html_content
-
-    except Exception as e:
+    
+    except ValidationError as ve:
+        # Handle JSON validation errors
+        return f"JSON validation error: {ve.message}", 400
+    
+    except Exception:
         # Handle exceptions
-        return str(e), 500
+        print("Something went wrong")
 
 if __name__ == '__main__':
     app.run()

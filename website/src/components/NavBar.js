@@ -1,5 +1,4 @@
-import React from 'react';
-import { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
     AppBar,
     Box,
@@ -17,28 +16,28 @@ import {
     Select,
 } from '@mui/material';
 import {
-    LoginOutlined,
-    StorageOutlined,
     AccountCircleOutlined,
     AccountTree,
+    LoginOutlined,
     Logout,
+    Menu as MenuIcon,
+    StorageOutlined,
+    AdminPanelSettings,
 } from '@mui/icons-material';
-import MenuIcon from '@mui/icons-material/Menu';
+
 import apiv2 from '../utils/apiv2';
 import NavBarItem from './NavBarItem';
 import NavMenuItem from './NavMenuItem';
+import userContext from '../contexts/userContext';
 import { StudentSelectionContext } from './StudentSelectionWrapper';
 
 export default function ButtonAppBar() {
-    const mobileView = useMediaQuery('(max-width:600px)');
-    const [loggedIn, setLoginStatus] = useState(
-        !!localStorage.getItem('token'),
-    );
+    const { dispatchUserStateUpdate, isLoggedIn, isAdmin, pfpUrl } =
+        useContext(userContext);
     const { selectedStudent, setSelectedStudent } = useContext(
         StudentSelectionContext,
     );
-    const [isAdmin, setAdminStatus] = useState(false);
-    const [profilePicture, updateProfilePicture] = useState('');
+    const mobileView = useMediaQuery('(max-width:600px)');
     const tabList = [
         {
             name: 'Profile',
@@ -59,17 +58,8 @@ export default function ButtonAppBar() {
     const [tabs, updateTabs] = useState(tabList.slice(1));
     const [anchorEl, setAnchorEl] = useState(null);
 
-    useEffect(() => {
-        let mounted = true;
-        if (loggedIn) {
-            updateTabs(() => tabList);
-            updateProfilePicture(localStorage.getItem('profilepicture'));
-        }
-        return () => (mounted = false);
-    }, [loggedIn]);
-
-    function renderMenuItems() {
-        return tabs.map((tab) => (
+    function renderMenuItems(tabList) {
+        return tabList.map((tab) => (
             <NavMenuItem
                 icon={tab.icon}
                 text={tab.name}
@@ -88,9 +78,9 @@ export default function ButtonAppBar() {
         setAnchorEl(null);
     }
     function doLogout() {
-        localStorage.setItem('token', '');
-        localStorage.setItem('email', '');
-        setLoginStatus(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('email');
+        dispatchUserStateUpdate({ type: 'logout' });
         window.location.reload(false);
     }
 
@@ -103,6 +93,14 @@ export default function ButtonAppBar() {
     useEffect(() => {
         let mounted = true;
         if (isAdmin) {
+            updateTabs((prev) => [
+                ...prev,
+                {
+                    name: 'Admin',
+                    href: '/admin',
+                    icon: <AdminPanelSettings />,
+                },
+            ]);
             apiv2.get('/students').then((res) => {
                 if (mounted) {
                     setStudents(res.data.students);
@@ -112,19 +110,6 @@ export default function ButtonAppBar() {
         }
         return () => (mounted = false);
     }, [isAdmin]);
-
-    useEffect(() => {
-        let mounted = true;
-        if (loggedIn) {
-            // Update user admin status
-            apiv2.get('/isadmin').then((res) => {
-                if (mounted) {
-                    setAdminStatus(res.data.isAdmin);
-                }
-                return () => (mounted = false);
-            });
-        }
-    }, [loggedIn]);
 
     return (
         <Box sx={{ flexGrow: 1 }}>
@@ -148,17 +133,20 @@ export default function ButtonAppBar() {
                         </Typography>
                         {!mobileView && (
                             <>
-                                {loggedIn && (
+                                {isLoggedIn && (
                                     <NavBarItem href='/'>My Grades</NavBarItem>
                                 )}
                                 <NavBarItem href='/buckets'>Buckets</NavBarItem>
                                 <NavBarItem href='/conceptmap'>
                                     Concept Map
                                 </NavBarItem>
+                                {isAdmin && (
+                                    <NavBarItem href='/admin'>Admin</NavBarItem>
+                                )}
                             </>
                         )}
                     </Box>
-                    {loggedIn ? (
+                    {isLoggedIn ? (
                         <>
                             {isAdmin && (
                                 <Box>
@@ -192,7 +180,7 @@ export default function ButtonAppBar() {
                             )}
                             <IconButton onClick={handleMenu}>
                                 <Avatar
-                                    src={profilePicture}
+                                    src={pfpUrl}
                                     imgProps={{ referrerPolicy: 'no-referrer' }}
                                 />
                             </IconButton>
@@ -211,7 +199,7 @@ export default function ButtonAppBar() {
                                 open={Boolean(anchorEl)}
                                 onClose={handleClose}
                             >
-                                {mobileView && renderMenuItems()}
+                                {mobileView && renderMenuItems(tabs)}
                                 <NavMenuItem
                                     icon={<Logout />}
                                     text={'Logout'}
@@ -251,7 +239,7 @@ export default function ButtonAppBar() {
                                                 window.location.href = '/login';
                                             }}
                                         />
-                                        {renderMenuItems()}
+                                        {renderMenuItems(tabs)}
                                     </Menu>
                                 </>
                             ) : (

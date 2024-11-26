@@ -2,6 +2,7 @@ import React, {
     createContext,
     useEffect,
     useReducer,
+    useState,
 } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
@@ -22,6 +23,7 @@ const userContext = createContext({
 userContext.displayName = 'UserContext';
 
 function reducer(state, action) {
+    console.debug('userContextUpdate:', action);
     switch (action.type) {
         case 'login':
             return { ...state, isLoggedIn: true };
@@ -42,8 +44,10 @@ function reducer(state, action) {
 export function UserContextProvider({ children }) {
     const token = localStorage.getItem('token');
 
+    const [isLoading, setIsLoading] = useState(false);
     const [state, dispatch] = useReducer(reducer, defaultState, (state) => {
         if (!token) return state;
+        setIsLoading(true);
         const localState = { ...state, isLoggedIn: true };
         const { email, picture } = jwtDecode(token);
         if (email) localState.email = email;
@@ -53,8 +57,13 @@ export function UserContextProvider({ children }) {
 
     useEffect(() => {
         if (!state.isLoggedIn || !token) return;
+
+        const abortController = new AbortController();
+        setIsLoading(true);
         apiv2
-            .get('/login')
+            .get('/login', {
+                signal: abortController.signal
+            })
             .then((res) => {
                 if (!res.data?.status) {
                     dispatch({ type: 'logout' });
@@ -69,16 +78,22 @@ export function UserContextProvider({ children }) {
                     dispatch({ type: 'setPfpUrl', payload: picture });
                 }
                 dispatch({ type: 'login' });
+                setIsLoading(false);
             })
             .catch((err) => {
-                console.error(err);
-                dispatch({ type: 'logout' });
-            });
+                if (!err.name === 'AbortError') {
+                    console.error(err);
+                    dispatch({ type: 'logout' });
+                    setIsLoading(false);
+                }
+            })
+
+        return () => abortController.abort();
     }, [state.isLoggedIn]);
 
     return (
         <userContext.Provider
-            value={{ ...state, dispatchUserStateUpdate: dispatch }}
+            value={{ isLoading, ...state, dispatchUserStateUpdate: dispatch }}
         >
             {children}
         </userContext.Provider>

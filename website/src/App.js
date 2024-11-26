@@ -6,6 +6,7 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom';
 
+import Admin from './views/admin';
 import Buckets from './views/buckets';
 import ConceptMap from './views/conceptMap';
 import Home from './views/home';
@@ -86,6 +87,13 @@ export default function App() {
                                 path='/conceptmap'
                                 element={<ConceptMap />}
                             />
+                            <Route element={<PrivateRoutes access='admin' />}>
+                                <Route
+                                    exact
+                                    path='/admin'
+                                    element={<Admin />}
+                                />
+                            </Route>
                             <Route
                                 exact
                                 path='/serverError'

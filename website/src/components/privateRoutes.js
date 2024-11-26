@@ -1,34 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import apiv2 from '../utils/apiv2';
+
 import Loader from './Loader';
+import userContext from '../contexts/userContext';
 
-export default function PrivateRoutes() {
-    const [loaded, setLoaded] = useState(false);
-    const [authorized, setAuthorized] = useState(false);
-    useEffect(() => {
-        if (localStorage.getItem('token') === '') {
-            setAuthorized(false);
-            setLoaded(true);
-            return;
+export default function PrivateRoutes({ access }) {
+    const { isLoading, isLoggedIn, isAdmin } = useContext(userContext);
+    const isAuthorized = useMemo(() => {
+        switch (access) {
+            case 'admin':
+                return isAdmin;
+            default:
+                return isLoggedIn;
         }
-        let mounted = true;
-        apiv2.get('/login').then((res) => {
-            if (mounted) {
-                setAuthorized(res.data.status);
-            }
-            setLoaded(true);
-        });
-        return () => (mounted = false);
-    }, []);
-
-    return loaded ? (
-        authorized ? (
-            <Outlet />
-        ) : (
-            <Navigate to='/login' />
-        )
-    ) : (
-        <Loader />
-    );
+    }, [access, isAdmin, isLoggedIn]);
+    if (isLoading) return <Loader />;
+    if (!isAuthorized) return <Navigate to='/login' />;
+    return <Outlet />;
 }

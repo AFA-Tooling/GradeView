@@ -89,7 +89,7 @@ def validate_mastery_learning_post_request(request_as_json):
     # Intentionally not handling the error an improper format may produce for now.
     jsonschema.validate(instance=request_as_json, schema=schema)
 
-@app.route('/', methods=["GET", "POST"])
+@app.route('/', methods=["GET"])
 def index():
     def assign_node_levels(node, student_levels_count, class_levels_count):
         nonlocal student_mastery, class_mastery
@@ -117,31 +117,10 @@ def index():
             node["class_level"] = sum(children_class_levels) // len(children_class_levels)
         return node["student_level"], node["class_level"]
 
-    # These values will be initialized in different ways depending on whether this route receives a GET or POST request
-    school_name = "Berkeley"
-    course_name = "CS10"
-    student_mastery = "000000"
-    class_mastery = ""
-
-    # The plan can be that the POST request contains all info we currently relay to CM in the url.
-    if request.method == "POST":
-        request_as_json = request.get_json()
-        validate_mastery_learning_post_request(request_as_json)
-        school_name = request_as_json["school"]
-        course_name = request_as_json["class"]
-        class_mastery = request_as_json["class_mastery"]
-
-        # To be consistent with the existing code, we can continue using a student_mastery string, which we can construct a student_mastery string using the content of the POST request.
-        student_mastery = ""
-        # The logic below makes use of the facts that dicts in Python are ordered and, in Flask apps, request.get_json() retains the order of the keys sent by the client.
-        for potential_concept, potential_mastery_level in request_as_json.items():
-            if potential_concept not in ["school", "class", "class_mastery"]:
-                student_mastery += str(potential_mastery_level)
-    if request.method == "GET":
-        school_name = request.args.get("school", "Berkeley")
-        course_name = request.args.get("class", "CS10")
-        student_mastery = request.args.get("student_mastery", "000000")
-        class_mastery = request.args.get("class_mastery", "")
+    school_name = request.args.get("school", "Berkeley")
+    course_name = request.args.get("class", "CS10")
+    student_mastery = request.args.get("student_mastery", "000000")
+    class_mastery = request.args.get("class_mastery", "")
     use_url_class_mastery = True if class_mastery != "" else False
     if not student_mastery.isdigit():
         return "URL parameter student_mastery is invalid", 400

@@ -72,23 +72,28 @@ Validates the fields of the mastery learning post request
 def validate_mastery_learning_post_request(request_as_json):
     schema = {
         "type": "object",
-
+        # Matches mastery fields (fields other than "school" and "class"
         "properties": {
-            # These fields can optionally be included in the POST request.
+            # These fields are optional.
             "school": {"type": "string"},
             "class": {"type": "string"},
-            "class_mastery": {"type": "string"},
         },
-        "patternProperties": {
-            "^(?!school$|class$|class_mastery).*": {"type": "integer"}  # Matches mastery fields (fields other than "school", "class", and "class_mastery")
+        "additionalProperties": {
+            "type": "object",
+            "properties": {
+                "key1": {"type": "integer"},
+                "key2": {"type": "integer"}
+            },
+            "additionalProperties": False
         },
-        "additionalProperties": False,  # Disallow undefined properties
-        "required": []  # No fields are required
     }
 
     # Intentionally not handling the error an improper format may produce for now.
     jsonschema.validate(instance=request_as_json, schema=schema)
 
+"""
+This method is deprecated. Query parameters are no longer used.
+"""
 @app.route('/', methods=["GET"])
 def index():
     def assign_node_levels(node, student_levels_count, class_levels_count):
@@ -146,6 +151,51 @@ def index():
                            class_levels=class_levels,
                            student_levels=student_levels,
                            use_url_class_mastery=use_url_class_mastery,
+                           course_node_count=course_node_count,
+                           course_data=course_nodes)
+
+
+@app.route('/', methods=["POST"])
+def generate_cm_from_post_parameters():
+    request_as_json = request.get_json()
+    validate_mastery_learning_post_request(request_as_json)
+    school_name = request_as_json.get("school", "Berkeley")
+    course_name = request_as_json.get("class", "CS10")
+    def assign_node_levels(node):
+        if not node["children"]:
+            node["student_level"] = request_as_json.get(node["name"], 0)
+            node["class_level"] = request_as_json.get(node["name"], 0)
+        else:
+            children_student_levels = []
+            children_class_levels = []
+            for child in node["children"]:
+                student_level, class_level = assign_node_levels(child)
+                children_student_levels.append(student_level)
+                children_class_levels.append(class_level)
+            node["student_level"] = sum(children_student_levels) // len(children_student_levels)
+            node["class_level"] = sum(children_class_levels) // len(children_class_levels)
+        return node["student_level"], node["class_level"]
+
+    parser.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=True)
+    try:
+        with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
+            course_data = json.load(data_file)
+    except FileNotFoundError:
+        return "Class not found", 400
+    start_date = course_data["start date"]
+    course_term = course_data["term"]
+    class_levels = course_data["class levels"]
+    student_levels = course_data["student levels"]
+    course_node_count = course_data["count"]
+    course_nodes = course_data["nodes"]
+    assign_node_levels(course_nodes)
+    return render_template("web_ui.html",
+                           start_date=start_date,
+                           course_name=course_name,
+                           course_term=course_term,
+                           class_levels=class_levels,
+                           student_levels=student_levels,
+                           use_url_class_mastery=False,
                            course_node_count=course_node_count,
                            course_data=course_nodes)
 

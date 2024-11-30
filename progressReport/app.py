@@ -163,8 +163,8 @@ def generate_cm_from_post_parameters():
     course_name = request_as_json.get("class", "CS10")
     def assign_node_levels(node):
         if not node["children"]:
-            node["student_level"] = request_as_json.get(node["name"], 0)
-            node["class_level"] = request_as_json.get(node["name"], 0)
+            node["student_level"] = request_as_json.get(node["name"]["student_mastery"], 0)
+            node["class_level"] = request_as_json.get(node["name"]["class_mastery"], 0)
         else:
             children_student_levels = []
             children_class_levels = []

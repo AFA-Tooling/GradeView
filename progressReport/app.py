@@ -136,7 +136,7 @@ def index():
         with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
             course_data = json.load(data_file)
     except FileNotFoundError:
-        return "Class not found", 400
+        return "Class not found", 404
     start_date = course_data["start date"]
     course_term = course_data["term"]
     class_levels = course_data["class levels"]
@@ -163,8 +163,8 @@ def generate_cm_from_post_parameters():
     course_name = request_as_json.get("class", "CS10")
     def assign_node_levels(node):
         if not node["children"]:
-            node["student_level"] = request_as_json.get(node["name"]["student_mastery"], 0)
-            node["class_level"] = request_as_json.get(node["name"]["class_mastery"], 0)
+            node["student_level"] = request_as_json.get(node["name"], {}).get("student_mastery", 0)
+            node["class_level"] = request_as_json.get(node["name"], {}).get("class_mastery", 0)
         else:
             children_student_levels = []
             children_class_levels = []
@@ -181,7 +181,7 @@ def generate_cm_from_post_parameters():
         with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
             course_data = json.load(data_file)
     except FileNotFoundError:
-        return "Class not found", 400
+        return "Class not found", 404
     start_date = course_data["start date"]
     course_term = course_data["term"]
     class_levels = course_data["class levels"]
@@ -209,7 +209,7 @@ def parse():
         with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
             course_data = json.load(data_file)
     except FileNotFoundError:
-        return "Class not found", 400
+        return "Class not found", 404
     return course_data
 
 if __name__ == '__main__':

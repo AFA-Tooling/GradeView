@@ -66,6 +66,12 @@ Dream Team GUI
 
 app = Flask(__name__)
 
+with open("meta/defaults.json", "r") as defaults_file:
+    default = json.load(defaults_file)
+
+DEFAULT_SCHOOL = default["school"]
+DEFAULT_CLASS = default["class"]
+
 """
 Validates the fields of the mastery learning post request
 """
@@ -81,8 +87,8 @@ def validate_mastery_learning_post_request(request_as_json):
         "additionalProperties": {
             "type": "object",
             "properties": {
-                "key1": {"type": "integer"},
-                "key2": {"type": "integer"}
+                "student_mastery": {"type": "integer"},
+                "class_mastery": {"type": "integer"}
             },
             "additionalProperties": False
         },
@@ -159,8 +165,8 @@ def index():
 def generate_cm_from_post_parameters():
     request_as_json = request.get_json()
     validate_mastery_learning_post_request(request_as_json)
-    school_name = request_as_json.get("school", "Berkeley")
-    course_name = request_as_json.get("class", "CS10")
+    school_name = request_as_json.get("school", DEFAULT_SCHOOL)
+    course_name = request_as_json.get("class", DEFAULT_CLASS)
     def assign_node_levels(node):
         if not node["children"]:
             node["student_level"] = request_as_json.get(node["name"], {}).get("student_mastery", 0)
@@ -202,8 +208,8 @@ def generate_cm_from_post_parameters():
 
 @app.route('/parse', methods=["POST"])
 def parse():
-    school_name = request.args.get("school_name", "Berkeley")
-    course_name = request.form.get("course_name", "CS10")
+    school_name = request.args.get("school_name", DEFAULT_SCHOOL)
+    course_name = request.form.get("course_name", DEFAULT_CLASS)
     parser.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=False)
     try:
         with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:

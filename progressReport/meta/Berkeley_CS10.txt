@@ -1,7 +1,7 @@
 name: CS10
-term: Spring 2024
+term: Fall 2024
 orientation: left to right
-start date: 2024 01 15
+start date: 2024 08 26
 styles:
     name: root, shape: ellipse, style: filled, fillcolor: #3A73A5
     name: blue1, shape: ellipse, style: filled, fillcolor: #74B3CE
@@ -38,16 +38,14 @@ nodes:
         Algorithmic Complexity [default, Week5]
         HOFs II [default, Week5]
         Fractal [default, Week5]
-
     Projects [blue2, Week1]
-        Project 1: Wordle™-lite [default, Week5]
+        Project 1: Wordle-lite [default, Week5]
         Project 2: Spelling Bee [default, Week5]
         Project 3: 2048 [default, Week5]
         Project 4: Artifact + Documentation [default, Week5]
         Project 4: Comments + Peer Feedback [default, Week5]
         Project 5: Pyturis [default, Week5]
         Project 6: Final Project Proposal [default, Week5]
-
     Labs [blue2, Week5]
         Lab 2: Build Your Own Blocks [default, Week2]
         Lab 3: Conditionals, Reporters & Abstraction [default, Week3]

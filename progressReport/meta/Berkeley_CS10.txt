@@ -39,7 +39,7 @@ nodes:
         HOFs II [default, Week5]
         Fractal [default, Week5]
     Projects [blue2, Week5]
-        Project 1: Wordle-lite [default, Week5]
+        Project 1: Wordle™-lite [default, Week5]
         Project 2: Spelling Bee [default, Week5]
         Project 3: 2048 [default, Week5]
         Project 4: Artifact + Documentation [default, Week5]

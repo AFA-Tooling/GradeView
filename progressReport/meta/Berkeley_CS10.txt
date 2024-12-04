@@ -8,14 +8,14 @@ styles:
     name: blue2, shape: ellipse, style: filled, fillcolor: #87CEEB
     name: default, shape: ellipse, style: filled, fillcolor: #E0E0E0
 class levels:
-    Not Taught: #DDDDDD
-    Taught: #8FBC8F
+    Not Taught: #dddddd
+    Taught: #8fbc8f
 student levels:
-    First Steps: #DDDDDD
-    Needs Practice: #A3D7FC
-    In Progress: #59B0F9
-    Almost There: #3981C1
-    Mastered: #20476A
+    First Steps: #dddddd
+    Needs Practice: #a3d7fc
+    In Progress: #59b0f9
+    Almost There: #3981c1
+    Mastered: #20476a
 nodes:
     Quest [blue2, Week1]
         Abstraction [default, Week1]

@@ -28,10 +28,10 @@ export default function ConceptMap() {
     /** The iframeRef is initially set to null. Once the HTML webpage is loaded
      * for the concept map, the iframeRef is dynamically set to the fetched
      * progress report query string iframe for the selected student.
-    */
+     */
     const iframeRef = useRef(null);
 
-    const { selectedStudent } = useContext(StudentSelectionContext);
+    const {selectedStudent} = useContext(StudentSelectionContext);
 
     /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
      * This function is called when the iframe starts to load. */
@@ -69,6 +69,7 @@ export default function ConceptMap() {
      * changes for the instructor view.
      * This effect depends on the `selectedStudent` from the context.
      */
+    /*
     useEffect(() => {
         let mounted = true;
         if (mounted) {
@@ -82,8 +83,46 @@ export default function ConceptMap() {
         return () => mounted = false;
     }, [selectedStudent])
 
+     */
+
+    /**
+     * Send a POST request to CM through the iframe. It uses test data for now.
+     */
+    useEffect(() => {
+        console.log("iframeRef:" + Object.keys(iframeRef["current"]));
+        const sendPostRequest = () => {
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `${window.location.origin}/progress`;
+            console.log("form.action:" + form.action);
+            form.target = 'ConceptMap';
+            form.style.display = "none";
+
+            // Create a hidden input for the JSON data
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "json";
+
+            // Just using this json data to test POST functionality
+            input.value = '{"Abstraction": {"student_mastery": 5, "class_mastery": 0}}';
+            form.appendChild(input);
+
+            document.body.appendChild(form);
+            form.submit();
+            console.log("form.submit:" + JSON.stringify(form));
+            document.body.removeChild(form);
+
+        };
+
+        const iframe = document.getElementById("ConceptMap");
+        if (iframe) {
+            sendPostRequest();
+        }
+    }, []);
+
     if (loading) {
-        return <Loader />;
+        return <Loader/>;
     }
 
     /**
@@ -99,8 +138,9 @@ export default function ConceptMap() {
                     ref={iframeRef}
                     className="concept_map_iframe"
                     id="ConceptMap"
+                    name="ConceptMap"
                     title="Concept Map"
-                    src={`${window.location.origin}/progress?show_legend=false&student_mastery=${studentMastery}`}
+                    src={`${window.location.origin}/progress`}
                     onLoad={handleLoad}
                     scrolling='no'
                     allowFullScreen

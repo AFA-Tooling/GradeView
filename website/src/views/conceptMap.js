@@ -23,7 +23,6 @@ import apiv2 from "../utils/apiv2";
  */
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
-    const [studentMastery, setStudentMastery] = useState('000000');
     const [CMhtml, setCMhtml] = useState('');
     const [masteryMapping, setMasteryMapping] = useState({});
 
@@ -56,13 +55,10 @@ export default function ConceptMap() {
         setLoading(true);
         if (mounted && localStorage.getItem('token')) {
             let email = jwtDecode(localStorage.getItem('token')).email;
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${email}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
-                setLoading(false);
-            });
-            apiv2.get(`/students/${email}/progressquerystring/masterymapping`).then((res) => {
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${email}/masterymapping`).then((res) => {
                 setMasteryMapping(res.data);
+                setLoading(false);
             });
         } else {
             setLoading(false);
@@ -80,9 +76,9 @@ export default function ConceptMap() {
         let mounted = true;
         if (mounted) {
             setLoading(true);
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${selectedStudent}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${selectedStudent}/masterymapping`).then((res) => {
+                setMasteryMapping(res.data);
                 setLoading(false);
             });
         }
@@ -104,8 +100,8 @@ export default function ConceptMap() {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            const result = await response.text(); // or response.json() if expecting JSON
-            return result; // Return the response
+            const result = await response.text();
+            return result;
         } catch (error) {
             console.error("Error:", error);
             return null;

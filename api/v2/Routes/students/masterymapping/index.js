@@ -21,7 +21,7 @@ function getTopicsFromUser(gradeData) {
     return topicsTable;
 }
 
-async function getMasteryString(userTopicPoints, maxTopicPoints) {
+async function getMasteryMapping(userTopicPoints, maxTopicPoints) {
     const numMasteryLevels = ProgressReportData['student levels'].length - 2;
     Object.entries(userTopicPoints).forEach(([topic, userPoints]) => {
         const maxAchievablePoints = maxTopicPoints[topic];
@@ -43,8 +43,11 @@ async function getMasteryString(userTopicPoints, maxTopicPoints) {
             userTopicPoints[topic] = Math.ceil(unBoundedMasteryLevel);
         }
     });
-    let masteryNum = Object.values(userTopicPoints).join('');
-    return masteryNum;
+    const masteryMapping = {};
+    Object.entries(userTopicPoints).forEach(([topic, userPoints]) => {
+        masteryMapping[topic] = {"student_mastery": userPoints, "class_mastery": 0};
+    });
+    return masteryMapping;
 }
 
 router.get('/', async (req, res) => {
@@ -54,7 +57,7 @@ router.get('/', async (req, res) => {
         const studentScores = await getStudentScores(id);
         const userTopicPoints = getTopicsFromUser(studentScores);
         const maxTopicPoints = getTopicsFromUser(maxScores);
-        const masteryNum = await getMasteryString(userTopicPoints, maxTopicPoints);
+        const masteryNum = await getMasteryMapping(userTopicPoints, maxTopicPoints);
         return res.status(200).json(masteryNum);
     } catch (err) {
         switch (err.name) {

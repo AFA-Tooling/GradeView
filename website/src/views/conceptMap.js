@@ -24,6 +24,9 @@ import apiv2 from "../utils/apiv2";
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
     const [studentMastery, setStudentMastery] = useState('000000');
+    const [CMhtml, setCMhtml] = useState('');
+    const [masteryMapping, setMasteryMapping] = useState({});
+
 
     /** The iframeRef is initially set to null. Once the HTML webpage is loaded
      * for the concept map, the iframeRef is dynamically set to the fetched
@@ -35,7 +38,7 @@ export default function ConceptMap() {
 
     /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
      * This function is called when the iframe starts to load. */
-    const handleLoad = useCallback(() =>{
+        const handleLoad = useCallback(() =>{
         if(iframeRef.current) {
             const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
             const height = iframeDocument.body.scrollHeight;
@@ -58,6 +61,9 @@ export default function ConceptMap() {
                 setStudentMastery(res.data);
                 setLoading(false);
             });
+            apiv2.get(`/students/${email}/progressquerystring/masterymapping`).then((res) => {
+                setMasteryMapping(res.data);
+            });
         } else {
             setLoading(false);
         }
@@ -69,7 +75,7 @@ export default function ConceptMap() {
      * changes for the instructor view.
      * This effect depends on the `selectedStudent` from the context.
      */
-    /*
+
     useEffect(() => {
         let mounted = true;
         if (mounted) {
@@ -83,69 +89,60 @@ export default function ConceptMap() {
         return () => mounted = false;
     }, [selectedStudent])
 
-     */
 
-    /**
-     * Send a POST request to CM through the iframe. It uses test data for now.
-     */
-    useEffect(() => {
-        console.log("iframeRef:" + Object.keys(iframeRef["current"]));
-        const sendPostRequest = () => {
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `${window.location.origin}/progress`;
-            console.log("form.action:" + form.action);
-            form.target = 'ConceptMap';
-            form.style.display = "none";
-
-            // Create a hidden input for the JSON data
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = "json";
-
-            // Just using this json data to test POST functionality
-            input.value = '{"Abstraction": {"student_mastery": 5, "class_mastery": 0}}';
-            form.appendChild(input);
-
-            document.body.appendChild(form);
-            form.submit();
-            console.log("form.submit:" + JSON.stringify(form));
-            document.body.removeChild(form);
-
-        };
-
-        const iframe = document.getElementById("ConceptMap");
-        if (iframe) {
-            sendPostRequest();
+    async function fetchCMHTML() {
+        const url = `${window.location.origin}/progress`;
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(masteryMapping)
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const result = await response.text(); // or response.json() if expecting JSON
+            return result; // Return the response
+        } catch (error) {
+            console.error("Error:", error);
+            return null;
         }
-    }, []);
+    }
+
+    fetchCMHTML().then(result => {
+        setCMhtml(result);
+    });
+
 
     if (loading) {
         return <Loader/>;
     }
 
-    /**
-     * Render the concept map iframe with the fetched mastery data.
-     * This iframe src takes in a string of numbers
-     * (progressQueryString) to display a concept map.
-     */
-    return (
-        <>
-            {/* <PageHeader>Concept Map</PageHeader> */}
-            <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
-                <iframe
-                    ref={iframeRef}
-                    className="concept_map_iframe"
-                    id="ConceptMap"
-                    name="ConceptMap"
-                    title="Concept Map"
-                    src={`${window.location.origin}/progress`}
-                    onLoad={handleLoad}
-                    scrolling='no'
-                    allowFullScreen
-                />
-            </div>
-        </>
-    );
+
+        /**
+         * Render the concept map iframe with the fetched mastery data.
+         * This iframe src takes in a string of numbers
+         * (progressQueryString) to display a concept map.
+         */
+        return (
+            <>
+                {/* <PageHeader>Concept Map</PageHeader> */}
+                <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
+                    <iframe
+                        ref={iframeRef}
+                        className="concept_map_iframe"
+                        id="ConceptMap"
+                        name="ConceptMap"
+                        title="Concept Map"
+                        srcdoc={CMhtml}
+                        onLoad={handleLoad}
+                        scrolling='no'
+                        allowFullScreen
+                    />
+                </div>
+            </>
+        );
 }

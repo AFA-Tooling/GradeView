@@ -30,7 +30,7 @@ export default function ConceptMap() {
     /** The iframeRef is initially set to null. Once the HTML webpage is loaded
      * for the concept map, the iframeRef is dynamically set to the fetched
      * progress report query string iframe for the selected student.
-     */
+    */
     const iframeRef = useRef(null);
 
     const { selectedStudent } = useContext(StudentSelectionContext);

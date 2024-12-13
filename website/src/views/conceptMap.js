@@ -71,7 +71,6 @@ export default function ConceptMap() {
      * changes for the instructor view.
      * This effect depends on the `selectedStudent` from the context.
      */
-
     useEffect(() => {
         let mounted = true;
         if (mounted) {
@@ -116,9 +115,7 @@ export default function ConceptMap() {
     if (loading) {
         return <Loader />;
     }
-
-
-
+    
     /**
      * Render the concept map iframe with the fetched mastery data.
      * This iframe src takes in a string of numbers

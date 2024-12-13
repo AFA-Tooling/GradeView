@@ -114,31 +114,32 @@ export default function ConceptMap() {
 
 
     if (loading) {
-        return <Loader/>;
+        return <Loader />;
     }
 
 
-        /**
-         * Render the concept map iframe with the fetched mastery data.
-         * This iframe src takes in a string of numbers
-         * (progressQueryString) to display a concept map.
-         */
-        return (
-            <>
-                {/* <PageHeader>Concept Map</PageHeader> */}
-                <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
-                    <iframe
-                        ref={iframeRef}
-                        className="concept_map_iframe"
-                        id="ConceptMap"
-                        name="ConceptMap"
-                        title="Concept Map"
-                        srcdoc={CMhtml}
-                        onLoad={handleLoad}
-                        scrolling='no'
-                        allowFullScreen
-                    />
-                </div>
-            </>
-        );
+
+    /**
+     * Render the concept map iframe with the fetched mastery data.
+     * This iframe src takes in a string of numbers
+     * (progressQueryString) to display a concept map.
+     */
+    return (
+        <>
+            {/* <PageHeader>Concept Map</PageHeader> */}
+            <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
+                <iframe
+                    ref={iframeRef}
+                    className="concept_map_iframe"
+                    id="ConceptMap"
+                    name="ConceptMap"
+                    title="Concept Map"
+                    srcdoc={CMhtml}
+                    onLoad={handleLoad}
+                    scrolling='no'
+                    allowFullScreen
+                />
+            </div>
+        </>
+    );
 }

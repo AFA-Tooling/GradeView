@@ -33,11 +33,11 @@ export default function ConceptMap() {
      */
     const iframeRef = useRef(null);
 
-    const {selectedStudent} = useContext(StudentSelectionContext);
+    const { selectedStudent } = useContext(StudentSelectionContext);
 
     /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
      * This function is called when the iframe starts to load. */
-        const handleLoad = useCallback(() =>{
+    const handleLoad = useCallback(() =>{
         if(iframeRef.current) {
             const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
             const height = iframeDocument.body.scrollHeight;

@@ -23,7 +23,7 @@ import apiv2 from "../utils/apiv2";
  */
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
-    const [CMhtml, setCMhtml] = useState('');
+    const [conceptMapHTML, setConceptMapHTML] = useState('');
     const [masteryMapping, setMasteryMapping] = useState({});
 
 

@@ -59,8 +59,6 @@ export default function ConceptMap() {
                 const conceptMapUrl = `${window.location.origin}/progress`;
                 axios.post(conceptMapUrl, res.data).then((res) => {
                     setConceptMapHTML(res.data);
-                }).catch(error => {
-                    console.error(error);
                 });
                 setLoading(false);
             });
@@ -84,8 +82,6 @@ export default function ConceptMap() {
                 const conceptMapUrl = `${window.location.origin}/progress`;
                 axios.post(conceptMapUrl, res.data).then((res) => {
                     setConceptMapHTML(res.data);
-                }).catch(error => {
-                    console.error(error);
                 });
                 setLoading(false);
             });

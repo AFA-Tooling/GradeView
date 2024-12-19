@@ -129,7 +129,7 @@ export default function ConceptMap() {
                     id="ConceptMap"
                     name="ConceptMap"
                     title="Concept Map"
-                    srcdoc={CMhtml}
+                    srcdoc={conceptMapHTML}
                     onLoad={handleLoad}
                     scrolling='no'
                     allowFullScreen

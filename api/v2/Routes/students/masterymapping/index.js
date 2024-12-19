@@ -9,15 +9,15 @@ const router = Router({ mergeParams: true });
 
 function getTopicsFromUser(gradeData) {
     const topicsTable = {};
-    Object.entries(gradeData).forEach(([assignment, topics]) => {
-        Object.entries(topics).forEach(([topic, score]) => {
+    Object.entries(gradeData)
+        .flatMap(([assignment, topics]) => Object.entries(topics))
+        .forEach(([topic, score]) => {
             if (topic in topicsTable) {
                 topicsTable[topic] += +(score ?? 0);
             } else {
                 topicsTable[topic] = +(score ?? 0);
             }
         });
-    });
     return topicsTable;
 }
 

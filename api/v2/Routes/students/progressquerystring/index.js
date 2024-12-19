@@ -1,3 +1,6 @@
+/**
+ * @deprecated This file is deprecated. It contains logic to produce a query string for CM, which is no longer used.
+ */
 import { Router } from 'express';
 import {
     getMaxScores,

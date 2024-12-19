@@ -4,6 +4,7 @@ import json
 import os
 import parser
 import jsonschema
+from deprecated import deprecated
 
 """
 Dream Team GUI
@@ -98,10 +99,12 @@ def validate_mastery_learning_post_request(request_as_json):
     jsonschema.validate(instance=request_as_json, schema=schema)
 
 """
-This method is deprecated. Query parameters are no longer used.
+This method is deprecated.
 """
+@deprecated(reason="Query parameters are no longer used.")
 @app.route('/', methods=["GET"])
 def index():
+    print("In index")
     def assign_node_levels(node, student_levels_count, class_levels_count):
         nonlocal student_mastery, class_mastery
         if not node["children"]:
@@ -163,7 +166,9 @@ def index():
 
 @app.route('/', methods=["POST"])
 def generate_cm_from_post_parameters():
+    print("In generate_cm_from_post_parameters")
     request_as_json = request.get_json()
+    print("Request", request)
     validate_mastery_learning_post_request(request_as_json)
     school_name = request_as_json.get("school", DEFAULT_SCHOOL)
     course_name = request_as_json.get("class", DEFAULT_CLASS)

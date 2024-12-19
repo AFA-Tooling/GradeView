@@ -84,38 +84,36 @@ export default function ConceptMap() {
         return () => mounted = false;
     }, [selectedStudent])
 
-
-
-    async function fetchCMHTML() {
-        const url = `${window.location.origin}/progress`;
-        try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(masteryMapping)
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+    useEffect(() => {
+        async function fetchCMHTML() {
+            const url = `${window.location.origin}/progress`;
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(masteryMapping)
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const result = await response.text();
+                return result;
+            } catch (error) {
+                console.error("Error:", error);
+                return null;
             }
-            const result = await response.text();
-            return result;
-        } catch (error) {
-            console.error("Error:", error);
-            return null;
         }
-    }
-
-    fetchCMHTML().then(result => {
-        setCMhtml(result);
-    });
-
+        fetchCMHTML().then(result => {
+            setConceptMapHTML(result);
+        });
+    })
 
     if (loading) {
         return <Loader />;
     }
-    
+
     /**
      * Render the concept map iframe with the fetched mastery data.
      * This iframe src takes in a string of numbers

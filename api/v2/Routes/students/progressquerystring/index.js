@@ -10,6 +10,9 @@ import ProgressReportData from '../../../../assets/progressReport/CS10.json' ass
 
 const router = Router({ mergeParams: true });
 
+/**
+ * @deprecated Use the function with the same name in ../masterymapping/index.js instead.
+ */
 function getTopicsFromUser(gradeData) {
     const topicsTable = {};
     Object.entries(gradeData).forEach(([assignment, topics]) => {
@@ -24,6 +27,9 @@ function getTopicsFromUser(gradeData) {
     return topicsTable;
 }
 
+/**
+ * @deprecated The query string is deprecated. GV now relays info to Concept Map using a POST request.
+ */
 async function getMasteryString(userTopicPoints, maxTopicPoints) {
     const numMasteryLevels = ProgressReportData['student levels'].length - 2;
     Object.entries(userTopicPoints).forEach(([topic, userPoints]) => {

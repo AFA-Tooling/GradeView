@@ -149,4 +149,3 @@ def generate_map(school_name, course_name, render=False):
             to_json(school_name, course_name, term, start_date, class_levels, student_levels, root, render)
     except FileNotFoundError:
         return
-        

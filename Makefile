@@ -1,6 +1,8 @@
 -include .env
 .DEFAULT_GOAL := docker
 
+test: clean
+
 init:
 	@cd website && npm install
 	@cd api && npm install

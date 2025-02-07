@@ -1,5 +1,7 @@
 # GradeView Web Application
 
+hello world
+
 ## About
 
 This application was created using Node, Express, and React by Connor Bernard at the University of California, Berkeley for the sake of displaying student grade information for the classes CS10 "The Beauty and Joy of Computing" and CS61C "Great Ideas in Computer Architecture (Machine Structures)."

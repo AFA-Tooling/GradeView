@@ -5,6 +5,7 @@ import './css/conceptMap.css';
 import jwtDecode from 'jwt-decode';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 import apiv2 from "../utils/apiv2";
+import axios from "axios";
 
 /**
  * The ConceptMap component renders a concept map based on student progress data from the progressQueryString API.
@@ -23,12 +24,12 @@ import apiv2 from "../utils/apiv2";
  */
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
-    const [studentMastery, setStudentMastery] = useState('000000');
+    const [conceptMapHTML, setConceptMapHTML] = useState('');
 
     /** The iframeRef is initially set to null. Once the HTML webpage is loaded
      * for the concept map, the iframeRef is dynamically set to the fetched
      * progress report query string iframe for the selected student.
-    */
+     */
     const iframeRef = useRef(null);
 
     const { selectedStudent } = useContext(StudentSelectionContext);
@@ -44,7 +45,7 @@ export default function ConceptMap() {
     }, []);
 
     /**
-     * Fetch the logged-in student's mastery data on component mount (student view).
+     * Fetch the logged-in student's CM html on component mount (student view).
      * This effect fetches data based on the JWT token stored
      * in localStorage and updates the component's state.
      */
@@ -53,9 +54,12 @@ export default function ConceptMap() {
         setLoading(true);
         if (mounted && localStorage.getItem('token')) {
             let email = jwtDecode(localStorage.getItem('token')).email;
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${email}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${email}/masterymapping`).then((res) => {
+                const conceptMapUrl = `${window.location.origin}/progress`;
+                axios.post(conceptMapUrl, res.data).then((res) => {
+                    setConceptMapHTML(res.data);
+                });
                 setLoading(false);
             });
         } else {
@@ -65,7 +69,7 @@ export default function ConceptMap() {
     }, []);
 
     /**
-     * Fetch the selected student's mastery data whenever the selected student
+     * Fetch the selected student's CM html whenever the selected student
      * changes for the instructor view.
      * This effect depends on the `selectedStudent` from the context.
      */
@@ -73,9 +77,12 @@ export default function ConceptMap() {
         let mounted = true;
         if (mounted) {
             setLoading(true);
-            // Fetch the student progressQueryString
-            apiv2.get(`/students/${selectedStudent}/progressquerystring`).then((res) => {
-                setStudentMastery(res.data);
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${selectedStudent}/masterymapping`).then((res) => {
+                const conceptMapUrl = `${window.location.origin}/progress`;
+                axios.post(conceptMapUrl, res.data).then((res) => {
+                    setConceptMapHTML(res.data);
+                });
                 setLoading(false);
             });
         }
@@ -99,8 +106,9 @@ export default function ConceptMap() {
                     ref={iframeRef}
                     className="concept_map_iframe"
                     id="ConceptMap"
+                    name="ConceptMap"
                     title="Concept Map"
-                    src={`${window.location.origin}/progress?show_legend=false&student_mastery=${studentMastery}`}
+                    srcdoc={conceptMapHTML}
                     onLoad={handleLoad}
                     scrolling='no'
                     allowFullScreen

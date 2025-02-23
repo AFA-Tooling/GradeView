@@ -18,7 +18,7 @@ export default function Buckets() {
                 let tempBins = [];
                 for (let i = res.data.length - 1; i >= 0; i--) {
                     const grade = res.data[i]['letter'];
-                    const lower = (i !== 0) ? +res.data[i - 1]['points'] + 1 : 0;
+                    const lower = (i !== 0) ? +res.data[i - 1]['points'] : 0;
                     const range = `${lower}-${res.data[i]['points']}`;
                     tempBins.push({ grade, range });
                 }

@@ -18,7 +18,7 @@ export default function Buckets() {
                 let tempBins = [];
                 for (let i = res.data.length - 1; i >= 0; i--) {
                     const grade = res.data[i]['letter'];
-                    const lower = (i !== 0) ? +res.data[i - 1]['points'] + 1 : 0;
+                    const lower = (i !== 0) ? +res.data[i - 1]['points'] : 0;
                     const range = `${lower}-${res.data[i]['points']}`;
                     tempBins.push({ grade, range });
                 }
@@ -36,13 +36,12 @@ export default function Buckets() {
 
     const gradingRows = [
         createGradingRow('Quest', 25),
-        createGradingRow('Midterm', 80),
-        createGradingRow('Postterm', 100),
+        createGradingRow('Midterm', 50),
+        createGradingRow('Postterm',75),
         createGradingRow('Project 1: Wordle™-lite', 10),
         createGradingRow('Project 2: Spelling-Bee', 25),
         createGradingRow('Project 3: 2048', 35),
         createGradingRow('Project 4: Explore', 15),
-        createGradingRow('Project 5: Pyturis', 45),
         createGradingRow('Final Project', 60),
         createGradingRow('Labs', 80),
         createGradingRow('Attendance / Participation', 25)

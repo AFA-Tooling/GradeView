@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid2 } from '@mui/material';
 import GradeTable from './GradeTable';
 
 
@@ -23,10 +23,9 @@ export default function GradeGrid({ category, assignments }) {
 
     const headerRight = `${cumGrade} / ${cumMaxGrade}`;
 
-
     return (
-        <Grid xs={2} sm={4} md={4} sx={{ minWidth: '20%' }}>
+        <Grid2 xs={2} sm={4} md={4} sx={{ minWidth: '20%' }}>
             <GradeTable assignments={assignments} headerLeft={category} headerRight={headerRight} />
-        </Grid>
+        </Grid2>
     );
 }

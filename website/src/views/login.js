@@ -14,7 +14,7 @@ import {
     Alert,
 } from '@mui/material';
 import axios from 'axios';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
     const [error, setError] = useState(false);

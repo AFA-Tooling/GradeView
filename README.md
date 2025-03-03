@@ -42,7 +42,7 @@ __NOTE: If your API server's origin is different from your live website's origin
 
 ### LOCALLY WITH DOCKER
 
-1. In the root directory run `make docker`
+1. In the root directory run `make dev-up`
 
 OR
 

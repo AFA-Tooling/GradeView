@@ -1,0 +1,68 @@
+name: CS10
+term: Fall 2024
+orientation: left to right
+start date: 2024 08 26
+styles:
+    name: root, shape: ellipse, style: filled, fillcolor: #3A73A5
+    name: blue1, shape: ellipse, style: filled, fillcolor: #74B3CE
+    name: blue2, shape: ellipse, style: filled, fillcolor: #87CEEB
+    name: default, shape: ellipse, style: filled, fillcolor: #E0E0E0
+class levels:
+    Not Taught: #dddddd
+    Taught: #8fbc8f
+student levels:
+    First Steps: #dddddd
+    Needs Practice: #a3d7fc
+    In Progress: #59b0f9
+    Almost There: #3981c1
+    Mastered: #20476a
+nodes:
+    Quest [blue2, Week1]
+        Abstraction [default, Week1]
+        Number Representation [default, Week2]
+        Iteration [default, Week3]
+        Domain and Range [blue2, Week4]
+        Booleans [default, Week5]
+        Functions [default, Week6]
+        HOFs I [default, Week6]
+    Midterm [blue2, Week5]
+        Algorithms [default, Week5]
+        Computers and Education [default, Week5]
+        Testing + 2048 + Mutable/Immutable [default, Week5]
+        Programming Paradigms [default, Week5]
+        Saving the World with Computing [default, Week5]
+        Debugging [default, Week5]
+        Scope [default, Week5]
+        Iteration and Randomness [default, Week5]
+        Recursion Tracing [default, Week5]
+        Algorithmic Complexity [default, Week5]
+        HOFs II [default, Week5]
+        Fractal [default, Week5]
+    Projects [blue2, Week5]
+        Project 1: Wordle™-lite [default, Week5]
+        Project 2: Spelling Bee [default, Week5]
+        Project 3: 2048 [default, Week5]
+        Project 4: Artifact + Documentation [default, Week5]
+        Project 4: Comments + Peer Feedback [default, Week5]
+        Project 5: Pyturis [default, Week5]
+        Project 6: Final Project Proposal [default, Week5]
+    Labs [blue2, Week5]
+        Lab 2: Build Your Own Blocks [default, Week2]
+        Lab 3: Conditionals, Reporters & Abstraction [default, Week3]
+        Lab 4: Lists + HOFs [default, Week3]
+        Lab 5: Algorithms [default, Week4]
+        Lab 6: Algorithmic Complexity [default, Week4]
+        Lab 7: Testing + 2048 [default, Week5]
+        Lab 8: Boards [default, Week6]
+        Lab 9: Trees and Fractals [default, Week6]
+        Lab 10: Recursive Reporters [default, Week7]
+        Lab 11: HOFs and Functions as Data [default, Week8]
+        Lab 12: Welcome to Python [default, Week9]
+        Lab 13: Data Structures in Python [default, Week9]
+        Lab 14: Linear Recursion in Python [default, Week10]
+        Lab 15: Tree Recursion [default, Week10]
+        Lab 16: Object-Oriented Programming [default, Week11]
+        Lab 17: Text Processing in Python [default, Week11]
+        Lab 18: Concurrency & Parallelism [default, Week12]
+        Lab 19: Data Science [default, Week13]
+end

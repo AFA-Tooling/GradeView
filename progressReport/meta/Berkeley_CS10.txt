@@ -26,6 +26,6 @@ nodes:
         Functions [default, Week1]
         HOFs I [default, Week1]
     Projects [blue2, Week1]
-        Project 1: Wordle™-lite [default, Week1]
+        Project 1: Wordle-lite [default, Week1]
         Project 2: Spelling Bee [default, Week1]
 end

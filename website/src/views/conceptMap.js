@@ -2,7 +2,7 @@ import React from 'react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Loader from '../components/Loader';
 import './css/conceptMap.css';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 import apiv2 from "../utils/apiv2";
 import axios from "axios";

@@ -4,7 +4,7 @@ import useFetch from '../utils/useFetch';
 import Loader from '../components/Loader';
 import GradeAccordion from '../components/GradeAccordion';
 import GradeGrid from '../components/GradeGrid';
-import { Grid2 } from '@mui/material';
+import { Grid } from '@mui/material';
 // import ProjectionTable from '../components/ProjectionTable';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 
@@ -48,7 +48,7 @@ function Home() {
                 </>
                 :
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4, width: '100%' }}>
-                    <Grid2 container sx={{ width: '100%' }} spacing={{ xs: 3, md: 5 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+                    <Grid container sx={{ width: '100%' }} spacing={{ xs: 3, md: 5 }} columns={{ xs: 4, sm: 8, md: 12 }}>
                         {Object.entries(gradeInfo.data).map(([assignmentName, breakdown]) => (
                             <GradeGrid
                                 key={assignmentName}
@@ -56,7 +56,7 @@ function Home() {
                                 assignments={breakdown}
                             />
                         ))}
-                    </Grid2>
+                    </Grid>
                 </Box>
             }
             {/* {localStorage.getItem('token') &&

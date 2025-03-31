@@ -36,6 +36,7 @@ nodes:
          Recursion Tracing [default, Week5]
          Algorithmic Complexity [default, Week5]
          HOFs II [default, Week5]
+         Fractal [default, Week5]
     Projects [blue2, Week1]
         Project 1: Wordle™-lite [default, Week1]
         Project 2: Spelling Bee [default, Week1]

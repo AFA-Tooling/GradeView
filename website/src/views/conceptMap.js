@@ -14,9 +14,8 @@ export default function ConceptMap() {
 
   const handleLoad = useCallback(() => {
     if (iframeRef.current) {
-      const iframeDocument =
-        iframeRef.current.contentDocument ||
-        iframeRef.current.contentWindow.document;
+      const iframeDocument = iframeRef.current.contentDocument ||
+                              iframeRef.current.contentWindow.document;
       const height = iframeDocument.body.scrollHeight;
       iframeRef.current.style.height = `${height}px`;
     }
@@ -34,9 +33,11 @@ export default function ConceptMap() {
         email = jwtDecode(localStorage.getItem('token')).email;
       }
       const encodedEmail = encodeURIComponent(email);
-      const masteryRes = await apiv2.get(`/students/${encodedEmail}/masterymapping`)
+      // Call the mastery mapping endpoint
+      const masteryRes = await apiv2.get(`/students/${encodedEmail}/masterymapping`);
       console.log("Mastery mapping data:", masteryRes.data);
       const conceptMapUrl = `${window.location.origin}/progress`;
+      // Post the mastery mapping data to get concept map HTML
       const postRes = await axios.post(conceptMapUrl, masteryRes.data);
       console.log("Received concept map HTML:", postRes.data);
       setConceptMapHTML(postRes.data);
@@ -46,12 +47,20 @@ export default function ConceptMap() {
       setLoading(false);
     }
   };
-  
 
   // Set up polling: fetch on mount and then every minute
+  useEffect(() => {
+    fetchConceptMapData();
+    const intervalId = setInterval(fetchConceptMapData, 60000);
+    return () => clearInterval(intervalId);
+  }, [selectedStudent]);
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
-    <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
-      <button onClick={fetchConceptMapData}>Manual Refresh</button>
+    <div style={{ textAlign: 'center', height: "100%" }}>
       <iframe
         ref={iframeRef}
         className="concept_map_iframe"
@@ -63,13 +72,12 @@ export default function ConceptMap() {
         scrolling="no"
         allowFullScreen
       />
-      {/* Debug output: 
+      {/*
+      // Optional: Debug output if needed.
       <pre style={{ textAlign: 'left', margin: '20px auto', maxWidth: '800px' }}>
         {conceptMapHTML}
       </pre>
-    */}
+      */}
     </div>
   );
-  
-  
 }

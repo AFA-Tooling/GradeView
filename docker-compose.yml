@@ -36,9 +36,14 @@ services:
       - ./api:/api
     environment:
       - PORT=${API_PORT}
+      - SERVER_HOST=redis
+      - SERVER_PORT=6379
+      - REDIS_URL=redis://:NciZ!4DfXxwAUNA@redis:6379
     networks:
       - frontend
       - db
+    ports:
+      - "8000:8000"
     command: npm start
     restart: unless-stopped
   dtgui-progress-report:
@@ -61,8 +66,11 @@ services:
       - 6379:6379
   dbcron:
     build: ./dbcron
+    env_file:
+      - ./dbcron/.env
     volumes:
       - ./dbcron:/dbcron
+      - ./progressReport/meta:/progressReport/meta
     networks:
       - db
     depends_on:

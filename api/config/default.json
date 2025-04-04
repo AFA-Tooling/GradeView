@@ -5,7 +5,7 @@
         "port": 6379
     },
     "spreadsheet": {
-        "id": "13qkZrlXtCWIqPI-0N86s-ZLtw9DTvYVzPI5BnJZ5gaM",
+        "id": "1pku1w78XgMRa7ONm9nV6cMZb7-EvMOk4NF4vkSjj9ZU",
         "scopes": [
             "https://www.googleapis.com/auth/spreadsheets.readonly"
         ],
@@ -34,7 +34,8 @@
         "gandhi@berkeley.edu",
         "pai@berkeley.edu",
         "eemonq@berkeley.edu",
-        "naveen.nathan@berkeley.edu"
+        "naveen.nathan@berkeley.edu",
+        "hheidy_463@berkeley.edu"
     ]
 }
 

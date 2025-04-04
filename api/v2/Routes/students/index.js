@@ -20,10 +20,10 @@ router.use(
 
 // TODO: sanitize email input.
 // Ensure the requester has access to the requested student's data.
-router.use('/:email', validateAdminOrStudentMiddleware);
+// router.use('/:email', validateAdminOrStudentMiddleware);
 
 router.use('/:id/grades', GradesRouter);
-router.use('/:email/projections', ProjectionsRouter);
+router.use('/:email/projections', ProjectionsRouter)
 router.use('/:id/progressquerystring', ProgressQueryStringRouter);
 router.use('/:id/masterymapping', MasteryMappingRouter);
 

@@ -11,5 +11,6 @@
 /website/server/build/
 
 # misc
+/usageAnalytics/cloud.json
 **/.DS_Store
 .vscode/

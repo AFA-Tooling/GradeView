@@ -22,6 +22,7 @@ import {
     AccountCircleOutlined,
     AccountTree,
     Logout,
+    BarChart,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import apiv2 from '../utils/apiv2';
@@ -56,6 +57,17 @@ export default function ButtonAppBar() {
             icon: <AccountTree />,
         },
     ];
+    
+    // Add Usage Analytics tab for admin users
+    const adminTabList = [
+        ...tabList,
+        {
+            name: 'Analytics',
+            href: '/analytics',
+            icon: <BarChart />,
+        },
+    ];
+    
     const [tabs, updateTabs] = useState(tabList.slice(1));
     const [anchorEl, setAnchorEl] = useState(null);
 
@@ -66,7 +78,7 @@ export default function ButtonAppBar() {
             updateProfilePicture(localStorage.getItem('profilepicture'));
         }
         return () => (mounted = false);
-    }, [loggedIn]);
+    }, [loggedIn, isAdmin]);
 
     function renderMenuItems() {
         return tabs.map((tab) => (
@@ -157,6 +169,9 @@ export default function ButtonAppBar() {
                                 <NavBarItem href='/buckets'>Buckets</NavBarItem>
                                 <NavBarItem href='/conceptmap'>
                                     Concept Map
+                                </NavBarItem>
+                                <NavBarItem href='/analytics'>
+                                    Analytics
                                 </NavBarItem>
                             </>
                         )}

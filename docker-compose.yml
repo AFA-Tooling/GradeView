@@ -17,6 +17,7 @@ services:
       - web
       - api
       - dtgui-progress-report
+      - usage-analytics
   web:
     container_name: gradeview-web
     image: ${CI_REGISTRY_IMAGE:-gradeview}/web:${WEB_VERSION:-development}
@@ -52,6 +53,21 @@ services:
     ports:
       - 8080:${PROGRESS_REPORT_PORT}
     restart: unless-stopped
+  usage-analytics:
+    container_name: gradeview-usage-analytics
+    image: ${CI_REGISTRY_IMAGE:-gradeview}/usage-analytics:${USAGE_ANALYTICS_VERSION:-development}
+    build: ./usageAnalytics
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - FLASK_APP=app.py
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/cloud.json
+    networks:
+      - frontend
+    ports:
+      - 4000:4000
+    restart: unless-stopped
+    volumes:
+      - ./usageAnalytics:/app
   redis:
     image: redis:latest
     networks:

@@ -1,0 +1,12 @@
+.analytics_iframe {
+    width: 100%;
+    border: none;
+    min-height: 800px;
+    overflow: hidden;
+}
+
+/* Ensure these styles don't affect the concept map */
+div[style*="overflow: hidden"] .analytics_iframe {
+    width: 100%;
+    height: calc(100vh - 64px);
+}

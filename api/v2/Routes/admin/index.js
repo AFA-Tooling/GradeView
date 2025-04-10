@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validateAdminMiddleware } from '../../../lib/authlib.mjs';
 import ProgressReportsRouter from './progressReports/index.js';
+import UsageAnalyticsRouter from './usageAnalytics/index.js';
 import RateLimit from 'express-rate-limit';
 
 const router = Router({ mergeParams: true });
@@ -16,6 +17,7 @@ router.use(limiter);
 
 router.use(validateAdminMiddleware);
 router.use('/progressreports', ProgressReportsRouter);
+router.use('/usageanalytics', UsageAnalyticsRouter);
 
 router.get('/', (_, res) => {
     res.status(200);

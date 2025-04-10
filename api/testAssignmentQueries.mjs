@@ -1,3 +1,19 @@
+/**
+ * Test script for Redis-based assignment score queries.
+ *
+ * This script runs a set of tests against helper functions in redisHelper.mjs
+ * to evaluate assignment statistics, including:
+ * - Average score for a given assignment
+ * - Maximum and minimum score
+ * - Top K students by assignment score
+ * - Top K students by total course score
+ *
+ * Run inside the gradeview-api Docker container:
+ *    docker exec -it gradeview-api sh
+ *    cd /api
+ *    node testAssignmentQueries.mjs
+ */
+
 import {
     getAverageAssignmentScore,
     getMaxAssignmentScore,

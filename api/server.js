@@ -43,7 +43,7 @@ async function main() {
   app.use(json());
 
   app.use('/api', ApiV2Router);
-  app.get('/api/meta', metaEndpoint);
+  // app.get('/api/meta', metaEndpoint);
   app.get('/api/meta', limiter, metaEndpoint);
 
 

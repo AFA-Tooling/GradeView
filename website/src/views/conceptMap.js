@@ -6,6 +6,24 @@ import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 import apiv2 from "../utils/apiv2";
 import axios from "axios";
 
+/**
+ * The ConceptMap component renders a dynamically generated concept map based on student progress data.
+ *
+ * It performs the following tasks:
+ * 1. Retrieves mastery mapping data for a student, which is determined by:
+ *    a. The currently logged-in user (student view), or
+ *    b. A selected student (instructor view).
+ * 2. Posts the retrieved mastery mapping data to a backend endpoint (a Python Flask application) to obtain HTML representing the concept map.
+ * 3. Renders the received HTML directly into the component using `dangerouslySetInnerHTML`.
+ *
+ * SECURITY NOTICE:
+ * This component uses `dangerouslySetInnerHTML` to insert HTML directly into the DOM without escaping.
+ * It is critical that the HTML content is trusted and/or properly sanitized (e.g., using DOMPurify) to prevent
+ * cross-site scripting (XSS) vulnerabilities.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered ConceptMap component.
+ */
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
     const [conceptMapHTML, setConceptMapHTML] = useState('');
@@ -51,15 +69,11 @@ export default function ConceptMap() {
 
     return (
         <div style={{ textAlign: 'center', height: "100%" }}>
-            {/*   
+            {/*
                 IMPORTANT SECURITY NOTES:
-                - When using `dangerouslySetInnerHTML`, the content is inserted into the DOM without 
-                  escaping, so any embedded scripts or malicious content in the HTML can execute.
-                - Only use this property with trusted, pre-sanitized HTML.
-                - If the HTML is coming from an untrusted source, you must sanitize it (for example, 
-                  using a library like DOMPurify) to prevent cross-site scripting (XSS) vulnerabilities.
-                - In this case, we expect the HTML to be generated securely on the server-side, but always 
-                  ensure that the data source is safe.
+                - The HTML content is inserted into the DOM via `dangerouslySetInnerHTML` without escaping.
+                - This bypasses React's default safety mechanism, so any embedded scripts or malicious content in the HTML can execute.
+                - Ensure that the HTML is generated securely on the server-side and/or is properly sanitized before being rendered.
             */}
             <div
                 className="concept_map_container"

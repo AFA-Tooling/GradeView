@@ -2,7 +2,7 @@ name: CS10
 term: Fall 2024
 orientation: left to right
 start date: 2024 08 26
-styles:
+style levels:
     name: root, shape: ellipse, style: filled, fillcolor: #3A73A5
     name: blue1, shape: ellipse, style: filled, fillcolor: #74B3CE
     name: blue2, shape: ellipse, style: filled, fillcolor: #87CEEB
@@ -19,12 +19,12 @@ student levels:
 nodes:
     Quest [blue2, Week1]
         Abstraction [default, Week1]
-        Number Representation [default, Week1]
-        Iteration [default, Week1]
-        Domain and Range [default, Week1]
-        Booleans [default, Week1]
-        Functions [default, Week1]
-        HOFs I [default, Week1]
+        Number Representation [default, Week2]
+        Iteration [default, Week3]
+        Domain and Range [default, Week4]
+        Booleans [default, Week5]
+        Functions [default, Week6]
+        HOFs I [default, Week7]
     Midterm [blue2, Week5]
          Algorithms [default, Week5]
          Computers and Education [default, Week5]

@@ -12,6 +12,7 @@ SCOPES = json.loads(os.getenv("SPREADSHEET_SCOPES"))
 HOST = os.getenv("SERVER_HOST")
 DB = int(os.getenv("SERVER_DBINDEX"))
 SHEETNAME = os.getenv("SPREADSHEET_SHEETNAME")
+print("Opening spreadsheet:", SHEETNAME)
 WORKSHEET = int(os.getenv("SPREADSHEET_WORKSHEET"))
 CATEGORYCOL = int(os.getenv("ASSIGNMENT_CATEGORYCOL"))
 CATEGORYROW = int(os.getenv("ASSIGNMENT_CATEGORYROW"))
@@ -27,11 +28,30 @@ credentials_dict = json.loads(credentials_json)
 credentials = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
 client = gspread.authorize(credentials)
 
+# Default to localhost if not in a Docker environment
+if os.getenv("ENVIRONMENT") == "docker":
+    redis_host = os.getenv("SERVER_HOST", "redis")
+else:
+    redis_host = os.getenv("SERVER_HOST", "localhost")
+
+print(f"Using Redis host: {redis_host}")
+
+
+# Then use redis_host when setting up your connection:
+redis_client = redis.Redis(host=redis_host,
+                           port=int(os.getenv("SERVER_PORT", 6379)),
+                           db=int(os.getenv("SERVER_DBINDEX", 0)),
+                           password=os.getenv("REDIS_DB_SECRET"))
+
+
+
 #redis setup
-redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW)
+# redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW)
 
 def update_redis():
-    sheet = client.open(SHEETNAME).get_worksheet(WORKSHEET)
+    # sheet = client.open(SHEETNAME).get_worksheet(WORKSHEET)
+    sheet = client.open_by_key(os.getenv("SPREADSHEET_ID")).get_worksheet(int(os.getenv("SPREADSHEET_WORKSHEET")))
+
     categories = sheet.row_values(CATEGORYROW)[CATEGORYCOL:] #gets the categories from row 2, starting from column C
     concepts = sheet.row_values(CONCEPTSROW)[CONCEPTSCOL:] #gets the concepts from row 1, starting from column C
     max_points = sheet.row_values(MAXPOINTSROW)[MAXPOINTSCOL:] #gets the max points from row 3, starting from column C
@@ -65,4 +85,3 @@ def update_redis():
 
 if __name__ == "__main__":
     update_redis()
-

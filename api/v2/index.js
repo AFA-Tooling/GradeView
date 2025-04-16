@@ -28,7 +28,6 @@ const limiter = RateLimit({
  */
 router.get('/meta', limiter, async (req, res, next) => {
     try {
-        // Use the centralized Redis helper to create a Redis client.
         const redisClient = redisHelper.getClient();
         await redisClient.connect();
         

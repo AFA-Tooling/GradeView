@@ -150,7 +150,7 @@ export async function getStudents() {
 
     for (const key of keys) {
         const studentData = await getEntry(key)
-        students.push([studentData['Legal Name'], key]); 
+        students.push([studentData['Legal Name'], key]);
     }
 
     await client.quit();

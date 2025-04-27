@@ -193,7 +193,7 @@ export default function ButtonAppBar() {
                                     </FormControl>
                                 </Box>
                             )}
-                            <IconButton 
+                            <IconButton
                                 aria-label="user profile"
                                 onClick={handleMenu}
                             >

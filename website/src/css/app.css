@@ -1,0 +1,19 @@
+:root{
+  --accent: #7253ed;
+  --tertiary: #e3a83b;
+}
+
+.app{
+    display: flex;
+    flex-flow: column;
+    align-items: stretch;
+    height: 100%;
+}
+
+.nav{
+    flex: 0 1 auto;
+}
+
+.content{
+    flex: 1 1 auto;
+}

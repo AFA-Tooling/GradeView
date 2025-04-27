@@ -1,0 +1,15 @@
+# dependencies
+**/node_modules/
+**/__pycache__/
+**/venv/
+**/.venv/
+
+# Environment variables
+**/*.env
+
+# production
+/website/server/build/
+
+# misc
+**/.DS_Store
+.vscode/

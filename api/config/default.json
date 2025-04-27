@@ -1,0 +1,41 @@
+{
+    "redis": {
+        "username": "default",
+        "host": "redis",
+        "port": 6379
+    },
+    "spreadsheet": {
+        "id": "13qkZrlXtCWIqPI-0N86s-ZLtw9DTvYVzPI5BnJZ5gaM",
+        "scopes": [
+            "https://www.googleapis.com/auth/spreadsheets.readonly"
+        ],
+        "pages": {
+            "gradepage": {
+                "pagename": "HAID",
+                "assignmentMetaRow": 2,
+                "startrow": 4,
+                "startcol": "C"
+            },
+            "binpage": {
+                "pagename": "Constants",
+                "startcell": "A51",
+                "endcell": "B61"
+            }
+        }
+    },
+    "googleconfig": {
+        "oauth": {
+            "clientid": "435032403387-5sph719eh205fc6ks0taft7ojvgipdji.apps.googleusercontent.com"
+        }
+    },
+    "admins": [
+        "connorbernard@berkeley.edu",
+        "ddgarcia@berkeley.edu",
+        "gandhi@berkeley.edu",
+        "pai@berkeley.edu",
+        "eemonq@berkeley.edu",
+        "naveen.nathan@berkeley.edu",
+        "hheidy_463@berkeley.edu"
+    ]
+}
+

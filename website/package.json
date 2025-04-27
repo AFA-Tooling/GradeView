@@ -1,0 +1,46 @@
+{
+  "name": "gradeview-website",
+  "version": "0.2.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@fontsource/roboto": "^5.2.5",
+    "@mui/icons-material": "^6.4.6",
+    "@mui/material": "^6.4.6",
+    "axios": "^1.8.1",
+    "dompurify": "^3.2.4",
+    "http-proxy-middleware": "^3.0.3",
+    "jwt-decode": "^4.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.2.0"
+  },
+  "scripts": {
+    "start": "cd ../server && npm run dev",
+    "startCurrentBuild": "nodemon index.js",
+    "react": "react-scripts start",
+    "build": "react-scripts build && rm -rf server/build && mv build server",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "react-scripts": "^5.0.1"
+  },
+  "overrides": {
+    "nth-check": "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz",
+    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz"
+  }
+}

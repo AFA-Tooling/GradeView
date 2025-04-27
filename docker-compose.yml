@@ -1,0 +1,79 @@
+version: '3.8'
+services:
+  reverseProxy:
+    container_name: gradeview-reverse-proxy
+    image: ${CI_REGISTRY_IMAGE:-gradeview}/reverse-proxy:${REVERSE_PROXY_VERSION:-development}
+    build: ./reverseProxy
+    volumes:
+      - ${SOCKETS_DIR:-/dev/null}:/run/sockets
+    environment:
+      - REVERSE_PROXY_LISTEN=${REVERSE_PROXY_LISTEN:-0.0.0.0:80}
+    networks:
+      - frontend
+      - concept_map_integration
+    ports:
+      - 80:80
+    depends_on:
+      - web
+      - api
+      - dtgui-progress-report
+  web:
+    container_name: gradeview-web
+    image: ${CI_REGISTRY_IMAGE:-gradeview}/web:${WEB_VERSION:-development}
+    build: ./website/server
+    environment:
+      - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER}
+      - PORT=${REACT_APP_PORT}
+    networks:
+      - frontend
+    command: npm start
+    restart: unless-stopped
+  api:
+    container_name: gradeview-api
+    image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}
+    build: ./api
+    volumes:
+      - ./api:/api
+    environment:
+      - PORT=${API_PORT}
+    networks:
+      - frontend
+      - db
+    command: npm start
+    restart: unless-stopped
+  dtgui-progress-report:
+    container_name: dtgui-progress-report
+    image: ${CI_REGISTRY_IMAGE:-dtgui}/progress-report:${PROGRESS_REPORT_VERSION:-development}
+    build: ./progressReport
+    environment:
+      - LISTEN_PORT=${PROGRESS_REPORT_PORT:-5000}
+    networks:
+      - concept_map_integration
+    ports:
+      - 8080:${PROGRESS_REPORT_PORT}
+    restart: unless-stopped
+  redis:
+    image: redis:latest
+    networks:
+      - db
+    command: redis-server --requirepass ${REDIS_DB_SECRET:-password}
+    ports:
+      - 6379:6379
+  dbcron:
+    build: ./dbcron
+    volumes:
+      - ./dbcron:/dbcron
+    networks:
+      - db
+    depends_on:
+      - redis
+networks:
+  frontend:
+    name: frontend
+    external: true
+  concept_map_integration:
+    name: concept_map_integration
+    external: true
+  db:
+    name: db
+    external: true

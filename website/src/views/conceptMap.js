@@ -118,46 +118,66 @@
 //     );
 // }
 // src/views/ConceptMap.jsx
+// src/views/ConceptMap.jsx
 import React, { useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import useWindowDimensions from '../hooks/useWindowDimension';
-import useIsAdmin          from '../hooks/useIsAdmin';
-import useConceptMap       from '../hooks/useConceptMap';
-import ConceptMapTree      from '../components/ConceptMapTree';
-import Loader              from '../components/Loader';
+
+import Loader from '../components/Loader';
+import ConceptMapTree from '../components/ConceptMapTree';
 import { StudentSelectionContext } from '../components/StudentSelectionWrapper';
+import useWindowDimensions    from '../hooks/useWindowDimension';
+import useIsAdmin             from '../hooks/useIsAdmin';
+import useConceptMap          from '../hooks/useConceptMap';
 
 export default function ConceptMap() {
-  // 1) hooks must go first
-  const { isAdmin, loading: adminLoading, error: adminError } = useIsAdmin();
+  // 1) Layout hook
   const { width, height } = useWindowDimensions();
+
+  // 2) Are we an admin?
+  const {
+    isAdmin,
+    loading: adminLoading,
+    error:   adminError,
+  } = useIsAdmin();
+
+  // 3) If instructor view, which student is selected?
   const { selectedStudent } = useContext(StudentSelectionContext);
 
-  // 2) derive emails
+  // 4) Who am I? (the logged-in student)
   const token     = localStorage.getItem('token');
   const userEmail = token ? jwtDecode(token).email : null;
-  // 3) pick the id: for admins use selectedStudent (or undefined), else your own
+
+  // 5) Decide whose map to fetch
+  //    - Admins wait until they pick someone
+  //    - Students always see their own
   const studentId = isAdmin
-    ? (selectedStudent || undefined)
+    ? selectedStudent      // might be undefined at first
     : userEmail;
 
-  // 4) data‐loading hook (always called, but will early‐exit if studentId is falsy)
-  const { outlineData, loading, error } = useConceptMap(studentId);
+  // 6) Fetch the concept‐map data
+  const {
+    outlineData,
+    loading: mapLoading,
+    error:   mapError,
+  } = useConceptMap(studentId);
 
-  // 5) now do your guards
+  // --- render logic in order ---
+
   if (adminLoading) return <Loader />;
   if (adminError)   return <div>Error checking admin status.</div>;
 
-  // admins with no selection see this and studentId===undefined so no fetch happened
   if (isAdmin && !selectedStudent) {
-    return <div>Please select a student from the dropdown above.</div>;
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        Please select a student from the dropdown above to view their concept map.
+      </div>
+    );
   }
 
-  // after admin has picked (or if you’re a normal student)
-  if (loading) return <Loader />;
-  if (error)   return <div>Error loading map.</div>;
+  if (mapLoading) return <Loader />;
+  if (mapError)   return <div>Error loading concept map.</div>;
 
-  // 6) finally, render
+  // Finally, render the D3 tree
   return (
     <ConceptMapTree
       outlineData={outlineData}

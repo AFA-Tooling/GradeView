@@ -1,44 +1,88 @@
+// /api/v2/Routes/students/conceptmap/index.js
+
 import { Router } from 'express';
-import { getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
-import ProgressReportData from '../../../../assets/progressReport/CS10.json' assert { type: 'json' };
-import { getTopicsFromUser, getMasteryMapping } from '../masterymapping/index.js';
+import { getEntry, getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
+import { getTopicsFromUser, getMasteryMapping }    from '../masterymapping/index.js';
+import normalizeName from '../../../../lib/normalizeName.mjs';
 
 const router = Router();
 
+function buildTree(rows) {
+  const byId = {};
+  rows.forEach(r => {
+    byId[r.id] = {
+      id:   Number(r.id),
+      name: r.name,
+      data: { week: Number(r.week) },
+      children: [],
+    };
+  });
+  rows.forEach(r => {
+    if (r.parentId != null && byId[r.parentId]) {
+      byId[r.parentId].children.push(byId[r.id]);
+    }
+  });
+  return rows
+    .filter(r => r.parentId == null)
+    .map(r => byId[r.id]);
+}
+
+async function fetchOutline() {
+  const rows = await getEntry('outline:v1', /*dbIndex=*/0);
+  return buildTree(rows);
+}
+
 function annotateNodes(node, mapping) {
-  const entry = mapping[node.name] || { student_mastery: 0, class_mastery: 0 };
+const norm = normalizeName(node.name);
+  const entry = mapping[norm] || { student_mastery: 0, class_mastery: 0 };
+  console.log('NODE:', node.name, '→', norm);
+  if (!mapping[norm]) console.log('MISS:', norm);
+
+  
   return {
     ...node,
     data: { ...node.data, ...entry },
-    children: (node.children || []).map(child => annotateNodes(child, mapping)),
+    children: node.children.map(c => annotateNodes(c, mapping)),
   };
 }
 
-/**
- * Matches GET /api/v2/students/:email/conceptmap
- */
 router.get('/:email/conceptmap', async (req, res, next) => {
-  const email = req.params.email;
-  console.log('📣  [conceptmap] hit for student:', email);
-
   try {
-    const maxScores     = await getMaxScores();
-    console.log('📣  [conceptmap] maxScores fetched');
-    const studentScores = await getStudentScores(email);
-    console.log('📣  [conceptmap] studentScores fetched');
+    const email      = req.params.email;
+    const roots      = await fetchOutline();
+    const maxScores  = await getMaxScores();
 
-    const mapping       = getMasteryMapping(
-      getTopicsFromUser(studentScores),
-      getTopicsFromUser(maxScores)
+    let studentScores;
+    try {
+      studentScores = await getStudentScores(email);
+    } catch (err) {
+      studentScores = err.name === 'KeyNotFoundError' ? {} : (() => { throw err })();
+    }
+
+
+    const mapping   =  await getMasteryMapping(
+      await getTopicsFromUser(studentScores),
+      await getTopicsFromUser(maxScores)
     );
-    console.log('📣  [conceptmap] mapping computed');
 
-    const rootClone     = JSON.parse(JSON.stringify(ProgressReportData.nodes));
-    const annotatedRoot = annotateNodes(rootClone, mapping);
 
-    return res.json({ ...ProgressReportData, nodes: annotatedRoot });
+    const annotated = roots.map(r => annotateNodes(r, mapping));
+
+    res.json({
+      name: 'CS10',
+      term: 'Fall 2024',
+      "student levels": [
+        "First Steps",
+        "Needs Practice",
+        "In Progress",
+        "Almost There",
+        "Mastered",
+      ],      
+      nodes: annotated.length === 1 ? annotated[0] : { children: annotated },
+
+
+    });
   } catch (err) {
-    console.error('❌ [conceptmap] error:', err);
     next(err);
   }
 });

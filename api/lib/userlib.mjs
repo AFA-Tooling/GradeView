@@ -22,11 +22,16 @@ export async function isStudent(email) {
         const student = await getStudent(email);
         return !!student;
     } catch (err) {
-        switch (typeof err) {
-            case 'StudentNotEnrolledError':
-                return false;
-            default:
-                throw err;
+        // switch (typeof err) {
+        //     case 'StudentNotEnrolledError':
+        //         return false;
+        //     default:
+        //         throw err;
+        // }
+        if (err.name === 'StudentNotEnrolledError') {
+            return false;
         }
+        throw err;
+        
     }
 }

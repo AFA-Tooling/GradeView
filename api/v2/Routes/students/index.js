@@ -1,3 +1,5 @@
+console.log("studentsRouter module loaded.");
+
 import { Router } from 'express';
 import RateLimit from 'express-rate-limit';
 import GradesRouter from './grades/index.js';

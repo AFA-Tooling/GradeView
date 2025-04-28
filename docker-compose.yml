@@ -11,6 +11,7 @@ services:
     networks:
       - frontend
       - concept_map_integration
+      - db
     ports:
       - 80:80
     depends_on:
@@ -28,6 +29,8 @@ services:
       - frontend
     command: npm start
     restart: unless-stopped
+    expose:
+      - 3000
   api:
     container_name: gradeview-api
     image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}
@@ -36,11 +39,14 @@ services:
       - ./api:/api
     environment:
       - PORT=${API_PORT}
+      - REDIS_URL=redis://:NciZ!4DfXxwAUNA@redis:6379
     networks:
       - frontend
       - db
     command: npm start
     restart: unless-stopped
+    expose:
+      - 8000
   dtgui-progress-report:
     container_name: dtgui-progress-report
     image: ${CI_REGISTRY_IMAGE:-dtgui}/progress-report:${PROGRESS_REPORT_VERSION:-development}

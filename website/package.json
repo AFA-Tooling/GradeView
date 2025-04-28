@@ -12,8 +12,8 @@
     "dompurify": "^3.2.4",
     "http-proxy-middleware": "^3.0.3",
     "jwt-decode": "^4.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-router-dom": "^7.2.0"
   },
   "scripts": {
@@ -41,6 +41,8 @@
   },
   "overrides": {
     "nth-check": "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz",
-    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz"
+    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

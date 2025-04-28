@@ -1,3 +1,4 @@
+// /api/server.js
 import cors from 'cors';
 import dotenv from 'dotenv';
 import logger from './lib/logger.mjs';
@@ -10,20 +11,20 @@ const PORT = process.env.PORT || 8000;
 
 async function main() {
     const app = express();
-    app.use(logger);
-    app.use(cors());
-    app.use(json());
+    app.use(logger);   // Logging middleware
+    app.use(cors());    // Enable Cross-Origin Resource Sharing
+    app.use(json());    // Automatically parse incoming JSON requests
 
-    app.use('/api', ApiV2Router);
-    // Initialize middleware
+    app.use('/api', ApiV2Router);  // Use ApiV2Router for the /api path
 
+    // Start the server
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}.`);
         console.log('Press Ctrl+C to quit.');
     });
 }
 
-// Run the main function if this is a main module
+// Run the main function if this is the entry point (not imported)
 if (esMain(import.meta)) {
     main();
 }

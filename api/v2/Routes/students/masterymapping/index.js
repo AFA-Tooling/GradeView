@@ -4,6 +4,7 @@ import {
     getStudentScores,
 } from '../../../../lib/redisHelper.mjs';
 import ProgressReportData from '../../../../assets/progressReport/CS10.json' assert { type: 'json' };
+import normalizeName from '../../../../lib/normalizeName.mjs';
 
 const router = Router({ mergeParams: true });
 
@@ -12,11 +13,13 @@ export async function getTopicsFromUser(gradeData) {
     Object.entries(gradeData)
         .flatMap(([assignment, topics]) => Object.entries(topics))
         .forEach(([topic, score]) => {
-            if (topic in topicsTable) {
-                topicsTable[topic] += +(score ?? 0);
-            } else {
-                topicsTable[topic] = +(score ?? 0);
-            }
+            // if (topic in topicsTable) {
+            //     topicsTable[topic] += +(score ?? 0);
+            // } else {
+            //     topicsTable[topic] = +(score ?? 0);
+            // }
+        const key = normalizeName(topic);
+        topicsTable[key] = (topicsTable[key] ?? 0) + +(score ?? 0);
         });
     return topicsTable;
 }
@@ -45,7 +48,11 @@ export async function getMasteryMapping(userTopicPoints, maxTopicPoints) {
     });
     const masteryMapping = {};
     Object.entries(userTopicPoints).forEach(([topic, userPoints]) => {
-        masteryMapping[topic] = {"student_mastery": userPoints, "class_mastery": 0};
+        // masteryMapping[topic] = {"student_mastery": userPoints, "class_mastery": 0};
+        masteryMapping[normalizeName(topic)] = {
+            student_mastery: userPoints,
+            class_mastery:   0
+        };
     });
     return masteryMapping;
 }
@@ -55,8 +62,8 @@ router.get('/', async (req, res) => {
     try {
         const maxScores = await getMaxScores();
         const studentScores = await getStudentScores(id);
-        const userTopicPoints = getTopicsFromUser(studentScores);
-        const maxTopicPoints = getTopicsFromUser(maxScores);
+        const userTopicPoints = await getTopicsFromUser(studentScores);
+        const maxTopicPoints  = await getTopicsFromUser(maxScores);
         const masteryNum = await getMasteryMapping(userTopicPoints, maxTopicPoints);
         return res.status(200).json(masteryNum);
     } catch (err) {

@@ -6,14 +6,14 @@ let api;
 
 if (localStorage.getItem('token')) {
     api = axios.create({
-        baseURL: `${URL}/api/v2`,
+        baseURL: `${URL}/api`,
         headers: { Authorization: localStorage.getItem('token') },
         validateStatus: status =>
             (status >= 200 && status < 300) || status === 304,
     });
 } else {
     api = axios.create({
-        baseURL: `${URL}/api/v2`,
+        baseURL: `${URL}/api`,
         validateStatus: status =>
             (status >= 200 && status < 300) || status === 304,
     });

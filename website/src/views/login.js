@@ -37,7 +37,7 @@ export default function Login() {
     async function handleGoogleLogin(authData) {
         const token = `Bearer ${authData.credential}`;
         axios
-            .get(`/api/v2/login`, {
+            .get(`/api/login`, {
                 headers: { Authorization: token },
             })
             .then((loginRes) => {

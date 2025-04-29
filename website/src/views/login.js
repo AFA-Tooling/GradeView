@@ -2,6 +2,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { useNavigate } from 'react-router-dom';
 import {
     OutlinedInput,
     Stack,
@@ -17,20 +18,24 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
-    const [error, setError] = useState(false);
+    const navigate = useNavigate();
+    const [error, setError] = useState('');
 
     // Initialize the google OAUTH
     useEffect(() => {
-        /* global google */
-        google.accounts.id.initialize({
-            client_id:
-                '435032403387-5sph719eh205fc6ks0taft7ojvgipdji.apps.googleusercontent.com',
-            callback: handleGoogleLogin,
-        });
-        google.accounts.id.renderButton(
-            document.querySelector('#googleSignInButton'),
-            {},
-        );
+        if (window.google) {
+            google.accounts.id.initialize({
+                client_id:
+                    '435032403387-5sph719eh205fc6ks0taft7ojvgipdji.apps.googleusercontent.com',
+                callback: handleGoogleLogin,
+            });
+            google.accounts.id.renderButton(
+                document.querySelector('#googleSignInButton'),
+                {}
+            );
+        } else {
+            console.error('Google API script not loaded.');
+        }
     }, []);
 
     // Updates OAuth2 token to be the local token value
@@ -52,7 +57,7 @@ export default function Login() {
                     // TODO: this is pretty awful.  We should have this in a context or something.
                     localStorage.setItem('email', credData?.email);
                     localStorage.setItem('profilepicture', credData?.picture);
-                    window.location.reload(false);
+                    navigate('/', { replace: true });
                 }
             })
             .catch(() => {
@@ -71,6 +76,10 @@ export default function Login() {
     const [password, setPassword] = React.useState('');
 
     function handleLogin(e) {
+        if (!authData.credential) {
+            setError('Google login failed. Please try again.');
+            return;
+        }
         e.preventDefault();
         console.log(username + ' ' + password);
         // TODO: Make a post request to the server to verify username and password

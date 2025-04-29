@@ -3,13 +3,27 @@ const createProxyMiddleware =
     require('http-proxy-middleware').createProxyMiddleware;
 const dotenv = require('dotenv');
 dotenv.config();
+const { limit } = require('./middleware');
+const App = require('./App');
 
+const app = App
+app.use('/rate-limited', limit(5)); // Allow 5 requests per minute
 // API proxy middleware
+// exports.proxy = createProxyMiddleware({
+//     target:
+//         process.env.REACT_APP_PROXY_SERVER ||
+//         `http://localhost:${process.env.PORT || 8000}`,
+//     changeOrigin: true,
+// });
+
 exports.proxy = createProxyMiddleware({
     target:
         process.env.REACT_APP_PROXY_SERVER ||
         `http://localhost:${process.env.PORT || 8000}`,
     changeOrigin: true,
+    pathRewrite: {
+        '^/api': '', // Remove '/api' from the forwarded request path
+    },
 });
 
 /**

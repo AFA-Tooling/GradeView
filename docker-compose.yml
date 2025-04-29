@@ -31,6 +31,8 @@ services:
     restart: unless-stopped
     expose:
       - 3000
+    ports:
+      - "3000:3000"
   api:
     container_name: gradeview-api
     image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}

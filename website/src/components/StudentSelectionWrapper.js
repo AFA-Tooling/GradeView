@@ -1,16 +1,20 @@
-// src/components/StudentSelectionWrapper.jsx
-import React, { createContext, useState } from 'react';
+import { createContext, useState } from 'react';
 
-export const StudentSelectionContext = createContext();
+export const StudentSelectionContext = createContext({
+    selectedStudent: '',
+    setSelectedStudent: () => { }
+});
 
 export default function StudentSelectionWrapper({ children }) {
-  // Pull your email out of localStorage (set by the login step)
-  const storedEmail = localStorage.getItem('email') || '';
-  const [selectedStudent, setSelectedStudent] = useState(storedEmail);
+    const [selectedStudent, setSelectedStudent] = useState('');
 
-  return (
-    <StudentSelectionContext.Provider value={{ selectedStudent, setSelectedStudent }}>
-      {children}
-    </StudentSelectionContext.Provider>
-  );
+    return (
+        <StudentSelectionContext.Provider value={{
+            selectedStudent,
+            setSelectedStudent,
+        }}>
+            {children}
+        </StudentSelectionContext.Provider>
+    )
+
 }

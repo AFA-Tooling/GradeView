@@ -1,21 +1,14 @@
 server {
-    listen 0.0.0.0:80;
+    listen $REVERSE_PROXY_LISTEN;
     server_name  _;
 
     location / {
         proxy_pass http://gradeview-web:3000;
     }
 
-    location /api/ {
-        proxy_pass         http://gradeview-api:8000;
-        proxy_http_version 1.1;
-        proxy_set_header   Host $host;
-        proxy_buffering    off;
-        proxy_cache        off;
-        proxy_cache_bypass 1;
+    location /api {
+        proxy_pass http://gradeview-api:8000;
     }
-
-
 
     location /progress {
         proxy_pass http://dtgui-progress-report:8080/;

@@ -6,7 +6,6 @@ import VerifyAccessRouter from './Routes/verifyaccess/index.js';
 import IsAdminRouter from './Routes/isadmin/index.js';
 import LoginRouter from "./Routes/login/index.js";
 import AdminRouter from './Routes/admin/index.js';
-import eventsRouter from './Routes/events/index.js';
 
 const router = Router();
 
@@ -16,6 +15,5 @@ router.use('/verifyaccess', VerifyAccessRouter);
 router.use('/isadmin', IsAdminRouter);
 router.use('/admin', AdminRouter);
 router.use('/students', StudentsRouter);
-router.use('/events', eventsRouter);
 
 export default router;

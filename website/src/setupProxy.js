@@ -1,15 +1,13 @@
-// src/setupProxy.js
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-module.exports = function(app) {
-  app.use(
-    '/api',
-    createProxyMiddleware({
-      target: 'http://localhost',   // your Nginx on port 80
-      changeOrigin: true,
-      pathRewrite: { '^/api': '/api' }, // no-op, but explicit
-      timeout:     30000,            // 30s
-      proxyTimeout:30000,
-    })
-  );
+module.exports = function (app) {
+    const proxyServerAddress =
+        process.env.REACT_APP_PROXY_SERVER || 'http://localhost:8000';
+    app.use(
+        '/api',
+        createProxyMiddleware({
+            target: `${proxyServerAddress}/api`,
+            changeOrigin: true,
+        }),
+    );
 };

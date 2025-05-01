@@ -1,78 +1,53 @@
+import config from 'config';
+import { OAuth2Client } from 'google-auth-library';
 import AuthorizationError from './errors/http/AuthorizationError.js';
-import UnauthorizedAccessError from './errors/http/UnauthorizedAccessError.js';
-import { getEmailFromAuth } from './googleAuthHelper.mjs';
-import { isAdmin, isStudent } from './userlib.mjs';
 
 /**
- * Validates that the requester is either an admin or a student.
- * @param {Request} req request to validate.
- * @param {*} _
- * @param {Function} next trigger the next middleware / request.
+ * Gets an email from a google auth token.
+ * @param {string} token user token to retrieve email from.
+ * @returns {string} user's email.
  */
-export async function validateAdminOrStudentMiddleware(req, _, next) {
+export async function getEmailFromAuth(token) {
+    const googleOauthAudience = config.get('googleconfig.oauth.clientid');
     try {
-        await validateAdminMiddleware(req, _, next);
-    } catch (err) {
-        switch (err.constructor) {
-            case UnauthorizedAccessError:
-                await validateStudentMiddleware(req, _, next);
-                break;
-            default:
-                throw err;
+        let oauthClient = new OAuth2Client(googleOauthAudience);
+        const ticket = await oauthClient.verifyIdToken({
+            idToken: token.split(' ')[1],
+            audience: googleOauthAudience,
+        });
+        const payload = ticket.getPayload();
+        if (payload['hd'] !== 'berkeley.edu') {
+            throw new AuthorizationError('domain mismatch');
         }
+        return payload['email'];
+    } catch (err) {
+        console.error('Error during Google authorization:', err);
+        throw new AuthorizationError(
+            'Could not authenticate authorization token.',
+        );
     }
 }
 
 /**
- * Validates that an admin request is permitted.
- * @param {Request} req the request to validate.
- * @param {*} _
- * @param {Function} next trigger the next middleware / request.
- * @throws {UnauthorizedAccessError} if the requester is not an admin.
+ * Ensures that an email is a properly formatted berkeley email.
+ * @param {string} email email to verify.
+ * @returns {boolean} success of verification.
+ * @deprecated
  */
-export async function validateAdminMiddleware(req, _, next) {
-    validateAuthenticatedRequestFormat(req);
-
-    const authEmail = await getEmailFromAuth(req.headers['authorization']);
-    if (!isAdmin(authEmail)) {
-        throw new UnauthorizedAccessError('not permitted');
-    }
-
-    next();
+export function verifyBerkeleyEmail(email) {
+    return (
+        email.split('@').length === 2 && email.split('@')[1] === 'berkeley.edu'
+    );
 }
 
+// TODO: check if the user is included in the list of users (in the db);
 /**
- * Validates that a student request is permitted.
- * @param {Request} req the request to validate.
- * @param {*} _
- * @param {Function} next trigger the next middleware / request.
- * @throws {AuthorizationError} if the domain is not berkeley.
- * @throws {UnauthorizedAccessError} if the requester is not the route email param.
+ * Checks to see if an email is a student email or an admin.
+ * @param {string} email email to check access to.
+ * @returns {boolean} whether the email is an admin or student.
+ * @deprecated use api/lib/userlib.mjs middlewares instead.
  */
-export async function validateStudentMiddleware(req, _, next) {
-    validateAuthenticatedRequestFormat(req);
-
-    const { email } = req.params;
-
-    const authEmail = await getEmailFromAuth(req.headers['authorization']);
-    const studentExists = await isStudent(authEmail);
-    if (!studentExists) {
-        throw new AuthorizationError('You are not a registered student.');
-    }
-    if (email && authEmail !== email) {
-        throw new UnauthorizedAccessError('not permitted');
-    }
-    next();
-}
-
-/**
- * Validates that a request has authorization headers.
- * @param {Request} req the request object to validate.
- * @throws {AuthorizationError} if the request does not have an authorization header.
- */
-function validateAuthenticatedRequestFormat(req) {
-    let token = req.headers['authorization'];
-    if (!token) {
-        throw new AuthorizationError('no authorization token provided.');
-    }
+export function ensureStudentOrAdmin(email) {
+    const isAdmin = config.get('admins').includes(email);
+    return isAdmin;
 }

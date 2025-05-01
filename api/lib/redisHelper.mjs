@@ -1,4 +1,3 @@
-// /api/lib/redisHelper.mjs
 import config from 'config';
 import dotenv from 'dotenv';
 import MisformedKeyError from './errors/redis/MisformedKeyError.js';

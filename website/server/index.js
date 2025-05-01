@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 app.use('/api', proxy);
 
 // Set up rate limiting middleware
-// app.use(limit(10));
+app.use(limit(10));
 
 // Serve static files from the React app
 app.get('/*', (_, res) => {

@@ -1,11 +1,11 @@
 // /api/v2/Routes/students/conceptmap/index.js
 
 import { Router } from 'express';
-import { getEntry, getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
+import { getCategories, getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
 import { getTopicsFromUser, getMasteryMapping }    from '../masterymapping/index.js';
 import normalizeName from '../../../../lib/normalizeName.mjs';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 function buildTree(rows) {
   const byId = {};
@@ -28,63 +28,79 @@ function buildTree(rows) {
 }
 
 async function fetchOutline() {
-  const rows = await getEntry('outline:v1', /*dbIndex=*/0);
+  const rows = await getCategories();
   return buildTree(rows);
 }
 
 function annotateNodes(node, mapping) {
-const norm = normalizeName(node.name);
-  const entry = mapping[norm] || { student_mastery: 0, class_mastery: 0 };
-  console.log('NODE:', node.name, '→', norm);
-  if (!mapping[norm]) console.log('MISS:', norm);
+  const norm = normalizeName(node.name);
+    const entry = mapping[norm] || { student_mastery: 0, class_mastery: 0 };
+    console.log('NODE:', node.name, '→', norm);
+    if (!mapping[norm]) console.log('MISS:', norm);
 
-  
-  return {
-    ...node,
-    data: { ...node.data, ...entry },
-    children: node.children.map(c => annotateNodes(c, mapping)),
-  };
+    
+    return {
+      ...node,
+      data: { ...node.data, ...entry },
+      children: node.children.map(c => annotateNodes(c, mapping)),
+    };
 }
 
-router.get('/:email/conceptmap', async (req, res, next) => {
+function cmNodes(mapping) {
+  const annotated = roots.map(r => annotateNodes(r, mapping));
+      res.json({
+        name: 'CS10',
+        term: 'Fall 2024',
+        "student levels": [
+          "First Steps",
+          "Needs Practice",
+          "In Progress",
+          "Almost There",
+          "Mastered",
+        ],      
+        nodes: annotated.length === 1 ? annotated[0] : { children: annotated }
+    })
+}
+
+router.get('/', async (req, res) => {
+  const { id } = req.params;
   try {
-    const email      = req.params.email;
     const roots      = await fetchOutline();
     const maxScores  = await getMaxScores();
+    studentScores = await getStudentScores(id);
 
-    let studentScores;
-    try {
-      studentScores = await getStudentScores(email);
-    } catch (err) {
-      studentScores = err.name === 'KeyNotFoundError' ? {} : (() => { throw err })();
+    if (isAdmin(id)) {
+      studentScores = maxScores;
+      studentRoots = roots;
+      mapping   =  getMasteryMapping(
+        getTopicsFromUser(studentScores),
+        getTopicsFromUser(maxScores)
+      );
+  
+    } else {
+      // Attempt to get student scores
+      studentScores = await getStudentScores(id);
+      studentRoots = await fetchOutline();
+      mapping   =  await getMasteryMapping(
+        await getTopicsFromUser(studentScores),
+        await getTopicsFromUser(maxScores)
+      );
     }
-
-
-    const mapping   =  await getMasteryMapping(
-      await getTopicsFromUser(studentScores),
-      await getTopicsFromUser(maxScores)
-    );
-
-
-    const annotated = roots.map(r => annotateNodes(r, mapping));
-
-    res.json({
-      name: 'CS10',
-      term: 'Fall 2024',
-      "student levels": [
-        "First Steps",
-        "Needs Practice",
-        "In Progress",
-        "Almost There",
-        "Mastered",
-      ],      
-      nodes: annotated.length === 1 ? annotated[0] : { children: annotated },
-
-
-    });
+   return res.status(200).json(
+      cmNodes(mapping)
+   );
   } catch (err) {
-    next(err);
+    switch (err.name) {
+      case 'StudentNotEnrolledError':
+      case 'KeyNotFoundError':
+          console.error("Error fetching scores for student with id %s", id, err);
+          return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
+      default:
+          console.error("Internal service error for student with id %s", id, err);
+          return res.status(500).json({ message: "Internal server error." });
   }
+}
 });
+
 
 export default router;

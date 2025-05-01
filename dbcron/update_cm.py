@@ -25,15 +25,28 @@ r = redis.Redis.from_url(redis_url)
 
 
 # ─── Google Sheets auth ────────────────────────────────────────────────────────
-SCOPES    = json.loads(os.getenv("SPREADSHEET_SCOPES"))
-CREDS     = json.loads(os.getenv("SERVICE_ACCOUNT_CREDENTIALS"))
-creds     = Credentials.from_service_account_info(CREDS, scopes=SCOPES)
-gc        = gspread.authorize(creds)
+PORT = int(os.getenv("SERVER_PORT"))
+SCOPES = json.loads(os.getenv("SPREADSHEET_SCOPES"))
+HOST = os.getenv("SERVER_HOST")
+DB = int(os.getenv("BINS_DBINDEX"))
+SHEETNAME = os.getenv("SPREADSHEET_SHEETNAME")
+WORKSHEET = int(os.getenv("BINS_WORKSHEET"))
+
+REDIS_PW = os.getenv("REDIS_DB_SECRET")
+#needs both spreadsheet and drive access or else there is a permissions error, added as a viewer on the spreadsheet
+credentials_json = os.getenv("SERVICE_ACCOUNT_CREDENTIALS")
+credentials_dict = json.loads(credentials_json)
+credentials = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
+client = gspread.authorize(credentials)
 
 SS_ID     = os.getenv("SPREADSHEET_ID")
-WSHEET    = int(os.getenv("CONCEPTMAP_WORKSHEET", 0))  # usually 0
+WSHEET    = int(os.getenv("CONCEPTMAP_WORKSHEET"))  # usually 0
+
+#redis setup
+redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW) 
 
 def update_cm():
+    print("Updating Concept Map HERE :D")
     # open the sheet and grab the two header rows
     sh     = gc.open_by_key(SS_ID)
     ws     = sh.get_worksheet(WSHEET)

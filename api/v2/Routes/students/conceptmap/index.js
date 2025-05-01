@@ -67,24 +67,21 @@ router.get('/', async (req, res) => {
   try {
     const roots      = await fetchOutline();
     const maxScores  = await getMaxScores();
-    studentScores = await getStudentScores(id);
-
+    const studentScores = await getStudentScores(id);
+    let studentRoots;
     if (isAdmin(id)) {
       studentScores = maxScores;
       studentRoots = roots;
-      mapping   =  getMasteryMapping(
+      const mapping   =  getMasteryMapping(
         getTopicsFromUser(studentScores),
-        getTopicsFromUser(maxScores)
-      );
-  
+        getTopicsFromUser(maxScores));
     } else {
       // Attempt to get student scores
       studentScores = await getStudentScores(id);
-      studentRoots = await fetchOutline();
-      mapping   =  await getMasteryMapping(
+      studentRoots = roots;
+      const mapping   =  await getMasteryMapping(
         await getTopicsFromUser(studentScores),
-        await getTopicsFromUser(maxScores)
-      );
+        await getTopicsFromUser(maxScores));
     }
    return res.status(200).json(
       cmNodes(mapping)

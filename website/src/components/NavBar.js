@@ -1,162 +1,280 @@
-// src/components/NavBar.js
-import React, { useContext, useEffect, useState } from 'react';
+import React from 'react';
+import { useContext, useEffect, useState } from 'react';
 import {
-  AppBar, Box, Toolbar, Button, Link,
-  Avatar, Menu, IconButton, useMediaQuery,
-  FormControl, InputLabel, Select, MenuItem
+    AppBar,
+    Box,
+    Toolbar,
+    Typography,
+    Button,
+    Link,
+    Avatar,
+    Menu,
+    MenuItem,
+    IconButton,
+    useMediaQuery,
+    FormControl,
+    InputLabel,
+    Select,
 } from '@mui/material';
 import {
-  LoginOutlined, StorageOutlined,
-  AccountCircleOutlined, AccountTree,
-  Logout
+    LoginOutlined,
+    StorageOutlined,
+    AccountCircleOutlined,
+    AccountTree,
+    Logout,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
-import useIsAdmin from '../hooks/useIsAdmin';
-import useFetch from '../utils/useFetch';
+import apiv2 from '../utils/apiv2';
 import NavBarItem from './NavBarItem';
 import NavMenuItem from './NavMenuItem';
 import { StudentSelectionContext } from './StudentSelectionWrapper';
 
-export default function NavBar() {
+export default function ButtonAppBar() {
     const mobileView = useMediaQuery('(max-width:600px)');
-    const [loggedIn] = useState(!!localStorage.getItem('token'));
-    const { isAdmin, loading: adminLoading } = useIsAdmin();         // ← use your hook
-    const { selectedStudent, setSelectedStudent } = useContext(StudentSelectionContext);
-
-    // Fetch students only when we know isAdmin === true
-    // grab the full payload, then default-stub to {}
-    const { data: studentPayload = {} } = useFetch(
-        isAdmin ? `/students` : null
+    const [loggedIn, setLoginStatus] = useState(
+        !!localStorage.getItem('token'),
     );
-  
-  // pull the array off, defaulting to an empty array
-  const studentList = Array.isArray(studentPayload.students)
-    ? studentPayload.students
-    : [];
-
-    // Update selection when list first arrives
-    useEffect(() => {
-        if (isAdmin && studentList.length) {
-            // studentList is [ [name, email], … ]
-            const sorted = studentList.sort((a, b) => a[0].localeCompare(b[0]));
-            setSelectedStudent(sorted[0][1]);
-        }
-    }, [isAdmin, studentList, setSelectedStudent]);
-
-    // Profile pic from localStorage
-    const profilePic = localStorage.getItem('profilepicture') || '';
-
-    // Menu state
-    const [anchorEl, setAnchorEl] = useState(null);
-    const open = Boolean(anchorEl);
-    const handleMenu = e => setAnchorEl(e.currentTarget);
-    const handleClose = () => setAnchorEl(null);
-
-    // Logout
-    const doLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('email');
-        window.location.reload();
-    };
-
-    // Tabs
-    const tabs = [
-        { name: 'My Grades',   href: '/' },
-        { name: 'Buckets',     href: '/buckets' },
-        { name: 'Concept Map', href: '/conceptmap' },
+    const { selectedStudent, setSelectedStudent } = useContext(
+        StudentSelectionContext,
+    );
+    const [isAdmin, setAdminStatus] = useState(false);
+    const [profilePicture, updateProfilePicture] = useState('');
+    const tabList = [
+        {
+            name: 'Profile',
+            href: '/',
+            icon: <AccountCircleOutlined />,
+        },
+        {
+            name: 'Buckets',
+            href: '/buckets',
+            icon: <StorageOutlined />,
+        },
+        {
+            name: 'Concept Map',
+            href: '/conceptmap',
+            icon: <AccountTree />,
+        },
     ];
+    const [tabs, updateTabs] = useState(tabList.slice(1));
+    const [anchorEl, setAnchorEl] = useState(null);
+
+    useEffect(() => {
+        let mounted = true;
+        if (loggedIn) {
+            updateTabs(() => tabList);
+            updateProfilePicture(localStorage.getItem('profilepicture'));
+        }
+        return () => (mounted = false);
+    }, [loggedIn]);
+
+    function renderMenuItems() {
+        return tabs.map((tab) => (
+            <NavMenuItem
+                icon={tab.icon}
+                text={tab.name}
+                onClick={() => {
+                    window.location.href = tab.href;
+                }}
+            />
+        ));
+    }
+
+    // Set up handlers for user menu
+    function handleMenu(e) {
+        setAnchorEl(e.currentTarget);
+    }
+    function handleClose() {
+        setAnchorEl(null);
+    }
+    function doLogout() {
+        localStorage.setItem('token', '');
+        localStorage.setItem('email', '');
+        setLoginStatus(false);
+        window.location.reload(false);
+    }
+
+    // Moved from home.js
+    function loadStudentData(e) {
+        setSelectedStudent(e.target.value);
+    }
+
+    const [students, setStudents] = useState([]);
+    useEffect(() => {
+        let mounted = true;
+        if (isAdmin) {
+            apiv2.get('/students').then((res) => {
+                if (mounted) {
+                    const sortedStudents = res.data.students.sort((a, b) =>
+                        a[0].localeCompare(b[0])
+                    );
+                    setStudents(sortedStudents);
+                    setSelectedStudent(sortedStudents[0][1]);
+                }
+            });
+        }
+        return () => (mounted = false);
+    }, [isAdmin]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (loggedIn) {
+            // Update user admin status
+            apiv2.get('/isadmin').then((res) => {
+                if (mounted) {
+                    setAdminStatus(res.data.isAdmin);
+                }
+                return () => (mounted = false);
+            });
+        }
+    }, [loggedIn]);
 
     return (
-        <AppBar position="static">
-            <Toolbar>
-                <Box sx={{ flexGrow: 1, display: 'flex', gap: 2 }}>
-                    <Link href="/" color="inherit" underline="none">
-                        GradeView
-                    </Link>
-                    {!mobileView && tabs.map(tab =>
-                        <NavBarItem key={tab.href} href={tab.href}>
-                            {tab.name}
-                        </NavBarItem>
-                    )}
-                </Box>
-
-                {loggedIn ? (
-                    <>
-                        {/* only show dropdown if admin data loaded */}
-                        {!adminLoading && isAdmin && (
-                        <FormControl size="small" sx={{ mr: 2, minWidth: 120 }}>
-                            <InputLabel>Student</InputLabel>
-                            <Select
-                                value={selectedStudent || ''}
-                                onChange={e => setSelectedStudent(e.target.value)}
-                                sx={{ bgcolor: 'white' }}
+        <Box sx={{ flexGrow: 1 }}>
+            <AppBar position='static'>
+                <Toolbar>
+                    <Box sx={{ flexGrow: 1, gap: '20px' }} display='flex'>
+                        <Typography
+                            variant='h6'
+                            component='div'
+                            display='inline-block'
+                        >
+                            <a
+                                href='/'
+                                style={{
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                }}
                             >
-                                {studentList.map(([name, email]) => (
-                                <MenuItem key={email} value={email}>
-                                    {name}
-                                </MenuItem>
-                                ))}
-                            </Select>
-                            </FormControl>
+                                GradeView
+                            </a>
+                        </Typography>
+                        {!mobileView && (
+                            <>
+                                {loggedIn && (
+                                    <NavBarItem href='/'>My Grades</NavBarItem>
+                                )}
+                                <NavBarItem href='/buckets'>Buckets</NavBarItem>
+                                <NavBarItem href='/conceptmap'>
+                                    Concept Map
+                                </NavBarItem>
+                            </>
                         )}
-
-                        <IconButton onClick={handleMenu} color="inherit">
-                            <Avatar src={profilePic} slotProps={{ img: { referrerPolicy: 'no-referrer' } }}/>
-            </IconButton>
-            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-              {mobileView && tabs.map(tab =>
-                <NavMenuItem
-                  key={tab.href}
-                  icon={
-                    tab.href === '/' ? <AccountCircleOutlined/> :
-                    tab.href === '/buckets' ? <StorageOutlined/> :
-                    <AccountTree/>
-                  }
-                  text={tab.name}
-                  onClick={() => window.location.href = tab.href}
-                />
-              )}
-              <NavMenuItem icon={<Logout/>} text="Logout" onClick={doLogout}/>
-            </Menu>
-          </>
-        ) : (
-          mobileView ? (
-            <>
-              <IconButton onClick={handleMenu} color="inherit">
-                <MenuIcon/>
-              </IconButton>
-              <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-                <NavMenuItem
-                  icon={<LoginOutlined/>}
-                  text="Login"
-                  onClick={() => window.location.href = '/login'}
-                />
-                {tabs.map(tab =>
-                  <NavMenuItem
-                    key={tab.href}
-                    icon={
-                      tab.href === '/' ? <AccountCircleOutlined/> :
-                      tab.href === '/buckets' ? <StorageOutlined/> :
-                      <AccountTree/>
-                    }
-                    text={tab.name}
-                    onClick={() => window.location.href = tab.href}
-                  />
-                )}
-              </Menu>
-            </>
-          ) : (
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<LoginOutlined/>}
-              href="/login"
-            >
-              Login
-            </Button>
-          )
-        )}
-      </Toolbar>
-    </AppBar>
-  );
+                    </Box>
+                    {loggedIn ? (
+                        <>
+                            {isAdmin && (
+                                <Box>
+                                    <FormControl
+                                        size='small'
+                                        sx={{ m: 1, minWidth: 100 }}
+                                        variant={'filled'}
+                                    >
+                                        <InputLabel id='student-dropdown-label'>
+                                            Student
+                                        </InputLabel>
+                                        <Select
+                                            labelId='student-dropdown-label'
+                                            id='student-dropdown'
+                                            label='student'
+                                            onChange={loadStudentData}
+                                            style={{ backgroundColor: 'white' }}
+                                            defaultValue={selectedStudent}
+                                        >
+                                            {students.map((student) => (
+                                                <MenuItem
+                                                    key={student[1]}
+                                                    value={student[1]}
+                                                >
+                                                    {student[0]}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                            )}
+                            <IconButton 
+                                aria-label="user profile"
+                                onClick={handleMenu}
+                            >
+                                <Avatar
+                                    src={profilePicture}
+                                    imgProps={{ referrerPolicy: 'no-referrer' }}
+                                />
+                            </IconButton>
+                            <Menu
+                                id='loggedInMenu'
+                                anchorEl={anchorEl}
+                                anchorOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                }}
+                                keepMounted
+                                transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                }}
+                                open={Boolean(anchorEl)}
+                                onClose={handleClose}
+                            >
+                                {mobileView && renderMenuItems()}
+                                <NavMenuItem
+                                    icon={<Logout />}
+                                    text={'Logout'}
+                                    onClick={doLogout}
+                                />
+                            </Menu>
+                        </>
+                    ) : (
+                        <>
+                            {mobileView ? (
+                                <>
+                                    <IconButton
+                                        onClick={handleMenu}
+                                        color='inherit'
+                                    >
+                                        <MenuIcon />
+                                    </IconButton>
+                                    <Menu
+                                        id='loggedInMenuMobile'
+                                        anchorEl={anchorEl}
+                                        anchorOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                        keepMounted
+                                        transformOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                        open={Boolean(anchorEl)}
+                                        onClose={handleClose}
+                                    >
+                                        <NavMenuItem
+                                            icon={<LoginOutlined />}
+                                            text={'Login'}
+                                            onClick={() => {
+                                                window.location.href = '/login';
+                                            }}
+                                        />
+                                        {renderMenuItems()}
+                                    </Menu>
+                                </>
+                            ) : (
+                                <Link
+                                    href='/login'
+                                    color='inherit'
+                                    underline='none'
+                                >
+                                    <Button variant='outlined' color='inherit'>
+                                        Login
+                                    </Button>
+                                </Link>
+                            )}
+                        </>
+                    )}
+                </Toolbar>
+            </AppBar>
+        </Box>
+    );
 }

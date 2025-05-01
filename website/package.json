@@ -2,7 +2,6 @@
   "name": "gradeview-website",
   "version": "0.2.0",
   "private": true,
-  "start": "cd ../server && npm run dev",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -11,14 +10,14 @@
     "@mui/material": "^6.4.6",
     "axios": "^1.8.1",
     "dompurify": "^3.2.4",
-    "http-proxy-middleware": "^3.0.5",
+    "http-proxy-middleware": "^3.0.3",
     "jwt-decode": "^4.0.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "cd ../server && npm run dev",
     "startCurrentBuild": "nodemon index.js",
     "react": "react-scripts start",
     "build": "react-scripts build && rm -rf server/build && mv build server",
@@ -42,8 +41,6 @@
   },
   "overrides": {
     "nth-check": "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz",
-    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz"
   }
 }

@@ -1,17 +1,21 @@
 // /api/v2/Routes/students/conceptmap/index.js
 
 import { Router } from 'express';
-import { getCategories, getMaxScores, getStudentScores } from '../../../../lib/redisHelper.mjs';
-import { getTopicsFromUser, getMasteryMapping }    from '../masterymapping/index.js';
-import normalizeName from '../../../../lib/normalizeName.mjs';
+import { getCategories, getMaxScores } from '../../../../lib/redisHelper.mjs';
+import axios from 'axios';
+import { isAdmin } from '../../../../lib/userlib.mjs';
 
 const router = Router({ mergeParams: true });
 
+/**
+ * Build a tree of nodes from a flat array:
+ * each node has { id, name, week, parentId }.
+ */
 function buildTree(rows) {
   const byId = {};
   rows.forEach(r => {
     byId[r.id] = {
-      id:   Number(r.id),
+      id:   r.id,
       name: r.name,
       data: { week: Number(r.week) },
       children: [],
@@ -27,77 +31,133 @@ function buildTree(rows) {
     .map(r => byId[r.id]);
 }
 
-async function fetchOutline() {
-  const rows = await getCategories();
-  return buildTree(rows);
-}
+/**
+ * Fetch the raw category→topics map from Redis, then
+ * turn it into a flat array of {id,name,week,parentId}.
+ */
+const fetchOutline = async () => {
+  const raw = await getCategories();
+  let counter = 1;
 
-function annotateNodes(node, mapping) {
-  const norm = normalizeName(node.name);
-    const entry = mapping[norm] || { student_mastery: 0, class_mastery: 0 };
-    console.log('NODE:', node.name, '→', norm);
-    if (!mapping[norm]) console.log('MISS:', norm);
-
-    
-    return {
-      ...node,
-      data: { ...node.data, ...entry },
-      children: node.children.map(c => annotateNodes(c, mapping)),
+  const rows = Object.entries(raw).flatMap(([catName, topics]) => {
+    const parentId = counter++;
+    // category container node
+    const parentNode = {
+      id:       parentId,
+      name:     catName || 'Uncategorized',
+      week:     0,
+      parentId: null,
     };
+     // one node per topic
+    const childNodes = Object.entries(topics).map(([topicName, wk]) => ({
+      id:       counter++,
+      name:     topicName,
+      week:     Number(wk),
+      parentId,
+    }));
+    return [parentNode, ...childNodes];
+  });
+
+  return buildTree(rows);
+};
+
+/**
+ * Annotate each leaf node with mastery values from mapping.
+ * Categories (non-leaves) get no entry here.
+ */
+function annotateNodes(node, mapping) {
+  const isLeaf = node.children.length === 0;
+  const entry = isLeaf
+    ? (mapping[node.name] || { student_mastery: 0, class_mastery: 0 })
+    : {};
+  if (isLeaf && !mapping[node.name]) {
+    console.log('MISS (leaf):', node.name);
+  }
+  return {
+    ...node,
+    data:     { ...node.data, ...entry },
+    children: node.children.map(c => annotateNodes(c, mapping)),
+  };
 }
 
-function cmNodes(mapping) {
-  const annotated = roots.map(r => annotateNodes(r, mapping));
-      res.json({
-        name: 'CS10',
-        term: 'Fall 2024',
-        "student levels": [
-          "First Steps",
-          "Needs Practice",
-          "In Progress",
-          "Almost There",
-          "Mastered",
-        ],      
-        nodes: annotated.length === 1 ? annotated[0] : { children: annotated }
-    })
+/**
+ * Wrap annotated roots into the final output shape.
+ */
+function cmNodes(roots, mapping) {
+  const annotatedRoots = roots.map(r => annotateNodes(r, mapping));
+  return {
+    name: 'CS10',
+    term: 'Fall 2024',
+    'student levels': [
+      'First Steps',
+      'Needs Practice',
+      'In Progress',
+      'Almost There',
+      'Mastered',
+    ],
+    // if only one root, emit that root; otherwise bundle under children
+    nodes:
+      annotatedRoots.length === 1
+        ? annotatedRoots[0]
+        : { children: annotatedRoots },
+  };
+}
+
+/**
+ * Recursively aggregate child mastery up into each category node
+ * (average of its immediate children).
+ */
+function aggregateMastery(node) {
+  if (!node.children || node.children.length === 0) {
+    return node.data.student_mastery || 0;
+  }
+  const childVals = node.children.map(aggregateMastery);
+  const avg = Math.round(childVals.reduce((a, b) => a + b, 0) / childVals.length);
+  node.data.student_mastery = avg;
+  return avg;
 }
 
 router.get('/', async (req, res) => {
   const { id } = req.params;
   try {
-    const roots      = await fetchOutline();
-    const maxScores  = await getMaxScores();
-    const studentScores = await getStudentScores(id);
-    let studentRoots;
-    if (isAdmin(id)) {
-      studentScores = maxScores;
-      studentRoots = roots;
-      const mapping   =  getMasteryMapping(
-        getTopicsFromUser(studentScores),
-        getTopicsFromUser(maxScores));
+    // Build and annotate the tree
+    const roots     = await fetchOutline();
+    const maxScores = await getMaxScores();
+
+    // Decide which mapping to fetch: for admins, use MAX POINTS
+    const mappingUrl = isAdmin(id)
+      ? `/api/v2/students/MAX%20POINTS/masterymapping`
+      : `/api/v2/students/${encodeURIComponent(id)}/masterymapping`;
+
+    // Forward the user's auth token
+    const authHeader = req.headers['authorization'];
+    const { data: mapping } = await axios.get(
+      `${req.protocol}://${req.get('host')}${mappingUrl}`,
+      { headers: { Authorization: authHeader } }
+    );
+
+    // Create the annotated tree
+    const tree = cmNodes(roots, mapping);
+
+    // Aggregate mastery scores into each category node
+    if (tree.nodes.children) {
+      tree.nodes.children.forEach(aggregateMastery);
     } else {
-      // Attempt to get student scores
-      studentScores = await getStudentScores(id);
-      studentRoots = roots;
-      const mapping   =  await getMasteryMapping(
-        await getTopicsFromUser(studentScores),
-        await getTopicsFromUser(maxScores));
+      aggregateMastery(tree.nodes);
     }
-   return res.status(200).json(
-      cmNodes(mapping)
-   );
+
+    return res.status(200).json(tree);
   } catch (err) {
     switch (err.name) {
       case 'StudentNotEnrolledError':
       case 'KeyNotFoundError':
-          console.error("Error fetching scores for student with id %s", id, err);
-          return res.status(404).json({ message: `Error fetching scores for student with id ${id}` });
+        console.error('Error fetching for %s', id, err);
+        return res.status(404).json({ message: `Error fetching for student ${id}` });
       default:
-          console.error("Internal service error for student with id %s", id, err);
-          return res.status(500).json({ message: "Internal server error." });
+        console.error('Internal error for %s', id, err);
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
   }
-}
 });
-
 
 export default router;

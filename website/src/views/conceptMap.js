@@ -13,33 +13,15 @@ export default function ConceptMap() {
     () => selectedStudent || localStorage.getItem('email'),
     [selectedStudent]
   );
-
   const { data, loading, error } = useFetch(
     `students/${encodeURIComponent(fetchEmail)}/conceptmap`
   );
 
-  // compute currentWeek flag
   const hasCurrWeek = data && data.currentWeek != null;
   const currWeek = hasCurrWeek ? Number(data.currentWeek) : Infinity;
 
-  // dynamic dimensions for the full viewport (minus AppBar)
-  const [dimensions, setDimensions] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight - 64,
-  });
-  useEffect(() => {
-    const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight - 64,
-      });
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   if (loading) return <Loader />;
-  if (error) {
+  if (error)
     return (
       <Box p={4}>
         <Typography color="error">
@@ -47,23 +29,19 @@ export default function ConceptMap() {
         </Typography>
       </Box>
     );
-  }
-  if (!data || !data.nodes) {
+  if (!data || !data.nodes)
     return (
       <Box p={4}>
         <Typography>No concept‐map data available.</Typography>
       </Box>
     );
-  }
-
   return (
     <Box
-      className="concept-map-container"
       sx={{
         position: 'relative',
         width: '100%',
         height: 'calc(100vh - 64px)',
-        overflow: 'auto',
+        overflow: 'hidden',
       }}
     >
       <ConceptMapTree
@@ -74,3 +52,4 @@ export default function ConceptMap() {
     </Box>
   );
 }
+

@@ -1,16 +1,16 @@
-import '../css/ConceptMapTree.css';
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useLayoutEffect } from 'react';
 import Tree from 'react-d3-tree';
 import PropTypes from 'prop-types';
+import '../css/ConceptMapTree.css';
 
 export default function ConceptMapTree({
   outlineData,
   currWeek = Infinity,
   hasCurrWeek = false,
 }) {
-  const treeContainer = useRef(null);
+  const containerRef = useRef(null);
 
-  // Convert your outlineData into the shape react-d3-tree wants
+  // 1) Build treeData
   const transformNode = node => ({
     name: node.name,
     attributes: {
@@ -20,7 +20,6 @@ export default function ConceptMapTree({
     },
     children: (node.children || []).map(transformNode),
   });
-
   const treeData = useMemo(() => {
     const safeChildren = Array.isArray(outlineData.nodes.children)
       ? outlineData.nodes.children
@@ -31,25 +30,59 @@ export default function ConceptMapTree({
     };
   }, [outlineData]);
 
-  // 1) compute tree depth
+  // 2) Measure wrapper size (and recalc on window resize)
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const update = () => {
+      if (!containerRef.current) return;
+      const { clientWidth, clientHeight } = containerRef.current;
+      setSize({ width: clientWidth, height: clientHeight });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // don’t render Tree until we know real dimensions
+  // if (size.width === 0 || size.height === 0) {
+  //   return <div ref={containerRef} className="concept-map-container" />;
+  // }
+
+  if (size.width === 0 || size.height === 0) {
+    return <div ref={containerRef} className="concept-map-container" />;
+  }
+
+  // 3) Calculate how big the raw tree would be
+  const nodeSize = { x: 200, y: 80 };
+  const margin = 50;
+
   const getDepth = node =>
     node.children && node.children.length
       ? 1 + Math.max(...node.children.map(getDepth))
       : 1;
   const depth = getDepth(treeData);
 
-  // 2) read container size
-  const containerEl = treeContainer.current;
-  const containerW = containerEl?.clientWidth ?? 800;
-  const containerH = containerEl?.clientHeight ?? 600;
+  const countLeaves = node =>
+    node.children && node.children.length
+      ? node.children.reduce((sum, c) => sum + countLeaves(c), 0)
+      : 1;
+  const leafCount = Math.max(1, countLeaves(treeData) - 1);
 
-  // 3) compute a zoom that fits the full tree
-  const initialZoom = Math.min(
-    containerW / (depth * 200 + 50),
-    containerH / (depth * 80 + 50),
+  const treeWidth = depth * nodeSize.x;
+  const treeHeight = leafCount * nodeSize.y;
+
+  // 4) Compute zoom & centering translate
+  const zoom = Math.min(
+    (size.width - margin) / treeWidth,
+    (size.height - margin) / treeHeight,
     1
   );
+  const translate = {
+    x: (size.width - treeWidth * zoom) / 2,  // true horizontal centering
+    y: size.height / 2,                      // vertical center
+  };
 
+  // 5) Path coloring
   const pathClassFunc = linkDatum => {
     if (!hasCurrWeek) return 'path';
     const week = linkDatum.target.data.attributes.week;
@@ -57,20 +90,21 @@ export default function ConceptMapTree({
   };
 
   return (
-    <div ref={treeContainer} className="concept-map-container">
+    <div ref={containerRef} className="concept-map-container">
       <Tree
         data={treeData}
         orientation="horizontal"
-        translate={{ x: containerW / 2, y: containerH / 2 }}
-        nodeSize={{ x: 200, y: 80 }}
-        pathClassFunc={pathClassFunc}
+        translate={translate}
+        nodeSize={nodeSize}
         separation={{ siblings: 1, nonSiblings: 2 }}
+        pathClassFunc={pathClassFunc}
         collapsible
-        draggable={true}
-        panOnDrag={true}
-        zoomable={true}
-        initialZoom={initialZoom}
-        scaleExtent={{ min: 0.1, max: 1 }}
+        draggable
+        panOnDrag
+        zoomable
+        zoom={zoom}          // use `zoom` not `initialZoom`
+        minZoom={0.1}
+        maxZoom={1}
         renderCustomNodeElement={props => (
           <ConceptMapNode
             {...props}
@@ -121,17 +155,15 @@ function ConceptMapNode({
       onClick={toggleNode}
       data-label={nodeDatum.name}
     >
-      <circle r="10" />
+      <circle r={10} />
       <text
-        x="20"
-        y="-10"
+        x={20}
+        y={-10}
         pointerEvents="none"
         style={{
           fontFamily: 'sans-serif',
           fontSize: '12px',
-          fontWeight: 'normal',
           fill: '#333',
-          stroke: 'none',
         }}
       >
         {nodeDatum.name}

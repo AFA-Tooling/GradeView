@@ -1,21 +1,18 @@
-// src/components/ConceptMapTree.jsx
 import '../css/ConceptMapTree.css';
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import Tree from 'react-d3-tree';
 import PropTypes from 'prop-types';
 
 export default function ConceptMapTree({
   outlineData,
-  dimensions,
   currWeek = Infinity,
   hasCurrWeek = false,
 }) {
   const treeContainer = useRef(null);
 
-  // build the correct shape for react-d3-tree
+  // Convert your outlineData into the shape react-d3-tree wants
   const transformNode = node => ({
     name: node.name,
-    // pull both week & mastery fields into attributes
     attributes: {
       week: node.data.week,
       student_mastery: node.data.student_mastery,
@@ -34,14 +31,24 @@ export default function ConceptMapTree({
     };
   }, [outlineData]);
 
-  useEffect(() => {
-    const el = treeContainer.current;
-    if (!el) return;
-    const onResize = () => (el.style.height = `${window.innerHeight}px`);
-    window.addEventListener('resize', onResize);
-    onResize();
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  // 1) compute tree depth
+  const getDepth = node =>
+    node.children && node.children.length
+      ? 1 + Math.max(...node.children.map(getDepth))
+      : 1;
+  const depth = getDepth(treeData);
+
+  // 2) read container size
+  const containerEl = treeContainer.current;
+  const containerW = containerEl?.clientWidth ?? 800;
+  const containerH = containerEl?.clientHeight ?? 600;
+
+  // 3) compute a zoom that fits the full tree
+  const initialZoom = Math.min(
+    containerW / (depth * 200 + 50),
+    containerH / (depth * 80 + 50),
+    1
+  );
 
   const pathClassFunc = linkDatum => {
     if (!hasCurrWeek) return 'path';
@@ -49,22 +56,20 @@ export default function ConceptMapTree({
     return week < currWeek ? 'path taught' : 'path';
   };
 
-  const levelsCount = Array.isArray(outlineData['student levels'])
-    ? outlineData['student levels'].length
-    : 5;
-
   return (
-    <div ref={treeContainer} style={{ width: '100%', height: '100%' }}>
+    <div ref={treeContainer} className="concept-map-container">
       <Tree
         data={treeData}
         orientation="horizontal"
-        translate={{ x: dimensions.width / 2, y: dimensions.height / 2 }}
+        translate={{ x: containerW / 2, y: containerH / 2 }}
         nodeSize={{ x: 200, y: 80 }}
         pathClassFunc={pathClassFunc}
         separation={{ siblings: 1, nonSiblings: 2 }}
         collapsible
         draggable={false}
-        zoomable={false}
+        zoomable={true}
+        initialZoom={initialZoom}
+        scaleExtent={{ min: 0.1, max: 1 }}
         renderCustomNodeElement={props => (
           <ConceptMapNode
             {...props}
@@ -82,10 +87,6 @@ ConceptMapTree.propTypes = {
     nodes: PropTypes.object.isRequired,
     'student levels': PropTypes.array,
   }).isRequired,
-  dimensions: PropTypes.shape({
-    width: PropTypes.number.isRequired,
-    height: PropTypes.number.isRequired,
-  }).isRequired,
   currWeek: PropTypes.number,
   hasCurrWeek: PropTypes.bool,
 };
@@ -96,7 +97,6 @@ function ConceptMapNode({
   toggleNode,
   levelNames,
 }) {
-  // never blow up if attributes is missing:
   const { attributes = {} } = nodeDatum;
   const sm = attributes.student_mastery ?? 0;
 
@@ -121,9 +121,6 @@ function ConceptMapNode({
       data-label={nodeDatum.name}
     >
       <circle r="10" />
-      {/* <text x="20" y="-10" pointerEvents="none">
-        {nodeDatum.name}
-      </text> */}
       <text
         x="20"
         y="-10"

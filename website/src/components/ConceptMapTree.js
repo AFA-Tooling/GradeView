@@ -53,7 +53,7 @@ export default function ConceptMapTree({
   }
 
   // 3) Calculate how big the raw tree would be
-  const nodeSize = { x: 200, y: 80 };
+  const nodeSize = { x: 200, y: 180 };
   const margin = 50;
 
   const getDepth = node =>
@@ -72,11 +72,12 @@ export default function ConceptMapTree({
   const treeHeight = leafCount * nodeSize.y;
 
   // 4) Compute zoom & centering translate
-  const zoom = Math.min(
+  const rawZoom = Math.min(
     (size.width - margin) / treeWidth,
     (size.height - margin) / treeHeight,
     1
   );
+  const zoom = Math.min(rawZoom * 1.5, 1);
   const translate = {
     x: (size.width - treeWidth * zoom) / 2,  // true horizontal centering
     y: size.height / 2,                      // vertical center
@@ -96,13 +97,13 @@ export default function ConceptMapTree({
         orientation="horizontal"
         translate={translate}
         nodeSize={nodeSize}
-        separation={{ siblings: 1, nonSiblings: 2 }}
+        separation={{ siblings: 0.5, nonSiblings: 1.5 }}
         pathClassFunc={pathClassFunc}
         collapsible
         draggable
         panOnDrag
         zoomable
-        zoom={zoom}          // use `zoom` not `initialZoom`
+        zoom={zoom}
         minZoom={0.1}
         maxZoom={1}
         renderCustomNodeElement={props => (
@@ -155,7 +156,7 @@ function ConceptMapNode({
       onClick={toggleNode}
       data-label={nodeDatum.name}
     >
-      <circle r={10} />
+      <circle r={15} />
       <text
         x={20}
         y={-10}

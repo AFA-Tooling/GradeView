@@ -70,8 +70,8 @@ g.node.collapsed>circle {
 }
 
 .concept-map-container g.node text {
-  font: 12px sans-serif !important;
+  font: 28px sans-serif !important;
   font-weight: normal !important;
-  fill: grey !important;
+  fill: black !important;
   stroke: none !important;
 }

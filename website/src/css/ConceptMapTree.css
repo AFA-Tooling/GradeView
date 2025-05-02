@@ -1,41 +1,76 @@
 /* container */
-.concept-map-container { position: relative; width:100%; height:100%; }
+.concept-map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 
 /* tree SVG */
-.concept-map-container svg { width:100%; height:100%; }
+.concept-map-container svg {
+  width: 100%;
+  height: 100%;
+}
 
 /* links */
-path.path { stroke: grey; stroke-width: 3px; fill: none; cursor: pointer; }
-path.path.taught { stroke: #228B22 !important; }
+path.path {
+  stroke: grey;
+  stroke-width: 3px;
+  fill: none;
+  cursor: pointer;
+}
+
+path.path.taught {
+  stroke: #228B22 !important;
+}
 
 /* nodes all clickable */
-g.node { cursor: pointer; }
+g.node {
+  cursor: pointer;
+}
 
 /* COLLAPSED indicator */
-g.node.collapsed > circle { fill: grey !important; }
+g.node.collapsed>circle {
+  fill: grey !important;
+}
 
 /* LEVEL 0: First Steps */
-.first-steps > circle {
-  stroke: #757C88; fill: #757C88; stroke-width: 10px;
-}
-/* LEVEL 1: Needs Practice */
-.needs-practice > circle {
-  stroke: #ADD8E6; fill: #ADD8E6; stroke-width: 10px;
-}
-/* LEVEL 2: In Progress */
-.in-progress > circle {
-  stroke: #89CFF0; fill: #89CFF0; stroke-width: 10px;
-}
-/* LEVEL 3: Almost There */
-.almost-there > circle {
-  stroke: #6495ED; fill: #6495ED; stroke-width: 10px;
-}
-/* LEVEL 4+: Mastered */
-.mastered > circle {
-  stroke: #0F4D92; fill: #0F4D92; stroke-width: 10px;
+.first-steps>circle {
+  stroke: #757C88;
+  fill: #757C88;
+  stroke-width: 10px;
 }
 
-/* node labels */
-g.node text {
-  font: bold 12px sans-serif; fill: grey;
+/* LEVEL 1: Needs Practice */
+.needs-practice>circle {
+  stroke: #ADD8E6;
+  fill: #ADD8E6;
+  stroke-width: 10px;
+}
+
+/* LEVEL 2: In Progress */
+.in-progress>circle {
+  stroke: #89CFF0;
+  fill: #89CFF0;
+  stroke-width: 10px;
+}
+
+/* LEVEL 3: Almost There */
+.almost-there>circle {
+  stroke: #6495ED;
+  fill: #6495ED;
+  stroke-width: 10px;
+}
+
+/* LEVEL 4+: Mastered */
+.mastered>circle {
+  stroke: #0F4D92;
+  fill: #0F4D92;
+  stroke-width: 10px;
+}
+
+.concept-map-container g.node text {
+  font: 12px sans-serif !important;
+  font-weight: normal !important;
+  fill: grey !important;
+  stroke: none !important;
 }

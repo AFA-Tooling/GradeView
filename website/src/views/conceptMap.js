@@ -19,14 +19,14 @@ export default function ConceptMap() {
     `students/${encodeURIComponent(fetchEmail)}/conceptmap`
   );
 
-      // after you’ve got `data` from useFetch…
+  // after you’ve got `data` from useFetch…
   const hasCurrWeek = data && data.currentWeek != null; // true if the API sent you a number
   const currWeek = hasCurrWeek
     ? Number(data.currentWeek)        // use the real week
     : Infinity;                       // or some sentinel meaning “don’t color by week”
 
 
-  
+
 
   if (loading) return <Loader />;
   if (error) {
@@ -59,8 +59,16 @@ export default function ConceptMap() {
 
 
 
+  // return (
+  //   <div style={{ position: 'relative', height: '100%' }}>
   return (
-    <div style={{ position: 'relative', height: '100%' }}>
+    <div
+      style={{
+        position: 'relative',
+        height: mobileView ? '400px' : 'calc(100vh - 64px)',
+        overflow: 'auto',      // ← here’s the scroll
+      }}
+    >
       <ConceptMapTree
         outlineData={data}
         dimensions={dimensions}

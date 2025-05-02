@@ -121,7 +121,21 @@ function ConceptMapNode({
       data-label={nodeDatum.name}
     >
       <circle r="10" />
-      <text x="20" y="-10" pointerEvents="none">
+      {/* <text x="20" y="-10" pointerEvents="none">
+        {nodeDatum.name}
+      </text> */}
+      <text
+        x="20"
+        y="-10"
+        pointerEvents="none"
+        style={{
+          fontFamily: 'sans-serif',
+          fontSize: '12px',
+          fontWeight: 'normal',
+          fill: '#333',
+          stroke: 'none',
+        }}
+      >
         {nodeDatum.name}
       </text>
     </g>

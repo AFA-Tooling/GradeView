@@ -66,7 +66,8 @@ export default function ConceptMapTree({
         pathClassFunc={pathClassFunc}
         separation={{ siblings: 1, nonSiblings: 2 }}
         collapsible
-        draggable={false}
+        draggable={true}
+        panOnDrag={true}
         zoomable={true}
         initialZoom={initialZoom}
         scaleExtent={{ min: 0.1, max: 1 }}

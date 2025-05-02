@@ -1,11 +1,28 @@
-/* container */
-.concept-map-container { position: relative; width:100%; height:100%; }
+/* src/css/ConceptMapTree.css  ── insert near the top */
+.concept-map-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 64px - 140px); /* viewport minus AppBar minus legend */
+  overflow: auto;
+}
 
-/* tree SVG */
-.concept-map-container svg { width:100%; height:100%; }
+/* phones: shorter AppBar, so shrink both margin‑top and height deduction */
+@media (max-width: 600px) {
+  .concept-map-container {
+    height: calc(100vh - 56px - 120px); /* legend rows are narrower too */
+  }
+}
+
+
+/* SVG should fill the wrapper; no extra padding */
+.concept-map-container svg {
+  width: 100%;
+  height: 100%;
+}
+
 
 /* links */
-path.path { stroke: grey; stroke-width: 3px; fill: none; cursor: pointer; }
+path.path { stroke-width: 3px; fill: none; cursor: pointer; }
 path.path.taught { stroke: #228B22 !important; }
 
 /* nodes all clickable */
@@ -14,28 +31,16 @@ g.node { cursor: pointer; }
 /* COLLAPSED indicator */
 g.node.collapsed > circle { fill: grey !important; }
 
-/* LEVEL 0: First Steps */
-.first-steps > circle {
-  stroke: #757C88; fill: #757C88; stroke-width: 10px;
-}
-/* LEVEL 1: Needs Practice */
-.needs-practice > circle {
-  stroke: #ADD8E6; fill: #ADD8E6; stroke-width: 10px;
-}
-/* LEVEL 2: In Progress */
-.in-progress > circle {
-  stroke: #89CFF0; fill: #89CFF0; stroke-width: 10px;
-}
-/* LEVEL 3: Almost There */
-.almost-there > circle {
-  stroke: #6495ED; fill: #6495ED; stroke-width: 10px;
-}
-/* LEVEL 4+: Mastered */
-.mastered > circle {
-  stroke: #0F4D92; fill: #0F4D92; stroke-width: 10px;
-}
+/*‑‑‑ Mastery‑level circle fills ‑‑‑*/
+.node.first-steps    circle { fill:#757C88; }   /* level 0 */
+.node.needs-practice circle { fill:#ADD8E6; }   /* level 1 */
+.node.in-progress    circle { fill:#89CFF0; }   /* level 2 */
+.node.almost-there   circle { fill:#6495ED; }   /* level 3 */
+.node.mastered       circle { fill:#0F4D92; }   /* level 4+ */
 
 /* node labels */
-g.node text {
-  font: bold 12px sans-serif; fill: grey;
+.node text {
+  font: 13px/1.4 sans-serif;   /* font‑size 13px, line‑height 1.4 */
+  fill: #000;
+  pointer-events:none;         /* click goes to the circle */
 }

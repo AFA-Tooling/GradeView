@@ -13,6 +13,7 @@
     "http-proxy-middleware": "^3.0.3",
     "jwt-decode": "^4.0.0",
     "react": "^19.0.0",
+    "react-d3-tree": "^3.6.6",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0"
   },

@@ -131,7 +131,8 @@ export default function ButtonAppBar() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
-            <AppBar position='static'>
+            {/* AppBar was static */}
+            <AppBar position="fixed" color="primary">
                 <Toolbar>
                     <Box sx={{ flexGrow: 1, gap: '20px' }} display='flex'>
                         <Typography
@@ -275,6 +276,9 @@ export default function ButtonAppBar() {
                     )}
                 </Toolbar>
             </AppBar>
+
+      {/* spacer pushes page content below the bar */}
+      <Toolbar />   {/* ← just this line */}
         </Box>
     );
 }

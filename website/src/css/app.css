@@ -14,6 +14,13 @@
     flex: 0 1 auto;
 }
 
-.content{
+/* app.css */
+.content {
     flex: 1 1 auto;
-}
+    padding-top: 64px;        /* desktop AppBar height */
+  }
+  
+  @media (max-width:600px) {
+    .content { padding-top: 56px; }   /* mobile AppBar height */
+  }
+  

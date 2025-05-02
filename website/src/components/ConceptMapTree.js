@@ -77,10 +77,10 @@ export default function ConceptMapTree({
     (size.height - margin) / treeHeight,
     1
   );
-  const zoom = Math.min(rawZoom * 1.5, 1);
+  const zoom = Math.min(rawZoom * 1.2, 1)
   const translate = {
     x: (size.width - treeWidth * zoom) / 2,  // true horizontal centering
-    y: size.height / 2,                      // vertical center
+    y: 300,                    // vertical center
   };
 
   // 5) Path coloring
@@ -105,7 +105,7 @@ export default function ConceptMapTree({
         zoomable
         zoom={zoom}
         minZoom={0.1}
-        maxZoom={1}
+        maxZoom={2}
         renderCustomNodeElement={props => (
           <ConceptMapNode
             {...props}

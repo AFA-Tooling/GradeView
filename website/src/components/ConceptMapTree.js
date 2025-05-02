@@ -55,8 +55,8 @@ export default function ConceptMapTree({
   }
 
   /* ---------- 3. geometry helpers ---------- */
-  const nodeSize   = { x: 200, y: 180 };
-  const margin     = 40;   // breathing room on each edge
+  const nodeSize   = { x: 300, y: 180 };
+  const margin     = 60;   // breathing room on each edge
   const legendH    = 140;  // px consumed by the two legend rows
 
   const getDepth = (n) =>
@@ -71,20 +71,20 @@ export default function ConceptMapTree({
   const rawTreeW  = depth * nodeSize.x;
   const rawTreeH  = leafCount * nodeSize.y;
 
-  /* ---------- 4. smart zoom + centring ---------- */
-  const zoom = Math.min(
-    (size.width  - margin)          / rawTreeW,
-    (size.height - legendH - margin) / rawTreeH,
-    1
-  );
+/* ---------- 4. smarter zoom + centring ---------- */
+const fitZoomX = (size.width  - margin)          / rawTreeW;
+const fitZoomY = (size.height - legendH - margin) / rawTreeH;
 
-  let translate = {
-    x: (size.width  - rawTreeW * zoom) / 2,
-    y: legendH + (size.height - legendH - rawTreeH * zoom) / 2,
-  };
+/* choose the larger of the two ratios to take up more space */
+const zoom = Math.min(Math.max(fitZoomX, fitZoomY) * 0.95, 1); // 95 % of max
 
-  // keep at least 10 px under the legend
-  if (translate.y < legendH + 10) translate.y = legendH + 10;
+let translate = {
+  x: (size.width  - rawTreeW * zoom) / 2,
+  y: legendH + (size.height - legendH - rawTreeH * zoom) / 2,
+};
+
+if (translate.y < legendH + 10) translate.y = legendH + 10;
+
 
   /* ---------- 5. coloured links ---------- */
   const pathClassFunc = (link) => {
@@ -107,7 +107,7 @@ export default function ConceptMapTree({
         panOnDrag
         zoomable
         zoom={zoom}
-        minZoom={0.1}
+        minZoom={zoom}
         maxZoom={2}
         renderCustomNodeElement={(props) => (
           <ConceptMapNode
@@ -162,9 +162,9 @@ function ConceptMapNode({
     >
       <circle r={20} />
       <text
-        x={26}
-        dy=".35em"
-        textAnchor="start"
+              x={20}
+              y={-10}
+              pointerEvents="none"
       >
         {nodeDatum.name}
       </text>

@@ -156,3 +156,19 @@ export async function getStudents() {
     await client.quit();
     return students;
 }
+
+export async function getLastSync() {
+    const client = getClient();
+    await client.connect();
+    try {
+      const raw = await client.get('LastGradesSync');
+      if (!raw) {
+        console.warn('[WARN] LastGradesSync not found in Redis.');
+        return null;
+      }
+      return raw;
+    } finally {
+      await client.quit();
+    }
+  }
+  

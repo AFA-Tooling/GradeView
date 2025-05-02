@@ -1,7 +1,7 @@
 // /api/v2/Routes/students/conceptmap/index.js
 
 import { Router } from 'express';
-import { getCategories, getMaxScores } from '../../../../lib/redisHelper.mjs';
+import { getCategories, getMaxScores, getLastSync } from '../../../../lib/redisHelper.mjs';
 import axios from 'axios';
 import { isAdmin } from '../../../../lib/userlib.mjs';
 
@@ -137,8 +137,16 @@ router.get('/', async (req, res) => {
     );
 
     // Create the annotated tree
-    const tree = cmNodes(roots, mapping);
-
+    const tree = {
+      ...cmNodes(roots, mapping),
+      lastSync: await getLastSync(),
+      currentWeek: (() => {
+        const termStart = new Date('2025-01-21');   // first Monday of term
+        const msWeek = 7*24*60*60*1000;
+        return Math.max(1, Math.ceil((Date.now() - termStart) / msWeek));
+      })(),
+    };
+    
     // Aggregate mastery scores into each category node
     if (tree.nodes.children) {
       tree.nodes.children.forEach(aggregateMastery);

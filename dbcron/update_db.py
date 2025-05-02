@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import json
 import os
 import redis
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -31,6 +32,7 @@ client = gspread.authorize(credentials)
 redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW)
 
 def update_redis():
+    print("Updating Redis HERE 99999999999999")
     sheet = client.open(SHEETNAME).get_worksheet(WORKSHEET)
     categories = sheet.row_values(CATEGORYROW)[CATEGORYCOL:] #gets the categories from row 2, starting from column C
     concepts = sheet.row_values(CONCEPTSROW)[CONCEPTSCOL:] #gets the concepts from row 1, starting from column C
@@ -62,6 +64,6 @@ def update_redis():
             users_to_assignments["Assignments"][category][concept] = record[concept]
 
         redis_client.set(email, json.dumps(users_to_assignments)) #sets key value for user:other data
-
+    redis_client.set("LastGradesSync", datetime.now(tz=timezone.utc).isoformat())
 if __name__ == "__main__":
     update_redis()

@@ -1,32 +1,32 @@
-import React, { useMemo, useContext } from 'react';
-import Loader from '../components/Loader';
-import ConceptMapTree from '../components/ConceptMapTree';
-import { StudentSelectionContext } from '../components/StudentSelectionWrapper';
-import { Box, useMediaQuery, Typography } from '@mui/material';
-import useFetch from '../utils/useFetch';
+import React, { useMemo, useContext } from 'react'
+import Loader from '../components/Loader'
+import ConceptMapTree from '../components/ConceptMapTree'
+import { StudentSelectionContext } from '../components/StudentSelectionWrapper'
+import { Box, useMediaQuery, Typography } from '@mui/material'
+import useFetch from '../utils/useFetch'
 
-export default function ConceptMap() {
+const ConceptMap = () => {
   // Determine if the screen is mobile-sized
-  const mobileView = useMediaQuery('(max-width:600px)');
+  const mobileView = useMediaQuery('(max-width:600px)')
 
   // Get selected student from context or fall back to localStorage
-  const { selectedStudent } = useContext(StudentSelectionContext);
+  const { selectedStudent } = useContext(StudentSelectionContext)
   const fetchEmail = useMemo(
     () => selectedStudent || localStorage.getItem('email'),
     [selectedStudent]
-  );
+  )
 
   // Fetch concept map data for the student
   const { data, loading, error } = useFetch(
     `students/${encodeURIComponent(fetchEmail)}/conceptmap`
-  );
+  )
 
   // Check if current week is available in the data
-  const hasCurrWeek = data && data.currentWeek != null;
-  const currWeek = hasCurrWeek ? Number(data.currentWeek) : Infinity;
+  const hasCurrWeek = data && data.currentWeek != null
+  const currWeek = hasCurrWeek ? Number(data.currentWeek) : Infinity
 
   // Handle loading state
-  if (loading) return <Loader />;
+  if (loading) return <Loader />
 
   // Handle error state
   if (error)
@@ -36,7 +36,7 @@ export default function ConceptMap() {
           Error loading concept map: {error.message}
         </Typography>
       </Box>
-    );
+    )
 
   // Handle missing data
   if (!data || !data.nodes)
@@ -44,7 +44,7 @@ export default function ConceptMap() {
       <Box p={4}>
         <Typography>No concept‐map data available.</Typography>
       </Box>
-    );
+    )
 
   // Define mastery level color mappings for student ring legend
   const studentLevels = [
@@ -53,13 +53,13 @@ export default function ConceptMap() {
     { name: 'In Progress', color: '#59b0f9' },
     { name: 'Almost There', color: '#3981c1' },
     { name: 'Mastered', color: '#20476a' },
-  ];
+  ]
 
   // Define class-wide mastery legend for "taught" vs. "not taught"
   const classLevels = [
     { name: 'Not Taught', color: '#dddddd' },
     { name: 'Taught', color: '#8fbc8f' },
-  ];
+  ]
 
   return (
     <Box
@@ -80,7 +80,7 @@ export default function ConceptMap() {
         }}
       >
         {studentLevels.map((lvl) => {
-          const bg = lvl.color + '33'; // ~20% opacity background fill
+          const bg = lvl.color + '33' // ~20% opacity background
           return (
             <Box
               key={lvl.name}
@@ -104,7 +104,7 @@ export default function ConceptMap() {
                 {lvl.name}
               </Typography>
             </Box>
-          );
+          )
         })}
       </Box>
 
@@ -147,5 +147,7 @@ export default function ConceptMap() {
         hasCurrWeek={hasCurrWeek}
       />
     </Box>
-  );
+  )
 }
+
+export default ConceptMap

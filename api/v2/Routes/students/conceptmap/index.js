@@ -9,7 +9,7 @@ const router = Router({ mergeParams: true });
  * Build a tree of nodes from a flat array:
  * each node has { id, name, week, parentId }.
  */
-function buildTree(rows) {
+const buildTree = (rows) => {
   const byId = {};
   rows.forEach(r => {
     byId[r.id] = {
@@ -27,7 +27,7 @@ function buildTree(rows) {
   return rows
     .filter(r => r.parentId == null)
     .map(r => byId[r.id]);
-}
+};
 
 /**
  * Fetch the raw category→topics map from Redis, then
@@ -63,7 +63,7 @@ const fetchOutline = async () => {
  * Annotate each leaf node with mastery values from mapping.
  * Categories (non-leaves) get no entry here.
  */
-function annotateNodes(node, mapping) {
+const annotateNodes = (node, mapping) => {
   const isLeaf = node.children.length === 0;
   const entry = isLeaf
     ? (mapping[node.name] || { student_mastery: 0, class_mastery: 0 })
@@ -76,12 +76,12 @@ function annotateNodes(node, mapping) {
     data: { ...node.data, ...entry },
     children: node.children.map(c => annotateNodes(c, mapping)),
   };
-}
+};
 
 /**
  * Wrap annotated roots into the final output shape.
  */
-function cmNodes(roots, mapping) {
+const cmNodes = (roots, mapping) => {
   const annotatedRoots = roots.map(r => annotateNodes(r, mapping));
   return {
     name: 'CS10',
@@ -99,13 +99,13 @@ function cmNodes(roots, mapping) {
         ? annotatedRoots[0]
         : { children: annotatedRoots },
   };
-}
+};
 
 /**
  * Recursively aggregate child mastery up into each category node
  * (average of its immediate children).
  */
-function aggregateMastery(node) {
+const aggregateMastery = (node) => {
   if (!node.children || node.children.length === 0) {
     return node.data.student_mastery || 0;
   }
@@ -133,8 +133,13 @@ router.get('/', async (req, res) => {
 
     // Forward the user's auth token
     const authHeader = req.headers['authorization'];
+    // const { data: mapping } = await axios.get(
+    //   `${req.protocol}://${req.get('host')}${mappingUrl}`,
+    //   { headers: { Authorization: authHeader } }
+    // );
+    const BASE = process.env.API_BASE_URL;
     const { data: mapping } = await axios.get(
-      `${req.protocol}://${req.get('host')}${mappingUrl}`,
+      `${BASE}${mappingUrl}`,
       { headers: { Authorization: authHeader } }
     );
 

@@ -88,7 +88,6 @@ export async function getStudent(email) {
  * @returns {object} the assignment categories.
  */
 export async function getBins() {
-    // TODO: this should be exported into a constant.
     const databaseIndex = 1;
     const binsEntry = await getEntry('bins', databaseIndex);
     return binsEntry.bins;
@@ -162,7 +161,7 @@ export async function getStudents() {
  * The timestamp is stored under the Redis key 'LastGradesSync'.
  * @returns {Promise<string|null>} ISO timestamp string or null if not found
  */
-export async function getLastSync() {
+export const getLastSync = async () => {
     const client = getClient();
     await client.connect();
     try {
@@ -175,4 +174,4 @@ export async function getLastSync() {
     } finally {
         await client.quit();
     }
-}
+};

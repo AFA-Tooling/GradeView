@@ -62,4 +62,3 @@ export default function App() {
 		</ThemeProvider>
 	);
 }
-// <Route path="/conceptmap" element={<ConceptMap />} />

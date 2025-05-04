@@ -1,7 +1,7 @@
 // /api/v2/Routes/students/conceptmap/index.js
 
 import { Router } from 'express';
-import { getCategories, getMaxScores } from '../../../../lib/redisHelper.mjs';
+import { getCategories, getMaxScores, getLastSync } from '../../../../lib/redisHelper.mjs';
 import axios from 'axios';
 import { isAdmin } from '../../../../lib/userlib.mjs';
 
@@ -15,7 +15,7 @@ function buildTree(rows) {
   const byId = {};
   rows.forEach(r => {
     byId[r.id] = {
-      id:   r.id,
+      id: r.id,
       name: r.name,
       data: { week: Number(r.week) },
       children: [],
@@ -43,16 +43,16 @@ const fetchOutline = async () => {
     const parentId = counter++;
     // category container node
     const parentNode = {
-      id:       parentId,
-      name:     catName || 'Uncategorized',
-      week:     0,
+      id: parentId,
+      name: catName || 'Uncategorized',
+      week: 0,
       parentId: null,
     };
-     // one node per topic
+    // one node per topic
     const childNodes = Object.entries(topics).map(([topicName, wk]) => ({
-      id:       counter++,
-      name:     topicName,
-      week:     Number(wk),
+      id: counter++,
+      name: topicName,
+      week: Number(wk),
       parentId,
     }));
     return [parentNode, ...childNodes];
@@ -75,7 +75,7 @@ function annotateNodes(node, mapping) {
   }
   return {
     ...node,
-    data:     { ...node.data, ...entry },
+    data: { ...node.data, ...entry },
     children: node.children.map(c => annotateNodes(c, mapping)),
   };
 }
@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
   const { id } = req.params;
   try {
     // Build and annotate the tree
-    const roots     = await fetchOutline();
+    const roots = await fetchOutline();
     const maxScores = await getMaxScores();
 
     // Decide which mapping to fetch: for admins, use MAX POINTS
@@ -137,7 +137,15 @@ router.get('/', async (req, res) => {
     );
 
     // Create the annotated tree
-    const tree = cmNodes(roots, mapping);
+    const tree = {
+      ...cmNodes(roots, mapping),
+      lastSync: await getLastSync(),
+      currentWeek: (() => {
+        const termStart = new Date('2025-01-21');   // first Monday of term
+        const msWeek = 7 * 24 * 60 * 60 * 1000;
+        return Math.max(1, Math.ceil((Date.now() - termStart) / msWeek));
+      })(),
+    };
 
     // Aggregate mastery scores into each category node
     if (tree.nodes.children) {

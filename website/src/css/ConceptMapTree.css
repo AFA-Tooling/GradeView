@@ -13,16 +13,16 @@
 
 /* your existing styles below… */
 /* links */
-path.path {
+/* path.path {
   stroke: grey;
   stroke-width: 3px;
   fill: none;
   cursor: pointer;
-}
+} */
 
-path.path.taught {
+/* path.path.taught {
   stroke: #228B22 !important;
-}
+} */
 
 /* nodes all clickable */
 g.node {
@@ -74,4 +74,17 @@ g.node.collapsed>circle {
   font-weight: normal !important;
   fill: black !important;
   stroke: none !important;
+}
+
+path.path {
+  stroke: #dddddd;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  fill: none;
+}
+
+path.path.taught {
+  stroke: #8fbc8f !important;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
 }

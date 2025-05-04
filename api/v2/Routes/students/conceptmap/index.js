@@ -6,7 +6,8 @@ import { isAdmin } from '../../../../lib/userlib.mjs';
 const router = Router({ mergeParams: true });
 
 /**
- * Convert a flat list of { id, name, week, parentId } into a tree structure.
+ * Build a tree of nodes from a flat array:
+ * each node has { id, name, week, parentId }.
  */
 function buildTree(rows) {
   const byId = {};
@@ -29,7 +30,8 @@ function buildTree(rows) {
 }
 
 /**
- * Fetch category-to-topic mapping from Redis and flatten it into an array of nodes.
+ * Fetch the raw category→topics map from Redis, then
+ * turn it into a flat array of {id,name,week,parentId}.
  */
 const fetchOutline = async () => {
   const raw = await getCategories();
@@ -37,12 +39,14 @@ const fetchOutline = async () => {
 
   const rows = Object.entries(raw).flatMap(([catName, topics]) => {
     const parentId = counter++;
+    // category container node
     const parentNode = {
       id: parentId,
       name: catName || 'Uncategorized',
       week: 0,
       parentId: null,
     };
+    // one node per topic
     const childNodes = Object.entries(topics).map(([topicName, wk]) => ({
       id: counter++,
       name: topicName,
@@ -56,7 +60,8 @@ const fetchOutline = async () => {
 };
 
 /**
- * Recursively attach mastery scores from `mapping` to leaf nodes only.
+ * Annotate each leaf node with mastery values from mapping.
+ * Categories (non-leaves) get no entry here.
  */
 function annotateNodes(node, mapping) {
   const isLeaf = node.children.length === 0;
@@ -74,7 +79,7 @@ function annotateNodes(node, mapping) {
 }
 
 /**
- * Create the final concept map object with levels and annotated nodes.
+ * Wrap annotated roots into the final output shape.
  */
 function cmNodes(roots, mapping) {
   const annotatedRoots = roots.map(r => annotateNodes(r, mapping));
@@ -88,6 +93,7 @@ function cmNodes(roots, mapping) {
       'Almost There',
       'Mastered',
     ],
+    // if only one root, emit that root; otherwise bundle under children
     nodes:
       annotatedRoots.length === 1
         ? annotatedRoots[0]
@@ -96,7 +102,8 @@ function cmNodes(roots, mapping) {
 }
 
 /**
- * Recursively compute the average mastery of immediate children and assign to parent.
+ * Recursively aggregate child mastery up into each category node
+ * (average of its immediate children).
  */
 function aggregateMastery(node) {
   if (!node.children || node.children.length === 0) {
@@ -115,31 +122,34 @@ function aggregateMastery(node) {
 router.get('/', async (req, res) => {
   const { id } = req.params;
   try {
+    // Build and annotate the tree
     const roots = await fetchOutline();
-    const maxScores = await getMaxScores(); // currently unused but preserved
+    const maxScores = await getMaxScores();
 
+    // Decide which mapping to fetch: for admins, use MAX POINTS
     const mappingUrl = isAdmin(id)
       ? `/api/v2/students/MAX%20POINTS/masterymapping`
       : `/api/v2/students/${encodeURIComponent(id)}/masterymapping`;
 
+    // Forward the user's auth token
     const authHeader = req.headers['authorization'];
     const { data: mapping } = await axios.get(
       `${req.protocol}://${req.get('host')}${mappingUrl}`,
       { headers: { Authorization: authHeader } }
     );
 
-    // Construct the tree with annotation and current week
+    // Create the annotated tree
     const tree = {
       ...cmNodes(roots, mapping),
       lastSync: await getLastSync(),
       currentWeek: (() => {
-        const termStart = new Date('2025-01-21');
+        const termStart = new Date('2025-01-21');    // first Monday of term
         const msWeek = 7 * 24 * 60 * 60 * 1000;
         return Math.max(1, Math.ceil((Date.now() - termStart) / msWeek));
       })(),
     };
 
-    // Aggregate mastery up to category level
+    // Aggregate mastery scores into each category node
     if (tree.nodes.children) {
       tree.nodes.children.forEach(aggregateMastery);
     } else {

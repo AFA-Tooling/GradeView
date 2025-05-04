@@ -150,9 +150,29 @@ export async function getStudents() {
 
     for (const key of keys) {
         const studentData = await getEntry(key)
-        students.push([studentData['Legal Name'], key]); 
+        students.push([studentData['Legal Name'], key]);
     }
 
     await client.quit();
     return students;
+}
+
+/**
+ * Retrieves the timestamp of the last grades synchronization.
+ * The timestamp is stored under the Redis key 'LastGradesSync'.
+ * @returns {Promise<string|null>} ISO timestamp string or null if not found
+ */
+export async function getLastSync() {
+    const client = getClient();
+    await client.connect();
+    try {
+        const raw = await client.get('LastGradesSync');
+        if (!raw) {
+            console.warn('[WARN] LastGradesSync not found in Redis.');
+            return null;
+        }
+        return raw;
+    } finally {
+        await client.quit();
+    }
 }

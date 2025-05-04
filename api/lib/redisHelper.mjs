@@ -157,6 +157,11 @@ export async function getStudents() {
     return students;
 }
 
+/**
+ * Retrieves the timestamp of the last grades synchronization.
+ * The timestamp is stored under the Redis key 'LastGradesSync'.
+ * @returns {Promise<string|null>} ISO timestamp string or null if not found
+ */
 export async function getLastSync() {
     const client = getClient();
     await client.connect();

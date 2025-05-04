@@ -1,4 +1,3 @@
-// src/views/ConceptMap.jsx
 import React, { useMemo, useContext } from 'react';
 import Loader from '../components/Loader';
 import ConceptMapTree from '../components/ConceptMapTree';
@@ -7,20 +6,29 @@ import { Box, useMediaQuery, Typography } from '@mui/material';
 import useFetch from '../utils/useFetch';
 
 export default function ConceptMap() {
+  // Determine if the screen is mobile-sized
   const mobileView = useMediaQuery('(max-width:600px)');
+
+  // Get selected student from context or fall back to localStorage
   const { selectedStudent } = useContext(StudentSelectionContext);
   const fetchEmail = useMemo(
     () => selectedStudent || localStorage.getItem('email'),
     [selectedStudent]
   );
+
+  // Fetch concept map data for the student
   const { data, loading, error } = useFetch(
     `students/${encodeURIComponent(fetchEmail)}/conceptmap`
   );
 
+  // Check if current week is available in the data
   const hasCurrWeek = data && data.currentWeek != null;
   const currWeek = hasCurrWeek ? Number(data.currentWeek) : Infinity;
 
+  // Handle loading state
   if (loading) return <Loader />;
+
+  // Handle error state
   if (error)
     return (
       <Box p={4}>
@@ -29,6 +37,8 @@ export default function ConceptMap() {
         </Typography>
       </Box>
     );
+
+  // Handle missing data
   if (!data || !data.nodes)
     return (
       <Box p={4}>
@@ -36,7 +46,7 @@ export default function ConceptMap() {
       </Box>
     );
 
-  // ——— HARDCODED LEGEND VALUES ———
+  // Define mastery level color mappings for student ring legend
   const studentLevels = [
     { name: 'First Steps', color: '#dddddd' },
     { name: 'Needs Practice', color: '#a3d7fc' },
@@ -44,6 +54,8 @@ export default function ConceptMap() {
     { name: 'Almost There', color: '#3981c1' },
     { name: 'Mastered', color: '#20476a' },
   ];
+
+  // Define class-wide mastery legend for "taught" vs. "not taught"
   const classLevels = [
     { name: 'Not Taught', color: '#dddddd' },
     { name: 'Taught', color: '#8fbc8f' },
@@ -54,21 +66,21 @@ export default function ConceptMap() {
       sx={{
         position: 'relative',
         width: '100%',
-        height: 'calc(100vh - 64px)',
+        height: 'calc(100vh - 64px)', // fills screen minus header
         overflow: 'hidden',
       }}
     >
-      {/* === LEGEND ROW 1: student‐mastery rings === */}
+      {/* === LEGEND ROW 1: student mastery rings === */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'center',
           mt: 0.8,
-          mb: 0.5
+          mb: 0.5,
         }}
       >
         {studentLevels.map((lvl) => {
-          const bg = lvl.color + '33'; // ~20% opacity
+          const bg = lvl.color + '33'; // ~20% opacity background fill
           return (
             <Box
               key={lvl.name}
@@ -96,13 +108,13 @@ export default function ConceptMap() {
         })}
       </Box>
 
-      {/* === LEGEND ROW 2: taught / not‐taught bars === */}
+      {/* === LEGEND ROW 2: class mastery bars === */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'center',
           mt: 0.5,
-          mb: 2
+          mb: 2,
         }}
       >
         {classLevels.map((lvl) => (
@@ -128,7 +140,7 @@ export default function ConceptMap() {
         ))}
       </Box>
 
-      {/* === YOUR EXISTING TREE === */}
+      {/* === CONCEPT MAP TREE RENDER === */}
       <ConceptMapTree
         outlineData={data}
         currWeek={currWeek}

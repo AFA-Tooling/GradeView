@@ -45,7 +45,7 @@ def update_redis():
         category_scores[category][concept] = points #nested hashmap of     category:concept:points
 
     redis_client.set("Categories", json.dumps(category_scores)) #the one record that holds all of the categories info
-    redis_client.set("LastGradesSync", datetime.now(tz=timezone.utc).isoformat())
+    redis_client.set("LastGradesSync", datetime.now(tz=timezone.utc).isoformat()) #updates the current UTC time in ISO 8601 format
 
     records = sheet.get_all_records()
 

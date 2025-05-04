@@ -10,7 +10,7 @@ export default function ConceptMapTree({
 }) {
   const containerRef = useRef(null);
 
-  // 1) Build treeData
+  // 1) Transform the raw outlineData into the format expected by react-d3-tree
   const transformNode = node => ({
     name: node.name,
     attributes: {
@@ -20,6 +20,7 @@ export default function ConceptMapTree({
     },
     children: (node.children || []).map(transformNode),
   });
+
   const treeData = useMemo(() => {
     const safeChildren = Array.isArray(outlineData.nodes.children)
       ? outlineData.nodes.children
@@ -30,29 +31,26 @@ export default function ConceptMapTree({
     };
   }, [outlineData]);
 
-  // 2) Measure wrapper size (and recalc on window resize)
+  // 2) Track container size and update on window resize
   const [size, setSize] = useState({ width: 0, height: 0 });
+
   useLayoutEffect(() => {
     const update = () => {
       if (!containerRef.current) return;
       const { clientWidth, clientHeight } = containerRef.current;
       setSize({ width: clientWidth, height: clientHeight });
     };
-    update();
+    update(); // run once on mount
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    return () => window.removeEventListener('resize', update); // cleanup
   }, []);
 
-  // don’t render Tree until we know real dimensions
-  // if (size.width === 0 || size.height === 0) {
-  //   return <div ref={containerRef} className="concept-map-container" />;
-  // }
-
+  // If container size not yet measured, return empty container
   if (size.width === 0 || size.height === 0) {
     return <div ref={containerRef} className="concept-map-container" />;
   }
 
-  // 3) Calculate how big the raw tree would be
+  // 3) Determine tree dimensions based on depth and leaf count
   const nodeSize = { x: 200, y: 180 };
   const margin = 50;
 
@@ -60,30 +58,32 @@ export default function ConceptMapTree({
     node.children && node.children.length
       ? 1 + Math.max(...node.children.map(getDepth))
       : 1;
-  const depth = getDepth(treeData);
 
   const countLeaves = node =>
     node.children && node.children.length
       ? node.children.reduce((sum, c) => sum + countLeaves(c), 0)
       : 1;
+
+  const depth = getDepth(treeData);
   const leafCount = Math.max(1, countLeaves(treeData) - 1);
 
   const treeWidth = depth * nodeSize.x;
   const treeHeight = leafCount * nodeSize.y;
 
-  // 4) Compute zoom & centering translate
+  // 4) Compute zoom and centering offsets for optimal fit
   const rawZoom = Math.min(
     (size.width - margin) / treeWidth,
     (size.height - margin) / treeHeight,
     1
   );
-  const zoom = Math.min(rawZoom * 1.2, 1)
+
+  const zoom = Math.min(rawZoom * 1.2, 1);
   const translate = {
-    x: (size.width - treeWidth * zoom) / 2,  // true horizontal centering
-    y: 300,                    // vertical center
+    x: (size.width - treeWidth * zoom) / 2,
+    y: 300,
   };
 
-  // 5) Path coloring
+  // 5) Style the links based on current week progress
   const pathClassFunc = linkDatum => {
     if (!hasCurrWeek) return 'path';
     const week = linkDatum.target.data.attributes.week;
@@ -117,6 +117,7 @@ export default function ConceptMapTree({
   );
 }
 
+// Prop type validation for the component
 ConceptMapTree.propTypes = {
   outlineData: PropTypes.shape({
     name: PropTypes.string.isRequired,
@@ -127,6 +128,7 @@ ConceptMapTree.propTypes = {
   hasCurrWeek: PropTypes.bool,
 };
 
+// Custom node renderer for each concept in the tree
 function ConceptMapNode({
   hierarchyPointNode,
   nodeDatum,
@@ -136,6 +138,7 @@ function ConceptMapNode({
   const { attributes = {} } = nodeDatum;
   const sm = attributes.student_mastery ?? 0;
 
+  // Assign CSS class based on mastery level
   let masteryClass = 'first-steps';
   if (levelNames[sm - 1]) {
     masteryClass = levelNames[sm - 1].toLowerCase().replace(/\s+/g, '-');
@@ -145,6 +148,7 @@ function ConceptMapNode({
 
   const hasChildren =
     Array.isArray(nodeDatum.children) && nodeDatum.children.length > 0;
+
   const isCollapsed =
     hasChildren &&
     Array.isArray(hierarchyPointNode.children) &&

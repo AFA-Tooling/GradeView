@@ -13,8 +13,9 @@
   },
   "author": "Connor Bernard",
   "license": "ISC",
-  "type":"module",
+  "type": "module",
   "dependencies": {
+    "axios": "^1.9.0",
     "config": "^3.3.9",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",

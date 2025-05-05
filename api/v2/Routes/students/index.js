@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import RateLimit from 'express-rate-limit';
+import ConceptMapRouter from './conceptmap/index.js';
 import GradesRouter from './grades/index.js';
 import ProjectionsRouter from './projections/index.js';
 import ProgressQueryStringRouter from './progressquerystring/index.js';
@@ -26,6 +27,7 @@ router.use('/:id/grades', GradesRouter);
 router.use('/:email/projections', ProjectionsRouter);
 router.use('/:id/progressquerystring', ProgressQueryStringRouter);
 router.use('/:id/masterymapping', MasteryMappingRouter);
+router.use('/:id/conceptmap', ConceptMapRouter);
 
 router.get('/', validateAdminMiddleware, async (_, res) => {
     try {

@@ -77,8 +77,10 @@ const ConceptMapTree = ({
   )
   const zoom = Math.min(rawZoom * 1.2, 1)
   const translate = {
-    x: (size.width - treeWidth * zoom) / 2,
-    y: 300,
+    // x: (size.width - treeWidth * zoom) / 2,
+    // y: 300,
+    x: (size.width + treeWidth * zoom) / 2,
+    y: 300
   }
 
   // 5) Style links based on current week
@@ -93,7 +95,7 @@ const ConceptMapTree = ({
       <Tree
         data={treeData}
         orientation="horizontal"
-        rootOrientation="EAST"
+        depthFactor={-nodeSize.x}
         translate={translate}
         nodeSize={nodeSize}
         separation={{ siblings: 0.5, nonSiblings: 1.5 }}

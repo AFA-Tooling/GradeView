@@ -93,6 +93,7 @@ const ConceptMapTree = ({
       <Tree
         data={treeData}
         orientation="horizontal"
+        rootOrientation="EAST"
         translate={translate}
         nodeSize={nodeSize}
         separation={{ siblings: 0.5, nonSiblings: 1.5 }}
@@ -104,6 +105,8 @@ const ConceptMapTree = ({
         zoom={zoom}
         minZoom={0.1}
         maxZoom={2}
+        enableLegacyTransitions
+        transitionDuration={500}
         renderCustomNodeElement={props => (
           <ConceptMapNode
             {...props}
@@ -147,8 +150,9 @@ const ConceptMapNode = ({
     >
       <circle r={15} />
       <text
-        x={20}
+        x={-20}
         y={-10}
+        textAnchor="end"
         pointerEvents="none"
         style={{
           fontFamily: 'sans-serif',

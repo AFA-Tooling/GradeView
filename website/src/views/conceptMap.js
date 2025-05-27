@@ -1,153 +1,119 @@
-import React, { useMemo, useContext } from 'react'
-import Loader from '../components/Loader'
-import ConceptMapTree from '../components/ConceptMapTree'
-import { StudentSelectionContext } from '../components/StudentSelectionWrapper'
-import { Box, useMediaQuery, Typography } from '@mui/material'
-import useFetch from '../utils/useFetch'
+import React from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import Loader from '../components/Loader';
+import './css/conceptMap.css';
+import { jwtDecode } from 'jwt-decode';
+import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
+import apiv2 from "../utils/apiv2";
+import axios from "axios";
 
-const ConceptMap = () => {
-  // Determine if the screen is mobile-sized
-  const mobileView = useMediaQuery('(max-width:600px)')
+/**
+ * The ConceptMap component renders a concept map based on student progress data from the progressQueryString API.
+ * 1. This fetches data either for either:
+ *    a. A currently logged-in user (student view)
+ *    b. A selected student (instructor view)
+ * and displays the concept map within an iframe.
+ * 2. The concept map iframe src takes in a string of numbers to display a concept map,
+ *    a. This makes an API call to the Python Flask application to create the concept map.
+ *    b. Each number represents a student's mastery level for a particular concept.
+ * 3. The concept nodes are arranged vertically from top to bottom.
+ * 4. The list of numerical strings associated with each node is sorted horizontally from left to right.
+ *    a. This numerical string is calculated through the Google Sheets data in the JavaScript API call.
+ * @component
+ * @returns {JSX.Element} The ConceptMap component.
+ */
+export default function ConceptMap() {
+    const [loading, setLoading] = useState(false);
+    const [conceptMapHTML, setConceptMapHTML] = useState('');
 
-  // Get selected student from context or fall back to localStorage
-  const { selectedStudent } = useContext(StudentSelectionContext)
-  const fetchEmail = useMemo(
-    () => selectedStudent || localStorage.getItem('email'),
-    [selectedStudent]
-  )
+    /** The iframeRef is initially set to null. Once the HTML webpage is loaded
+     * for the concept map, the iframeRef is dynamically set to the fetched
+     * progress report query string iframe for the selected student.
+     */
+    const iframeRef = useRef(null);
 
-  // Fetch concept map data for the student
-  const { data, loading, error } = useFetch(
-    `students/${encodeURIComponent(fetchEmail)}/conceptmap`
-  )
+    const { selectedStudent } = useContext(StudentSelectionContext);
 
-  // Check if current week is available in the data
-  const hasCurrWeek = data && data.currentWeek != null
-  const currWeek = hasCurrWeek ? Number(data.currentWeek) : Infinity
+    /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
+     * This function is called when the iframe starts to load. */
+    const handleLoad = useCallback(() =>{
+        if(iframeRef.current) {
+            const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
+            const height = iframeDocument.body.scrollHeight;
+            iframeRef.current.style.height = `${height}px`;
+        }
+    }, []);
 
-  // Handle loading state
-  if (loading) return <Loader />
+    /**
+     * Fetch the logged-in student's CM html on component mount (student view).
+     * This effect fetches data based on the JWT token stored
+     * in localStorage and updates the component's state.
+     */
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        if (mounted && localStorage.getItem('token')) {
+            let email = jwtDecode(localStorage.getItem('token')).email;
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${email}/masterymapping`).then((res) => {
+                const conceptMapUrl = `${window.location.origin}/progress`;
+                axios.post(conceptMapUrl, res.data).then((res) => {
+                    setConceptMapHTML(res.data);
+                });
+                setLoading(false);
+            });
+        } else {
+            setLoading(false);
+        }
+        return () => mounted = false;
+    }, []);
 
-  // Handle error state
-  if (error)
+    /**
+     * Fetch the selected student's CM html whenever the selected student
+     * changes for the instructor view.
+     * This effect depends on the `selectedStudent` from the context.
+     */
+    useEffect(() => {
+        let mounted = true;
+        if (mounted) {
+            setLoading(true);
+            // Fetch the student masterymapping
+            apiv2.get(`/students/${selectedStudent}/masterymapping`).then((res) => {
+                const conceptMapUrl = `${window.location.origin}/progress`;
+                axios.post(conceptMapUrl, res.data).then((res) => {
+                    setConceptMapHTML(res.data);
+                });
+                setLoading(false);
+            });
+        }
+        return () => mounted = false;
+    }, [selectedStudent])
+
+    if (loading) {
+        return <Loader />;
+    }
+
+    /**
+     * Render the concept map iframe with the fetched mastery data.
+     * This iframe src takes in a string of numbers
+     * (progressQueryString) to display a concept map.
+     */
     return (
-      <Box p={4}>
-        <Typography color="error">
-          Error loading concept map: {error.message}
-        </Typography>
-      </Box>
-    )
-
-  // Handle missing data
-  if (!data || !data.nodes)
-    return (
-      <Box p={4}>
-        <Typography>No concept‐map data available.</Typography>
-      </Box>
-    )
-
-  // Define mastery level color mappings for student ring legend
-  const studentLevels = [
-    { name: 'First Steps', color: '#dddddd' },
-    { name: 'Needs Practice', color: '#a3d7fc' },
-    { name: 'In Progress', color: '#59b0f9' },
-    { name: 'Almost There', color: '#3981c1' },
-    { name: 'Mastered', color: '#20476a' },
-  ]
-
-  // Define class-wide mastery legend for "taught" vs. "not taught"
-  const classLevels = [
-    { name: 'Not Taught', color: '#dddddd' },
-    { name: 'Taught', color: '#8fbc8f' },
-  ]
-
-  return (
-    <Box
-      sx={{
-        position: 'relative',
-        width: '100%',
-        height: 'calc(100vh - 64px)', // fills screen minus header
-        overflow: 'hidden',
-      }}
-    >
-      {/* === LEGEND ROW 1: student mastery rings === */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          mt: 0.8,
-          mb: 0.5,
-        }}
-      >
-        {studentLevels.map((lvl) => {
-          const bg = lvl.color + '33' // ~20% opacity background
-          return (
-            <Box
-              key={lvl.name}
-              sx={{
-                m: 1,
-                width: 60,
-                height: 60,
-                borderRadius: '50%',
-                border: `10px solid ${lvl.color}`,
-                backgroundColor: bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Typography
-                variant="subtitle1"
-                align="center"
-                sx={{ color: '#000', fontSize: '0.7rem', px: 1 }}
-              >
-                {lvl.name}
-              </Typography>
-            </Box>
-          )
-        })}
-      </Box>
-
-      {/* === LEGEND ROW 2: class mastery bars === */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          mt: 0.5,
-          mb: 2,
-        }}
-      >
-        {classLevels.map((lvl) => (
-          <Box
-            key={lvl.name}
-            sx={{
-              m: 1,
-              pt: '24px',
-              width: 100,
-              borderBottom: `4px solid ${lvl.color}`,
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              align="center"
-              sx={{ color: '#000', fontSize: '0.9rem' }}
-            >
-              {lvl.name}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-
-      {/* === CONCEPT MAP TREE RENDER === */}
-      <ConceptMapTree
-        outlineData={data}
-        currWeek={currWeek}
-        hasCurrWeek={hasCurrWeek}
-      />
-    </Box>
-  )
+        <>
+            {/* <PageHeader>Concept Map</PageHeader> */}
+            <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
+                <iframe
+                    ref={iframeRef}
+                    className="concept_map_iframe"
+                    id="ConceptMap"
+                    name="ConceptMap"
+                    title="Concept Map"
+                    srcdoc={conceptMapHTML}
+                    onLoad={handleLoad}
+                    scrolling='no'
+                    allowFullScreen
+                />
+            </div>
+        </>
+    );
 }
-
-export default ConceptMap

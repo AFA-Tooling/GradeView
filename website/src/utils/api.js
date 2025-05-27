@@ -6,12 +6,12 @@ let api;
 
 if (localStorage.getItem('token')) {
     api = axios.create({
-        baseURL: `${URL}/api`,
+        baseURL: `${URL}/api/`,
         headers: { Authorization: localStorage.getItem('token') },
     });
 } else {
     api = axios.create({
-        baseURL: `${URL}/api`,
+        baseURL: `${URL}/api/`,
     });
 }
 

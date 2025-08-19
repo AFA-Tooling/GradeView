@@ -14,8 +14,11 @@ export default function GradeAccordion({ category, assignments }) {
         let cg = 0;
         let cmg = 0;
         Object.values(assignments).forEach((category) => {
-            cg += category.student;
-            cmg += category.max;
+            // Handle empty strings and convert to numbers safely
+            const studentScore = category.student === "" ? 0 : +(category.student || 0);
+            const maxScore = category.max === "" ? 0 : +(category.max || 0);
+            cg += studentScore;
+            cmg += maxScore;
         })
         setCumGrade(Math.round(cg * 100) / 100);
         setCumMaxGrade(Math.round(cmg * 100) / 100);

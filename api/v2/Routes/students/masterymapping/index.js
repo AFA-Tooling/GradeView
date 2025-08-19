@@ -51,10 +51,10 @@ async function getMasteryMapping(userTopicPoints, maxTopicPoints) {
 }
 
 router.get('/', async (req, res) => {
-    const { id } = req.params;
+    const { email } = req.params;
     try {
         const maxScores = await getMaxScores();
-        const studentScores = await getStudentScores(id);
+        const studentScores = await getStudentScores(email);
         const userTopicPoints = getTopicsFromUser(studentScores);
         const maxTopicPoints = getTopicsFromUser(maxScores);
         const masteryNum = await getMasteryMapping(userTopicPoints, maxTopicPoints);
@@ -63,10 +63,10 @@ router.get('/', async (req, res) => {
         switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
-                console.error('Error fetching student with id %s', id, err);
+                console.error('Error fetching student with email %s', email, err);
                 return res.status(404).json({ message: "Error fetching student."});
             default:
-                console.error('Internal service error fetching student with id %s', id, err);
+                console.error('Internal service error fetching student with email %s', email, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

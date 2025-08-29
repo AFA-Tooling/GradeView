@@ -28,7 +28,7 @@ router.use('/:email/concept-structure', ConceptStructureRouter);
 // TODO: sanitize email input.
 // Ensure the requester has access to the requested student's data.
 // Temporarily disabled to debug routing issue
-// router.use('/:email', validateAdminOrStudentMiddleware);
+router.use('/:email', validateAdminOrStudentMiddleware);
 
 router.get('/', validateAdminMiddleware, async (_, res) => {
     try {

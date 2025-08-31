@@ -11,7 +11,8 @@ PORT = int(os.getenv("SERVER_PORT"))
 SCOPES = json.loads(os.getenv("SPREADSHEET_SCOPES"))
 HOST = os.getenv("SERVER_HOST")
 DB = int(os.getenv("SERVER_DBINDEX"))
-SHEETNAME = os.getenv("SPREADSHEET_SHEETNAME")
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")  # Fixed: Use SPREADSHEET_ID
+SHEETNAME = os.getenv("SPREADSHEET_SHEETNAME")  # This is the sheet/tab name
 WORKSHEET = int(os.getenv("SPREADSHEET_WORKSHEET"))
 CATEGORYCOL = int(os.getenv("ASSIGNMENT_CATEGORYCOL"))
 CATEGORYROW = int(os.getenv("ASSIGNMENT_CATEGORYROW"))
@@ -28,40 +29,61 @@ credentials = Credentials.from_service_account_info(credentials_dict, scopes=SCO
 client = gspread.authorize(credentials)
 
 #redis setup
-redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW)
+if HOST == "redis":  # If running in Docker
+    redis_client = redis.Redis(host=HOST, port=PORT, db=DB, password=REDIS_PW)
+else:  # If running locally
+    redis_client = redis.Redis(host="localhost", port=6379, db=DB, password=REDIS_PW)
 
 def update_redis():
-    sheet = client.open(SHEETNAME).get_worksheet(WORKSHEET)
-    categories = sheet.row_values(CATEGORYROW)[CATEGORYCOL:] #gets the categories from row 2, starting from column C
-    concepts = sheet.row_values(CONCEPTSROW)[CONCEPTSCOL:] #gets the concepts from row 1, starting from column C
-    max_points = sheet.row_values(MAXPOINTSROW)[MAXPOINTSCOL:] #gets the max points from row 3, starting from column C
+    print(f"Attempting to open spreadsheet with ID: {SPREADSHEET_ID}")
+    print(f"Looking for sheet/tab named: {SHEETNAME}")
+    
+    try:
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEETNAME)
+        print("Successfully opened spreadsheet!")
+        
+        categories = sheet.row_values(CATEGORYROW)[CATEGORYCOL:] #gets the categories from row 2, starting from column C
+        concepts = sheet.row_values(CONCEPTSROW)[CONCEPTSCOL:] #gets the concepts from row 1, starting from column C
+        max_points = sheet.row_values(MAXPOINTSROW)[MAXPOINTSCOL:] #gets the max points from row 3, starting from column C
 
-    category_scores = {}
-    for category, concept, points in zip(categories, concepts, max_points):
-        if category not in category_scores:
-            category_scores[category] = {} #creates a hashmap entry for each category
-        category_scores[category][concept] = points #nested hashmap of     category:concept:points
+        print(f"Found categories: {categories[:3]}...")  # Show first 3 categories
+        print(f"Found concepts: {concepts[:3]}...")      # Show first 3 concepts
 
-    redis_client.set("Categories", json.dumps(category_scores)) #the one record that holds all of the categories info
+        category_scores = {}
+        for category, concept, points in zip(categories, concepts, max_points):
+            if category not in category_scores:
+                category_scores[category] = {} #creates a hashmap entry for each category
+            category_scores[category][concept] = points #nested hashmap of     category:concept:points
 
-    records = sheet.get_all_records()
+        redis_client.set("Categories", json.dumps(category_scores)) #the one record that holds all of the categories info
 
-    for record in records:
-        email = record.pop('Email')
-        legal_name = record.pop('Legal Name')
-        if email == "CATEGORY":
-            continue
-        users_to_assignments = { #structure for db entries
-            "Legal Name": legal_name,
-            "Assignments": {}
-        }
+        records = sheet.get_all_records()
+        print(f"Found {len(records)} student records")
 
-        for category, concept in zip(categories, concepts):
-            if category not in users_to_assignments["Assignments"]:
-                users_to_assignments["Assignments"][category] = {}
-            users_to_assignments["Assignments"][category][concept] = record[concept]
+        for record in records:
+            email = record.pop('Email')
+            legal_name = record.pop('Legal Name')
+            if email == "CATEGORY":
+                continue
+            users_to_assignments = { #structure for db entries
+                "Legal Name": legal_name,
+                "Assignments": {}
+            }
 
-        redis_client.set(email, json.dumps(users_to_assignments)) #sets key value for user:other data
+            for category, concept in zip(categories, concepts):
+                if category not in users_to_assignments["Assignments"]:
+                    users_to_assignments["Assignments"][category] = {}
+                users_to_assignments["Assignments"][category][concept] = record[concept]
+
+            redis_client.set(email, json.dumps(users_to_assignments)) #sets key value for user:other data
+        
+        print("Successfully updated Redis database!")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        print(f"Spreadsheet ID: {SPREADSHEET_ID}")
+        print(f"Sheet name: {SHEETNAME}")
+        raise
 
 if __name__ == "__main__":
     update_redis()

@@ -1,0 +1,51 @@
+.node {
+    cursor: pointer;
+}
+
+.node > circle {
+    stroke: grey;
+    stroke-width: 10px;
+    fill: transparent;
+}
+
+.not-taught > circle {
+    stroke: grey;
+}
+
+.new > circle {
+    fill: #808080;
+    stroke: #808080;
+    stroke-width: 10px;
+}
+
+.in-process > circle {
+    fill: #FFA500;
+    stroke: #FFA500;
+    stroke-width: 10px;
+}
+
+.learned > circle {
+    fill: #228B22;
+    stroke: #228B22;
+    stroke-width: 10px;
+}
+
+.node text {
+    font-weight: bold;
+    fill: grey;
+    font: 12pt sans-serif black;
+}
+
+.path {
+    cursor: pointer !important;
+    stroke: grey !important;
+    stroke-width: 3px;
+}
+
+.collapsed > circle {
+    fill: grey !important;
+}
+
+.taught {
+    stroke: green !important;
+}

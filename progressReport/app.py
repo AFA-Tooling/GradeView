@@ -104,7 +104,7 @@ This method is deprecated.
 @deprecated(reason="Query parameters are no longer used.")
 @app.route('/', methods=["GET"])
 def index():
-    print("In index")
+    print("In GET route (index)")
     def assign_node_levels(node, student_levels_count, class_levels_count):
         nonlocal student_mastery, class_mastery
         if not node["children"]:
@@ -172,10 +172,79 @@ def generate_cm_from_post_parameters():
     validate_mastery_learning_post_request(request_as_json)
     school_name = request_as_json.get("school", DEFAULT_SCHOOL)
     course_name = request_as_json.get("class", DEFAULT_CLASS)
+    
+    # Build dynamic tree structure from mastery data
+    def build_dynamic_tree(mastery_data):
+        """Build tree structure dynamically from mastery data"""
+        root = {
+            "id": 1,
+            "name": course_name,
+            "parent": "null",
+            "children": [],
+            "data": {
+                "week": 0
+            }
+        }
+
+        # Define the expected categories and their concepts based on the actual data structure
+        category_mapping = {
+            "Quest": ["Abstraction", "Number Representation", "Iteration", "Domain and Range", "Booleans", "Functions", "HOFs I"],
+            "Midterm": ["Algorithms", "Computers and Education", "Testing + 2048 + Mutable/Immutable", "Saving the World with Computing", "Debugging", "Scope", "Iteration and Randomness", "Recursion Tracing", "Algorithmic Complexity", "HOFs II", "Fractal"],
+            "Postterm": ["Python Advanced", "Programming Paradigms", "HCI", "Generative AI", "Ethics in AI", "Generic Base Conversion", "Concurrency", "HOFs III", "Coding Snap! Recursive Reporter and HOF", "Coding Python Data Structures"],
+            "Projects": ["Project 1: Wordle™-lite", "Project 2: Spelling Bee", "Project 3: 2048"]
+        }
+
+        # Build tree structure
+        node_id = 2
+        for category, expected_concepts in category_mapping.items():
+            category_node = {
+                "id": node_id,
+                "name": category,
+                "parent": "null",  # Changed from course_name to "null"
+                "children": [],
+                "data": {
+                    "week": 0  # Added data property for category nodes
+                }
+            }
+            node_id += 1
+
+            for concept_name in expected_concepts:
+                # Find mastery data for this concept
+                mastery_info = mastery_data.get(concept_name, {"student_mastery": 0, "class_mastery": 0})
+
+                concept_node = {
+                    "id": node_id,
+                    "name": concept_name,
+                    "parent": category,
+                    "children": [],
+                    "data": {
+                        "week": 0  # Default week
+                    }
+                }
+                node_id += 1
+                category_node["children"].append(concept_node)
+
+            root["children"].append(category_node)
+
+        return root, node_id - 1
+
     def assign_node_levels(node):
         if not node["children"]:
-            node["student_level"] = request_as_json.get(node["name"], {}).get("student_mastery", 0)
-            node["class_level"] = request_as_json.get(node["name"], {}).get("class_mastery", 0)
+            # For leaf nodes, get mastery from the concept name
+            concept_name = node["name"]
+            # Try to find matching mastery data
+            mastery_data = None
+            for key, value in request_as_json.items():
+                if concept_name in key or key in concept_name:
+                    mastery_data = value
+                    break
+
+            if mastery_data:
+                node["student_level"] = mastery_data.get("student_mastery", 0)
+                node["class_level"] = mastery_data.get("class_mastery", 0)
+            else:
+                node["student_level"] = 0
+                node["class_level"] = 0
         else:
             children_student_levels = []
             children_class_levels = []
@@ -187,19 +256,29 @@ def generate_cm_from_post_parameters():
             node["class_level"] = sum(children_class_levels) // len(children_class_levels)
         return node["student_level"], node["class_level"]
 
-    parser.generate_map(school_name=secure_filename(school_name), course_name=secure_filename(course_name), render=True)
-    try:
-        with open("data/{}_{}.json".format(secure_filename(school_name), secure_filename(course_name))) as data_file:
-            course_data = json.load(data_file)
-    except FileNotFoundError:
-        return "Class not found", 404
-    start_date = course_data["start date"]
-    course_term = course_data["term"]
-    class_levels = course_data["class levels"]
-    student_levels = course_data["student levels"]
-    course_node_count = course_data["count"]
-    course_nodes = course_data["nodes"]
+    # Build dynamic tree instead of using static parser
+    print("About to build dynamic tree with data:", list(request_as_json.keys())[:5])
+    course_nodes, course_node_count = build_dynamic_tree(request_as_json)
+    print("Dynamic tree built with", course_node_count, "nodes and", len(course_nodes["children"]), "categories")
+
+    # Use default values for other fields
+    start_date = "8/26/2024"
+    course_term = "Fall 2024"
+    class_levels = [
+        {"name": "Not Taught", "color": "#dddddd"},
+        {"name": "Taught", "color": "#8fbc8f"}
+    ]
+    student_levels = [
+        {"name": "First Steps", "color": "#dddddd"},
+        {"name": "Needs Practice", "color": "#a3d7fc"},
+        {"name": "In Progress", "color": "#59b0f9"},
+        {"name": "Almost There", "color": "#3981c1"},
+        {"name": "Mastered", "color": "#20476a"}
+    ]
+
+    # Assign mastery levels to the dynamic tree
     assign_node_levels(course_nodes)
+
     return render_template("web_ui.html",
                            start_date=start_date,
                            course_name=course_name,

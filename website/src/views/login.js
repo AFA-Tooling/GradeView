@@ -24,7 +24,7 @@ export default function Login() {
         /* global google */
         google.accounts.id.initialize({
             client_id:
-                '435032403387-5sph719eh205fc6ks0taft7ojvgipdji.apps.googleusercontent.com',
+                '960156693240-hje09pstet1al4g4tr08271kkcjfqnn2.apps.googleusercontent.com',
             callback: handleGoogleLogin,
         });
         google.accounts.id.renderButton(

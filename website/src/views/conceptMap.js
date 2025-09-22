@@ -51,57 +51,71 @@ export default function ConceptMap() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        
+
         let email = null;
-        
+
         console.log('=== CONCEPT MAP DEBUG ===');
         console.log('selectedStudent:', selectedStudent);
         console.log('selectedStudent type:', typeof selectedStudent);
         console.log('selectedStudent length:', selectedStudent ? selectedStudent.length : 'N/A');
         console.log('localStorage token exists:', !!localStorage.getItem('token'));
-        
-        // Determine which email to use
-        if (selectedStudent) {
-            // Instructor view - use selected student
-            email = selectedStudent;
-            console.log('Using selectedStudent email:', email);
-        } else if (localStorage.getItem('token')) {
-            // Student view - use JWT token
-            const token = localStorage.getItem('token');
-            console.log('JWT Token:', token);
-            const decoded = jwtDecode(token);
-            console.log('Decoded JWT:', decoded);
-            email = decoded.email;
-            console.log('Extracted email from JWT:', email);
-        }
-        
-        console.log('Final email value:', email);
-        console.log('=== END DEBUG ===');
-        
-        if (email && mounted) {
-            console.log('Making API call with email:', email);
-            // Fetch the student masterymapping
-            apiv2.get(`/students/${email}/masterymapping`).then((res) => {
-                if (mounted) {
-                    const conceptMapUrl = `${window.location.origin}/progress`;
-                    axios.post(conceptMapUrl, res.data).then((res) => {
-                        if (mounted) {
-                            setConceptMapHTML(res.data);
-                        }
-                    });
-                    setLoading(false);
-                }
-            }).catch((err) => {
-                console.error('Error fetching masterymapping:', err);
-                if (mounted) {
-                    setLoading(false);
-                }
-            });
-        } else {
-            console.log('No email available, setting loading to false');
-            setLoading(false);
-        }
-        
+
+        // check admin status so we don't use JWT email for admins
+        let isAdmin = false;
+        const adminPromise = apiv2.get('/isadmin')
+            .then(r => r.data?.isAdmin === true)
+            .catch(() => false);
+
+        adminPromise.then((admin) => {
+            if (!mounted) return;
+            isAdmin = admin;
+
+            // Determine which email to use
+            if (selectedStudent) {
+                // Instructor view - use selected student
+                email = selectedStudent;
+                console.log('Using selectedStudent email:', email);
+            } else if (!isAdmin && localStorage.getItem('token')) {
+                // Student view only - use JWT token
+                const token = localStorage.getItem('token');
+                console.log('JWT Token:', token);
+                const decoded = jwtDecode(token);
+                console.log('Decoded JWT:', decoded);
+                email = decoded.email;
+                console.log('Extracted email from JWT:', email);
+            }
+
+            console.log('Final email value:', email);
+            console.log('=== END DEBUG ===');
+
+            if (email && mounted) {
+                console.log('Making API call with email:', email);
+                apiv2.get(`/students/${encodeURIComponent(email)}/masterymapping`).then((res) => {
+                    if (mounted) {
+                        const conceptMapUrl = `${window.location.origin}/progress`;
+                        axios.post(conceptMapUrl, res.data).then((res) => {
+                            if (mounted) {
+                                setConceptMapHTML(res.data);
+                            }
+                        });
+                        setLoading(false);
+                    }
+                }).catch((err) => {
+                    console.error('Error fetching masterymapping:', err);
+                    if (err?.response?.status === 404) {
+                      alert('No mastery data found for this student. Please ensure data is loaded.');
+                    }
+                    if (mounted) {
+                        setLoading(false);
+                    }
+                });
+            } else {
+                // Admin without a selected student: wait for selection
+                console.log('No email available (likely admin with no student selected), setting loading to false');
+                setLoading(false);
+            }
+        });
+
         return () => {
             mounted = false;
         };

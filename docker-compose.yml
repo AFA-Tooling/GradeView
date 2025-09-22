@@ -1,32 +1,40 @@
-version: '3.8'
 services:
   reverseProxy:
+    image: nginx:1.25.2-alpine
     container_name: gradeview-reverse-proxy
-    image: ${CI_REGISTRY_IMAGE:-gradeview}/reverse-proxy:${REVERSE_PROXY_VERSION:-development}
-    build: ./reverseProxy
+    depends_on:
+      api:
+        condition: service_started
+      dtgui-progress-report:
+        condition: service_started
+      web:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - ${SOCKETS_DIR:-/dev/null}:/run/sockets
-    environment:
-      - REVERSE_PROXY_LISTEN=${REVERSE_PROXY_LISTEN:-0.0.0.0:80}
+      - ./reverseProxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./reverseProxy/site.conf:/etc/nginx/conf.d/site.conf:ro
+      - ./reverseProxy/empty:/etc/nginx/templates:ro    
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     networks:
       - frontend
       - concept_map_integration
-    ports:
-      - 80:80
-    depends_on:
-      - web
-      - api
-      - dtgui-progress-report
+    restart: unless-stopped
   web:
     container_name: gradeview-web
-    image: ${CI_REGISTRY_IMAGE:-gradeview}/web:${WEB_VERSION:-development}
-    build: ./website/server
+    image: gradeview/web:development
+    build: 
+      context: ./website
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_PROXY_SERVER: /api
     environment:
-      - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER}
-      - PORT=${REACT_APP_PORT}
+      PORT: "3000"
+      REACT_APP_PROXY_SERVER: /api
     networks:
       - frontend
-    command: npm start
     restart: unless-stopped
   api:
     container_name: gradeview-api

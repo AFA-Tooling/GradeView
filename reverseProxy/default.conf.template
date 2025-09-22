@@ -1,20 +1,54 @@
+# HTTP: serve ACME challenge, redirect everything else to HTTPS
 server {
-    listen $REVERSE_PROXY_LISTEN;
-    server_name  _;
+  listen 80;
+  server_name gradeview.eecs.berkeley.edu;
 
-    location / {
-        proxy_pass http://gradeview-web:3000;
-    }
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
 
-    location /api {
-        proxy_pass http://gradeview-api:8000;
-    }
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
 
-    location /progress {
-        proxy_pass http://dtgui-progress-report:8080/;
-    }
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   /usr/share/nginx/html;
-    }
+# HTTPS: real app
+server {
+  listen 443 ssl;
+  server_name gradeview.eecs.berkeley.edu;
+
+  ssl_certificate     /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+
+  # Frontend
+  location / {
+    proxy_pass http://web:3000;
+    proxy_set_header Host $$host;
+    proxy_set_header X-Real-IP $$remote_addr;
+    proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $$scheme;
+  }
+
+  # API (keep /api prefix)
+  location /api/ {
+    proxy_pass http://api:8000;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $$host;
+    proxy_set_header X-Real-IP $$remote_addr;
+    proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $$scheme;
+  }
+
+  # Concept Map
+  location = /progress  { return 301 /progress/; }
+  location ^~ /progress/ {
+    proxy_pass http://dtgui-progress-report:8080/;
+    proxy_set_header Host $$host;
+    proxy_set_header X-Real-IP $$remote_addr;
+    proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $$scheme;
+  }
 }

@@ -9,6 +9,7 @@
 
 # production
 /website/server/build/
+website/server/build*
 
 # misc
 **/.DS_Store

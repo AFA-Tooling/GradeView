@@ -109,7 +109,9 @@ export default function ButtonAppBar() {
                         a[0].localeCompare(b[0])
                     );
                     setStudents(sortedStudents);
-                    setSelectedStudent(sortedStudents[0][1]);
+                    if (sortedStudents.length > 0) {
+                        setSelectedStudent(sortedStudents[0][1]);
+                    }
                 }
             });
         }

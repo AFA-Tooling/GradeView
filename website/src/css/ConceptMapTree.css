@@ -1,0 +1,100 @@
+/* Full-screen container for the concept map */
+.concept-map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure the SVG fills the full container */
+.concept-map-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Make all node groups clickable */
+g.node {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for clickable nodes */
+g.node:hover > circle {
+  stroke-width: 12px;
+  opacity: 0.8;
+}
+
+/* Default node style - donut with white center and colored ring */
+g.node > circle {
+  fill: white;
+  stroke-width: 8px;
+  r: 15;
+}
+
+/* Visual style for collapsed nodes */
+g.node.collapsed > circle {
+  fill: #666 !important;
+  stroke: #333 !important;
+  stroke-width: 8px;
+}
+
+/* NODE LEVEL STYLES BASED ON MASTERY - Donut Style */
+
+/* Level 0: First Steps (dark gray-blue) */
+.first-steps > circle {
+  stroke: #dddddd;
+  fill: white;
+  stroke-width: 8px;
+}
+
+/* Level 1: Needs Practice (light blue) */
+.needs-practice > circle {
+  stroke: #ADD8E6;
+  fill: white;
+  stroke-width: 8px;
+}
+
+/* Level 2: In Progress (sky blue) */
+.in-progress > circle {
+  stroke: #89CFF0;
+  fill: white;
+  stroke-width: 8px;
+}
+
+/* Level 3: Almost There (cornflower blue) */
+.almost-there > circle {
+  stroke: #6495ED;
+  fill: white;
+  stroke-width: 8px;
+}
+
+/* Level 4+: Mastered (dark blue) */
+.mastered > circle {
+  stroke: #0F4D92;
+  fill: white;
+  stroke-width: 8px;
+}
+
+/* Style for node labels */
+.concept-map-container g.node text {
+  font: 12px sans-serif !important;
+  font-weight: normal !important;
+  fill: black !important;
+  stroke: none !important;
+}
+
+/* BRANCH/PATH STYLES BASED ON TAUGHT/NOT TAUGHT STATUS */
+
+/* Default link/path style (not taught) */
+path.path {
+  stroke: #dddddd;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* Highlighted path style for "taught" concepts */
+path.path.taught {
+  stroke: #8fbc8f !important;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+}

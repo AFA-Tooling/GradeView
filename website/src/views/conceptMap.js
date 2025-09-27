@@ -1,11 +1,14 @@
 import React from 'react';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Loader from '../components/Loader';
 import './css/conceptMap.css';
-import { jwtDecode } from 'jwt-decode';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 import apiv2 from "../utils/apiv2";
-import axios from "axios";
+import ConceptMapTree from '../components/ConceptMapTree';
+import { Box, useMediaQuery, Typography } from '@mui/material';
+
+// Temporarily render without ErrorBoundary to surface errors
+
 
 /**
  * The ConceptMap component renders a concept map based on student progress data from the progressQueryString API.
@@ -24,128 +27,176 @@ import axios from "axios";
  */
 export default function ConceptMap() {
     const [loading, setLoading] = useState(false);
-    const [conceptMapHTML, setConceptMapHTML] = useState('');
-
-    /** The iframeRef is initially set to null. Once the HTML webpage is loaded
-     * for the concept map, the iframeRef is dynamically set to the fetched
-     * progress report query string iframe for the selected student.
-     */
-    const iframeRef = useRef(null);
+    const [outline, setOutline] = useState(null);
+    const [needsSelection, setNeedsSelection] = useState(false);
 
     const { selectedStudent } = useContext(StudentSelectionContext);
 
-    /** This adjusts the height of the iframe to fit its content and removes the iframe scrollbar.
-     * This function is called when the iframe starts to load. */
-    const handleLoad = useCallback(() =>{
-        if(iframeRef.current) {
-            const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-            const height = iframeDocument.body.scrollHeight;
-            iframeRef.current.style.height = `${height}px`;
-        }
-    }, []);
 
-    /**
-     * Fetch the concept map data for either the logged-in student or selected student.
-     * This effect handles both student view (JWT token) and instructor view (selectedStudent).
-     */
+    
+
+    // Fetch dynamic outline + mastery directly from API
     useEffect(() => {
         let mounted = true;
-        setLoading(true);
-
-        let email = null;
-
-        console.log('=== CONCEPT MAP DEBUG ===');
-        console.log('selectedStudent:', selectedStudent);
-        console.log('selectedStudent type:', typeof selectedStudent);
-        console.log('selectedStudent length:', selectedStudent ? selectedStudent.length : 'N/A');
-        console.log('localStorage token exists:', !!localStorage.getItem('token'));
-
-        // check admin status so we don't use JWT email for admins
-        let isAdmin = false;
-        const adminPromise = apiv2.get('/isadmin')
-            .then(r => r.data?.isAdmin === true)
-            .catch(() => false);
-
-        adminPromise.then((admin) => {
-            if (!mounted) return;
-            isAdmin = admin;
-
-            // Determine which email to use
-            if (selectedStudent) {
-                // Instructor view - use selected student
-                email = selectedStudent;
-                console.log('Using selectedStudent email:', email);
-            } else if (!isAdmin && localStorage.getItem('token')) {
-                // Student view only - use JWT token
-                const token = localStorage.getItem('token');
-                console.log('JWT Token:', token);
-                const decoded = jwtDecode(token);
-                console.log('Decoded JWT:', decoded);
-                email = decoded.email;
-                console.log('Extracted email from JWT:', email);
+        async function run() {
+            setLoading(true);
+            try {
+                // Admins must select a student; students can use stored email
+                let email = selectedStudent || localStorage.getItem('email');
+                // Detect admin to require selection
+                let isAdmin = false;
+                try {
+                    const adminRes = await apiv2.get('/isadmin');
+                    isAdmin = adminRes?.data?.isAdmin === true;
+                } catch (_) {}
+                if (!email && localStorage.getItem('token')) {
+                    // fallback: some flows store jwt but not email; server will validate
+                    const token = localStorage.getItem('token');
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1] || ''));
+                        email = payload?.email;
+                    } catch (_) {}
+                }
+                if (!email) {
+                    if (isAdmin) {
+                        setNeedsSelection(true);
+                    }
+                    setLoading(false);
+                    return;
+                }
+                setNeedsSelection(false);
+                const res = await apiv2.get(`/students/${encodeURIComponent(email)}/concept-structure`);
+                if (!mounted) return;
+                setOutline(res.data);
+            } catch (err) {
+                console.error('Error fetching concept-structure:', err);
+            } finally {
+                if (mounted) setLoading(false);
             }
-
-            console.log('Final email value:', email);
-            console.log('=== END DEBUG ===');
-
-            if (email && mounted) {
-                console.log('Making API call with email:', email);
-                apiv2.get(`/students/${encodeURIComponent(email)}/masterymapping`).then((res) => {
-                    if (mounted) {
-                        const conceptMapUrl = `${window.location.origin}/progress`;
-                        axios.post(conceptMapUrl, res.data).then((res) => {
-                            if (mounted) {
-                                setConceptMapHTML(res.data);
-                            }
-                        });
-                        setLoading(false);
-                    }
-                }).catch((err) => {
-                    console.error('Error fetching masterymapping:', err);
-                    if (err?.response?.status === 404) {
-                      alert('No mastery data found for this student. Please ensure data is loaded.');
-                    }
-                    if (mounted) {
-                        setLoading(false);
-                    }
-                });
-            } else {
-                // Admin without a selected student: wait for selection
-                console.log('No email available (likely admin with no student selected), setting loading to false');
-                setLoading(false);
-            }
-        });
-
-        return () => {
-            mounted = false;
-        };
+        }
+        run();
+        return () => { mounted = false; };
     }, [selectedStudent]);
 
-    if (loading) {
-        return <Loader />;
+    const hasCurrWeek = outline && outline.currentWeek != null;
+    const currWeek = hasCurrWeek ? Number(outline.currentWeek) : Infinity;
+  
+    if (loading) return <Loader />;
+    if (needsSelection) {
+        return (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+                Please select a student to view the Concept Map.
+            </div>
+        );
+    }
+    if (!outline) return null;
+    const hasChildren = Array.isArray(outline?.nodes?.children) && outline.nodes.children.length > 0;
+    if (!hasChildren) {
+        return (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+                No concept data available yet. Try refreshing after a minute.
+            </div>
+        );
     }
 
-    /**
-     * Render the concept map iframe with the fetched mastery data.
-     * This iframe src takes in a string of numbers
-     * (progressQueryString) to display a concept map.
-     */
-    return (
-        <>
-            {/* <PageHeader>Concept Map</PageHeader> */}
-            <div style={{ textAlign: 'center', height:"100%" }} overflow="hidden">
-                <iframe
-                    ref={iframeRef}
-                    className="concept_map_iframe"
-                    id="ConceptMap"
-                    name="ConceptMap"
-                    title="Concept Map"
-                    srcdoc={conceptMapHTML}
-                    onLoad={handleLoad}
-                    scrolling='no'
-                    allowFullScreen
-                />
-            </div>
-        </>
-    );
+  // ——— HARDCODED LEGEND VALUES ———
+  const studentLevels = [
+    { name: 'First Steps', color: '#dddddd' },
+    { name: 'Needs Practice', color: '#ADD8E6' },
+    { name: 'In Progress', color: '#89CFF0' },
+    { name: 'Almost There', color: '#6495ED' },
+    { name: 'Mastered', color: '#0F4D92' },
+  ];
+  const classLevels = [
+    { name: 'Not Taught', color: '#dddddd' },
+    { name: 'Taught', color: '#8fbc8f' },
+  ];
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        width: '100%',
+        height: 'calc(100vh - 64px)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* === LEGEND ROW 1: student‐mastery rings === */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 0.8,
+          mb: 0.5
+        }}
+      >
+        {studentLevels.map((lvl) => {
+          const bg = lvl.color + '33'; // ~20% opacity
+          return (
+            <Box
+              key={lvl.name}
+              sx={{
+                m: 1,
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                border: `10px solid ${lvl.color}`,
+                backgroundColor: bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                align="center"
+                sx={{ color: '#000', fontSize: '0.7rem', px: 1 }}
+              >
+                {lvl.name}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* === LEGEND ROW 2: taught / not‐taught bars === */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 0.5,
+          mb: 2
+        }}
+      >
+        {classLevels.map((lvl) => (
+          <Box
+            key={lvl.name}
+            sx={{
+              m: 1,
+              pt: '24px',
+              width: 100,
+              borderBottom: `4px solid ${lvl.color}`,
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              align="center"
+              sx={{ color: '#000', fontSize: '0.9rem' }}
+            >
+              {lvl.name}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* === YOUR EXISTING TREE === */}
+      <ConceptMapTree
+        outlineData={outline}
+        currWeek={currWeek}
+        hasCurrWeek={hasCurrWeek}
+      />
+    </Box>
+  );
 }

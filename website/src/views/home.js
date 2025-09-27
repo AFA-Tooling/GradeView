@@ -34,11 +34,14 @@ function Home() {
         return (<Loader />);
     }
 
+    // Guard: if no grades (404/empty), render empty state instead of crashing
+    const safeData = (gradeInfo?.data && typeof gradeInfo.data === 'object') ? gradeInfo.data : {};
+
     return (
         <Box sx={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
             {mobileView ?
                 <>
-                    {Object.entries(gradeInfo.data).map(([assignmentName, breakdown]) => (
+                    {Object.entries(safeData).map(([assignmentName, breakdown]) => (
                         <GradeAccordion
                             key={assignmentName}
                             category={assignmentName}
@@ -49,7 +52,7 @@ function Home() {
                 :
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4, width: '100%' }}>
                     <Grid2 container sx={{ width: '100%' }} spacing={{ xs: 3, md: 5 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                        {Object.entries(gradeInfo.data).map(([assignmentName, breakdown]) => (
+                        {Object.entries(safeData).map(([assignmentName, breakdown]) => (
                             <GradeGrid
                                 key={assignmentName}
                                 category={assignmentName}

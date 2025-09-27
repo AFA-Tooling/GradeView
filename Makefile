@@ -14,7 +14,7 @@ dev-down:
 	@docker compose -f docker-compose.dev.yml down
 
 docker:
-	@cd website && npm run build
+	@cd website && npm install && npm run build
 	@docker compose build
 	@docker compose up -dV
 

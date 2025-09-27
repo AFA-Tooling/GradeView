@@ -13,10 +13,11 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
 
 // Set up API proxy middleware
+// Apply a higher, scoped rate limit to API routes only, then proxy
+app.use('/api', limit(60));
 app.use('/api', proxy);
 
-// Set up rate limiting middleware
-app.use(limit(10));
+// Remove global rate limiting to avoid throttling static assets and pages
 
 // Serve static files from the React app
 app.get('/*', (_, res) => {

@@ -32,6 +32,8 @@ services:
     container_name: gradeview-api
     image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}
     build: ./api
+    volumes:
+      - ./api:/api
     environment:
       - PORT=${API_PORT}
     networks:

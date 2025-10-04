@@ -38,13 +38,13 @@ export default function Buckets() {
         createGradingRow('Quest', 25),
         createGradingRow('Midterm', 50),
         createGradingRow('Postterm',75),
-        createGradingRow('Project 1: Wordle™-lite', 10),
+        createGradingRow('Project 1: Wordle™-lite', 15),
         createGradingRow('Project 2: Spelling-Bee', 25),
         createGradingRow('Project 3: 2048', 35),
-        createGradingRow('Project 4: Explore', 15),
+        createGradingRow('Project 4: Explore', 20),
         createGradingRow('Final Project', 60),
         createGradingRow('Labs', 80),
-        createGradingRow('Attendance / Participation', 25)
+        createGradingRow('Attendance / Participation', 15)
     ];
 
     return (

@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   reverseProxy:
     container_name: gradeview-reverse-proxy
@@ -6,6 +5,9 @@ services:
     build: ./reverseProxy
     volumes:
       - ${SOCKETS_DIR:-/dev/null}:/run/sockets
+      - ./reverseProxy/default.conf.template:/etc/nginx/templates/default.conf.template:ro 
+      - ./reverseProxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro 
     environment:
       - REVERSE_PROXY_LISTEN=${REVERSE_PROXY_LISTEN:-0.0.0.0:80}
     networks:
@@ -13,21 +15,27 @@ services:
       - concept_map_integration
     ports:
       - 80:80
+      - 443:443
     depends_on:
       - web
       - api
       - dtgui-progress-report
   web:
     container_name: gradeview-web
-    image: ${CI_REGISTRY_IMAGE:-gradeview}/web:${WEB_VERSION:-development}
-    build: ./website/server
+    build: ./api
+    image: node:18-alpine
+    working_dir: /website
+    volumes:
+      - ./website:/website
     environment:
       - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER}
       - PORT=${REACT_APP_PORT}
     networks:
       - frontend
-    command: npm start
+    command: ["node", "server/index.js"]
     restart: unless-stopped
+    depends_on:
+      - api
   api:
     container_name: gradeview-api
     image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}
@@ -35,7 +43,11 @@ services:
     volumes:
       - ./api:/api
     environment:
-      - PORT=${API_PORT}
+      - NODE_ENV=production
+      - PORT=${API_PORT:-8000}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379   
+      - REDIS_PASSWORD=${REDIS_DB_SECRET:-password}  
     networks:
       - frontend
       - db
@@ -56,9 +68,12 @@ services:
     image: redis:latest
     networks:
       - db
+      - frontend
     command: redis-server --requirepass ${REDIS_DB_SECRET:-password}
     ports:
       - 6379:6379
+    environment:
+      - REDIS_PASSWORD=NciZ!4DfXxwAUNA
   dbcron:
     build: ./dbcron
     volumes:
@@ -70,6 +85,7 @@ services:
 networks:
   frontend:
     name: frontend
+    driver: bridge
   concept_map_integration:
     name: concept_map_integration
   db:

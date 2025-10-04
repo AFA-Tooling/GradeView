@@ -17,7 +17,7 @@ services:
             - dtgui-progress-report
     web:
         container_name: gradeview-web
-        build: ./website
+        working_dir: /website
         volumes:
             - ./website:/website
         environment:
@@ -26,6 +26,8 @@ services:
         networks:
             - frontend
         restart: unless-stopped
+        depends_on:
+            - api
     api:
         container_name: gradeview-api
         build: ./api

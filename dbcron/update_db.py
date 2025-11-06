@@ -57,17 +57,95 @@ def update_redis():
 
         redis_client.set("Categories", json.dumps(category_scores)) #the one record that holds all of the categories info
 
+        # VALIDATION: Check spreadsheet structure
+        print("\n" + "="*60)
+        print("SPREADSHEET STRUCTURE VALIDATION")
+        print("="*60)
+        
+        # Check header row structure
+        header_row = sheet.row_values(1)  # Row 1 is header for get_all_records()
+        print(f"\nHeader row (Row 1): {header_row[:5]}...")
+        
+        # Validate column structure per README requirements
+        validation_warnings = []
+        validation_errors = []
+        
+        # Check: First column should be student name (can be empty header)
+        if len(header_row) > 0:
+            first_col = header_row[0] if header_row[0] else "(empty)"
+            if first_col and first_col != "Legal Name" and first_col.strip() != "":
+                validation_warnings.append(f"First column header is '{first_col}' (expected empty or 'Legal Name')")
+            else:
+                print(f"✓ First column (student name): {first_col}")
+        else:
+            validation_errors.append("No columns found in header row")
+        
+        # Check: Second column should be Email
+        if len(header_row) > 1:
+            second_col = header_row[1] if len(header_row) > 1 else None
+            if second_col == "Email":
+                print(f"✓ Second column (Email): {second_col}")
+            else:
+                validation_errors.append(f"Second column should be 'Email', found: '{second_col}'")
+        else:
+            validation_errors.append("Second column (Email) not found")
+        
+        # Check assignment metadata rows
+        print(f"\nAssignment metadata rows:")
+        print(f"  Row {CONCEPTSROW} (concepts/titles): {sheet.row_values(CONCEPTSROW)[:5]}...")
+        print(f"  Row {CATEGORYROW} (categories/types): {sheet.row_values(CATEGORYROW)[:5]}...")
+        print(f"  Row {MAXPOINTSROW} (max points): {sheet.row_values(MAXPOINTSROW)[:5]}...")
+        
+        # Validate max points are numeric
+        max_points_numeric = all(
+            str(val).replace('.', '').isdigit() or val == '' 
+            for val in max_points[:10]  # Check first 10
+        )
+        if max_points_numeric:
+            print("✓ Max points row contains numeric values")
+        else:
+            validation_warnings.append("Some values in max points row may not be numeric")
+        
+        # Check categories and concepts
+        if len(categories) > 0 and len(concepts) > 0:
+            print(f"✓ Found {len(categories)} categories and {len(concepts)} concepts")
+        else:
+            validation_warnings.append(f"Found {len(categories)} categories and {len(concepts)} concepts (expected > 0)")
+        
         records = sheet.get_all_records()
-        print(f"Found {len(records)} student records")
+        print(f"\n✓ Found {len(records)} student records")
         
         # Determine the name column - try multiple strategies
         # get_all_records() uses the first row as headers, so check what keys we have
         if len(records) == 0:
+            validation_errors.append("No student records found in spreadsheet")
             raise ValueError("No records found in spreadsheet")
         
         # Get the available column keys from the first record
         available_keys = list(records[0].keys())
         print(f"Available columns: {available_keys[:5]}...")  # Show first 5 columns
+        
+        # Print validation results
+        if validation_errors:
+            print("\n" + "="*60)
+            print("VALIDATION ERRORS (must be fixed):")
+            print("="*60)
+            for error in validation_errors:
+                print(f"  ❌ {error}")
+            print("="*60 + "\n")
+        
+        if validation_warnings:
+            print("\n" + "="*60)
+            print("VALIDATION WARNINGS (should be reviewed):")
+            print("="*60)
+            for warning in validation_warnings:
+                print(f"  ⚠️  {warning}")
+            print("="*60 + "\n")
+        
+        if not validation_errors and not validation_warnings:
+            print("\n✓ All spreadsheet structure validations passed!")
+        
+        print("="*60 + "\n")
         
         name_column_key = None
         

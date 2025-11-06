@@ -16,12 +16,18 @@ export default function BinTable({ title, col1, col2, rows, keys }){
                         </TableHead>
                         <TableBody>
                             {
-                                rows.map((row) => (
-                                    <TableRow key={row[keys[0]]}>
-                                        <TableCell>{row[keys[0]]}</TableCell>
-                                        <TableCell>{row[keys[1]]}</TableCell>
+                                rows && rows.length > 0 ? (
+                                    rows.map((row) => (
+                                        <TableRow key={row[keys[0]]}>
+                                            <TableCell>{row[keys[0]]}</TableCell>
+                                            <TableCell>{row[keys[1]]}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} align="center">No data available</TableCell>
                                     </TableRow>
-                                ))
+                                )
                             }
                         </TableBody>
                     </Table>

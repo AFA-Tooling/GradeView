@@ -1,63 +1,20 @@
-
 server {
-  listen 80;
-  server_name gradeview.eecs.berkeley.edu;
+    listen $REVERSE_PROXY_LISTEN;
+    server_name  _;
 
-  location ^~ /.well-known/acme-challenge/ { root /var/www/certbot; }
-  location / { return 301 https://$host$request_uri; }
-}
+    location / {
+        proxy_pass http://gradeview-web:3000;
+    }
 
+    location /api {
+        proxy_pass http://gradeview-api:8000;
+    }
 
-server {
-  listen 443 ssl;
-  server_name gradeview.eecs.berkeley.edu;
-
-  ssl_certificate     /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/privkey.pem;
-  ssl_protocols TLSv1.2 TLSv1.3;
-  ssl_ciphers HIGH:!aNULL:!MD5;
-  
-  set $web_upstream  http://web:3000;
-  set $api_upstream  http://api:8000;
-
-  location / {
-    proxy_pass $web_upstream;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  location ~ ^/api/v2/students/([^/]+)/grades$ {
-    set $email $1;
-    proxy_pass http://api:8000/api/v2/students/grades?email=$email;
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-
-  # /api/*  ->  /*   (drops /api)
-  location /api/ {
-    proxy_pass $api_upstream; 
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-
-  # Concept Map
-  location = /progress { return 301 /progress/; }
-  location ^~ /progress/ {
-    proxy_pass http://dtgui-progress-report:8080/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
+    location /progress {
+        proxy_pass http://dtgui-progress-report:8080/;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
 }

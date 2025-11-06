@@ -59,10 +59,51 @@ def update_redis():
 
         records = sheet.get_all_records()
         print(f"Found {len(records)} student records")
+        
+        # Determine the name column - try multiple strategies
+        # get_all_records() uses the first row as headers, so check what keys we have
+        if len(records) == 0:
+            raise ValueError("No records found in spreadsheet")
+        
+        # Get the available column keys from the first record
+        available_keys = list(records[0].keys())
+        print(f"Available columns: {available_keys[:5]}...")  # Show first 5 columns
+        
+        name_column_key = None
+        
+        # Strategy 1: Check if 'Legal Name' exists
+        if 'Legal Name' in available_keys:
+            name_column_key = 'Legal Name'
+        # Strategy 2: Check for empty string (common when column A has no header)
+        elif '' in available_keys and available_keys[0] == '':
+            name_column_key = ''
+            print("Found empty header in first column, assuming it's the name column")
+        # Strategy 3: Use the first column as fallback (before Email)
+        elif len(available_keys) > 0:
+            # Find Email column index
+            email_index = available_keys.index('Email') if 'Email' in available_keys else -1
+            # If Email is in column B (index 1), then column A (index 0) is likely the name
+            if email_index == 1:
+                name_column_key = available_keys[0]
+                print(f"Warning: 'Legal Name' column not found. Using first column '{name_column_key}' as name column.")
+            else:
+                # Last resort: use first column
+                name_column_key = available_keys[0]
+                print(f"Warning: 'Legal Name' column not found. Using first column '{name_column_key}' as name column.")
+        
+        if name_column_key is None:
+            raise ValueError("Could not determine name column. Please ensure the spreadsheet has a name column in the first column.")
 
         for record in records:
             email = record.pop('Email')
-            legal_name = record.pop('Legal Name')
+            # Safely get the legal name using the determined key
+            legal_name = record.pop(name_column_key, None)
+            if legal_name is None:
+                # Last resort: try to get from first column by index
+                first_col_value = list(record.values())[0] if record else None
+                legal_name = first_col_value or "Unknown"
+                print(f"Warning: Could not extract name for email {email}, using '{legal_name}'")
+            
             if email == "CATEGORY":
                 continue
             users_to_assignments = { #structure for db entries

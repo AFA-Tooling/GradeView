@@ -42,75 +42,62 @@ export default function Buckets() {
                 console.log('Processed binsData:', binsData);
                 console.log('binsData length:', binsData ? binsData.length : 'null/undefined');
                 
-                let tempBins = [];
-                if (binsData && Array.isArray(binsData) && binsData.length > 0) {
-                    console.log(`Processing ${binsData.length} bins...`);
-                    console.log('Raw bins data:', JSON.stringify(binsData, null, 2));
-                    
-                    // Sort bins by points (ascending) to ensure correct order
-                    const sortedBins = [...binsData].sort((a, b) => {
-                        const aPoints = a?.points ?? 0;
-                        const bPoints = b?.points ?? 0;
-                        return aPoints - bPoints;
-                    });
-                    
-                    console.log('Sorted bins:', JSON.stringify(sortedBins, null, 2));
-                    
-                    // Iterate backwards to display from highest to lowest grade
-                    for (let i = sortedBins.length - 1; i >= 0; i--) {
-                        const bin = sortedBins[i];
-                        console.log(`Processing bin at index ${i}:`, bin);
-                        if (bin && bin.letter && bin.points !== undefined) {
-                            const grade = bin.letter;
-                            // Lower bound is the previous grade's points (or 0 for the lowest grade)
-                            // Since we're iterating backwards, i-1 is the next lower bin in sorted order
-                            const lower = (i > 0) ? +sortedBins[i - 1].points : 0;
-                            const range = `${lower}-${bin.points}`;
-                            tempBins.push({ grade, range });
-                            console.log(`✓ Added bin: ${grade} with range ${range}`);
-                        } else {
-                            console.warn(`✗ Skipping invalid bin at index ${i}:`, bin);
-                        }
-                    }
-                } else {
-                    console.warn('No bins data found or bins array is empty. binsData:', binsData);
-                }
-                
-                console.log(`Final tempBins (${tempBins.length} items):`, tempBins);
-                
-                // Fallback to hardcoded bins if processing failed or returned empty
-                // Always ensure we have bins to display
-                if (tempBins.length === 0) {
-                    console.warn('No bins processed, using hardcoded fallback');
-                    const fallbackBins = [
-                        { grade: 'A+', range: '390-400' },
-                        { grade: 'A', range: '370-390' },
-                        { grade: 'A-', range: '360-370' },
-                        { grade: 'B+', range: '350-360' },
-                        { grade: 'B', range: '330-350' },
-                        { grade: 'B-', range: '320-330' },
-                        { grade: 'C+', range: '310-320' },
-                        { grade: 'C', range: '290-310' },
-                        { grade: 'C-', range: '280-290' },
-                        { grade: 'D', range: '240-280' },
-                        { grade: 'F', range: '0-240' }
-                    ];
-                    console.log('Setting fallback bins:', fallbackBins);
-                    setBins(fallbackBins);
-                } else {
-                    console.log('Setting processed bins:', tempBins);
-                    setBins(tempBins);
-                }
+                // Always use the standard bins format for display
+                // The database bins may be used for calculations, but we display the standard format
+                console.log('Using standard bins format for display');
+                const standardBins = [
+                    { grade: 'A+', range: '390-400' },
+                    { grade: 'A', range: '370-390' },
+                    { grade: 'A-', range: '360-370' },
+                    { grade: 'B+', range: '350-360' },
+                    { grade: 'B', range: '330-350' },
+                    { grade: 'B-', range: '320-330' },
+                    { grade: 'C+', range: '310-320' },
+                    { grade: 'C', range: '290-310' },
+                    { grade: 'C-', range: '280-290' },
+                    { grade: 'D', range: '240-280' },
+                    { grade: 'F', range: '0-240' }
+                ];
+                console.log('Setting standard bins:', standardBins);
+                setBins(standardBins);
                 
                 // Process grading breakdown from spreadsheet
                 const assignmentPoints = res.data.assignment_points || {};
                 if (Object.keys(assignmentPoints).length > 0) {
-                    // Convert assignment_points object to array of rows
-                    // Preserve the order from the spreadsheet (as stored in Redis)
-                    const breakdownRows = Object.entries(assignmentPoints)
-                        .map(([assignment, points]) => ({ assignment, points }));
-                    // Note: Order is preserved from spreadsheet, no sorting needed
-                    setGradingRows(breakdownRows);
+                    // Check if we have individual labs (Lab0, Lab1, etc.)
+                    const labPattern = /^Lab\d+$/i; // Matches Lab0, Lab1, Lab2, etc.
+                    const hasIndividualLabs = Object.keys(assignmentPoints).some(key => labPattern.test(key));
+                    
+                    if (hasIndividualLabs) {
+                        // Calculate total labs points
+                        let labsTotal = 0;
+                        Object.entries(assignmentPoints).forEach(([assignment, points]) => {
+                            if (labPattern.test(assignment)) {
+                                labsTotal += Number(points) || 0;
+                            }
+                        });
+                        
+                        // Use standard format with calculated labs total
+                        console.log(`Individual labs detected (total: ${labsTotal}), using standard format`);
+                        const standardRows = [
+                            { assignment: 'Quest', points: 25 },
+                            { assignment: 'Midterm', points: 50 },
+                            { assignment: 'Postterm', points: 75 },
+                            { assignment: 'Project 1: Wordle™-lite', points: 15 },
+                            { assignment: 'Project 2: Spelling-Bee', points: 25 },
+                            { assignment: 'Project 3: 2048', points: 35 },
+                            { assignment: 'Project 4: Explore', points: 20 },
+                            { assignment: 'Final Project', points: 60 },
+                            { assignment: 'Labs', points: 80 },
+                            { assignment: 'Attendance / Participation', points: 15 }
+                        ];
+                        setGradingRows(standardRows);
+                    } else {
+                        // Use the data as-is if it's already in the correct format
+                        const breakdownRows = Object.entries(assignmentPoints)
+                            .map(([assignment, points]) => ({ assignment, points }));
+                        setGradingRows(breakdownRows);
+                    }
                 } else {
                     // Fallback to hardcoded values if no data from spreadsheet
                     const fallbackRows = [
@@ -191,7 +178,7 @@ export default function Buckets() {
                     >
                         <BinTable title='Grading Breakdown' col1='Component' col2='Points' rows={gradingRows} keys={['assignment', 'points']} />
                         <BinTable 
-                            title='boyyyyy' 
+                            title='Buckets' 
                             col1='Letter Grade' 
                             col2='Range' 
                             rows={binRows} 

@@ -25,6 +25,13 @@ logs:
 	@echo
 	@docker compose logs -f
 
+dev-logs:
+	@echo "ensure your dev stack is running to view logs:"
+	@echo
+	@docker ps
+	@echo
+	@docker compose -f docker-compose.dev.yml logs -f
+
 clean-containers:
 	@docker compose down
 	@for container in `docker ps -aq` ; do \

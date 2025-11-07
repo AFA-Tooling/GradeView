@@ -8,6 +8,7 @@ import './css/app.css';
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom';
 import PrivateRoutes from './components/privateRoutes';
 import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 import Home from './views/home';
 import Login from './views/login';
 import Buckets from './views/buckets';
@@ -39,11 +40,11 @@ export default function App() {
 		<ThemeProvider theme={theme}>
 			<StudentSelectionWrapper>
 				<div className="app">
-					<div className="content">
-						<BrowserRouter>
-							<div className="nav">
-								<NavBar />
-							</div>
+					<BrowserRouter>
+						<div className="nav">
+							<NavBar />
+						</div>
+						<div className="content">
 							<Routes>
 								<Route exact path='/login' element={localStorage.getItem('token') ? <Navigate to='/' /> : <Login />} />
 								<Route exact path='/buckets' element={<Buckets />} />
@@ -55,8 +56,9 @@ export default function App() {
 								<Route exact path='/clientError' element={<HTTPError errorCode={400} />} />
 								<Route exact path='*' element={<HTTPError errorCode={404} />} />
 							</Routes>
-						</BrowserRouter>
-					</div>
+						</div>
+						<Footer />
+					</BrowserRouter>
 				</div>
 			</StudentSelectionWrapper>
 		</ThemeProvider>

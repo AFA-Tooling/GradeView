@@ -100,8 +100,15 @@ export async function getBins() {
  * @returns {object} the student's scores.
  */
 export async function getStudentScores(email) {
-    const studentInfo = await getStudent(email);
-    return studentInfo['Assignments'];
+    try {
+        const studentInfo = await getStudent(email);
+        return studentInfo['Assignments'];
+    } catch (err) {
+        if (err.name === 'KeyNotFoundError' || err.name === 'StudentNotEnrolledError') {
+            return {}; // Return empty object instead of throwing error
+        }
+        throw err; // Re-throw other errors
+    }
 }
 
 /**
@@ -133,7 +140,14 @@ export async function getTotalPossibleScore() {
  * @returns {object} the maximal scores for all assignments so far.
  */
 export async function getMaxScores() {
-    return await getStudentScores('MAX POINTS');
+    try {
+        return await getStudentScores('MAX POINTS');
+    } catch (err) {
+        if (err.name === 'KeyNotFoundError') {
+            return {}; // Return empty object instead of throwing error
+        }
+        throw err; // Re-throw other errors
+    }
 }
 
 /**

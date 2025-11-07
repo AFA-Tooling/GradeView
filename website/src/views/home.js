@@ -38,7 +38,7 @@ function Home() {
     const safeData = (gradeInfo?.data && typeof gradeInfo.data === 'object') ? gradeInfo.data : {};
 
     return (
-        <Box sx={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
+        <Box sx={{ display: 'flex', flexFlow: 'column', minHeight: 0 }}>
             {mobileView ?
                 <>
                     {Object.entries(safeData).map(([assignmentName, breakdown]) => (

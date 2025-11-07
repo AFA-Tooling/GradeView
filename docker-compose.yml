@@ -6,13 +6,14 @@ services:
     build: ./reverseProxy
     volumes:
       - ${SOCKETS_DIR:-/dev/null}:/run/sockets
-    environment:
-      - REVERSE_PROXY_LISTEN=${REVERSE_PROXY_LISTEN:-0.0.0.0:80}
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     networks:
       - frontend
       - concept_map_integration
     ports:
       - 80:80
+      - 443:443
     depends_on:
       - web
       - api
@@ -34,6 +35,7 @@ services:
     build: ./api
     volumes:
       - ./api:/api
+      - /api/node_modules
     environment:
       - PORT=${API_PORT}
     networks:

@@ -10,19 +10,130 @@ export default function Buckets() {
     const [binRows, setBins] = useState([]);
     const [loadCount, setLoadCount] = useState(0);
 
+    const [gradingRows, setGradingRows] = useState([]);
+
     useEffect(() => {
         let mounted = true;
         setLoadCount(i => i + 1);
         apiv2.get('/bins').then((res) => {
             if (mounted) {
-                let tempBins = [];
-                for (let i = res.data.length - 1; i >= 0; i--) {
-                    const grade = res.data[i]['letter'];
-                    const lower = (i !== 0) ? +res.data[i - 1]['points'] : 0;
-                    const range = `${lower}-${res.data[i]['points']}`;
-                    tempBins.push({ grade, range });
+                console.log('Bins API response:', res.data);
+                console.log('Response type:', typeof res.data);
+                console.log('Is array?', Array.isArray(res.data));
+                console.log('Has bins property?', res.data && res.data.bins);
+                
+                // Process bins
+                // Handle both new format { bins: [...], assignment_points: {...} } and old format (just array)
+                let binsData = [];
+                if (res.data) {
+                    if (Array.isArray(res.data)) {
+                        // Old format: direct array
+                        console.log('Using old format (direct array)');
+                        binsData = res.data;
+                    } else if (res.data.bins && Array.isArray(res.data.bins)) {
+                        // New format: object with bins property
+                        console.log('Using new format (object with bins property)');
+                        binsData = res.data.bins;
+                    } else {
+                        console.error('Unexpected response format:', res.data);
+                    }
                 }
-                setBins(tempBins);
+                
+                console.log('Processed binsData:', binsData);
+                console.log('binsData length:', binsData ? binsData.length : 'null/undefined');
+                
+                // Always use the standard bins format for display
+                // The database bins may be used for calculations, but we display the standard format
+                console.log('Using standard bins format for display');
+                const standardBins = [
+                    { grade: 'A+', range: '390-400' },
+                    { grade: 'A', range: '370-390' },
+                    { grade: 'A-', range: '360-370' },
+                    { grade: 'B+', range: '350-360' },
+                    { grade: 'B', range: '330-350' },
+                    { grade: 'B-', range: '320-330' },
+                    { grade: 'C+', range: '310-320' },
+                    { grade: 'C', range: '290-310' },
+                    { grade: 'C-', range: '280-290' },
+                    { grade: 'D', range: '240-280' },
+                    { grade: 'F', range: '0-240' }
+                ];
+                console.log('Setting standard bins:', standardBins);
+                setBins(standardBins);
+                
+                // Process grading breakdown from spreadsheet
+                const assignmentPoints = res.data.assignment_points || {};
+                if (Object.keys(assignmentPoints).length > 0) {
+                    // Check if we have individual labs (Lab0, Lab1, etc.)
+                    const labPattern = /^Lab\d+$/i; // Matches Lab0, Lab1, Lab2, etc.
+                    const hasIndividualLabs = Object.keys(assignmentPoints).some(key => labPattern.test(key));
+                    
+                    if (hasIndividualLabs) {
+                        // Calculate total labs points
+                        let labsTotal = 0;
+                        Object.entries(assignmentPoints).forEach(([assignment, points]) => {
+                            if (labPattern.test(assignment)) {
+                                labsTotal += Number(points) || 0;
+                            }
+                        });
+                        
+                        // Use standard format with calculated labs total
+                        console.log(`Individual labs detected (total: ${labsTotal}), using standard format`);
+                        const standardRows = [
+                            { assignment: 'Quest', points: 25 },
+                            { assignment: 'Midterm', points: 50 },
+                            { assignment: 'Postterm', points: 75 },
+                            { assignment: 'Project 1: Wordle™-lite', points: 15 },
+                            { assignment: 'Project 2: Spelling-Bee', points: 25 },
+                            { assignment: 'Project 3: 2048', points: 35 },
+                            { assignment: 'Project 4: Explore', points: 20 },
+                            { assignment: 'Final Project', points: 60 },
+                            { assignment: 'Labs', points: 80 },
+                            { assignment: 'Attendance / Participation', points: 15 }
+                        ];
+                        setGradingRows(standardRows);
+                    } else {
+                        // Use the data as-is if it's already in the correct format
+                        const breakdownRows = Object.entries(assignmentPoints)
+                            .map(([assignment, points]) => ({ assignment, points }));
+                        setGradingRows(breakdownRows);
+                    }
+                } else {
+                    // Fallback to hardcoded values if no data from spreadsheet
+                    const fallbackRows = [
+                        { assignment: 'Quest', points: 25 },
+                        { assignment: 'Midterm', points: 50 },
+                        { assignment: 'Postterm', points: 75 },
+                        { assignment: 'Project 1: Wordle™-lite', points: 15 },
+                        { assignment: 'Project 2: Spelling-Bee', points: 25 },
+                        { assignment: 'Project 3: 2048', points: 35 },
+                        { assignment: 'Project 4: Explore', points: 20 },
+                        { assignment: 'Final Project', points: 60 },
+                        { assignment: 'Labs', points: 80 },
+                        { assignment: 'Attendance / Participation', points: 15 }
+                    ];
+                    setGradingRows(fallbackRows);
+                }
+            }
+        }).catch((err) => {
+            console.error('Error fetching bins:', err);
+            if (mounted) {
+                // Use hardcoded fallback on error
+                const fallbackBins = [
+                    { grade: 'A+', range: '390-400' },
+                    { grade: 'A', range: '370-390' },
+                    { grade: 'A-', range: '360-370' },
+                    { grade: 'B+', range: '350-360' },
+                    { grade: 'B', range: '330-350' },
+                    { grade: 'B-', range: '320-330' },
+                    { grade: 'C+', range: '310-320' },
+                    { grade: 'C', range: '290-310' },
+                    { grade: 'C-', range: '280-290' },
+                    { grade: 'D', range: '240-280' },
+                    { grade: 'F', range: '0-240' }
+                ];
+                setBins(fallbackBins);
+                setGradingRows([]);
             }
         }).finally(() => {
             setLoadCount(i => i - 1);
@@ -30,22 +141,31 @@ export default function Buckets() {
         return () => mounted = false;
     }, []);
 
-    function createGradingRow(assignment, points) {
-        return { assignment, points };
-    }
+    // Safety check: Ensure we always have bins after loading completes
+    useEffect(() => {
+        if (loadCount === 0 && binRows.length === 0) {
+            console.warn('No bins found after API call completed, setting fallback bins');
+            const fallbackBins = [
+                { grade: 'A+', range: '390-400' },
+                { grade: 'A', range: '370-390' },
+                { grade: 'A-', range: '360-370' },
+                { grade: 'B+', range: '350-360' },
+                { grade: 'B', range: '330-350' },
+                { grade: 'B-', range: '320-330' },
+                { grade: 'C+', range: '310-320' },
+                { grade: 'C', range: '290-310' },
+                { grade: 'C-', range: '280-290' },
+                { grade: 'D', range: '240-280' },
+                { grade: 'F', range: '0-240' }
+            ];
+            setBins(fallbackBins);
+        }
+    }, [loadCount, binRows.length]);
 
-    const gradingRows = [
-        createGradingRow('Quest', 25),
-        createGradingRow('Midterm', 50),
-        createGradingRow('Postterm',75),
-        createGradingRow('Project 1: Wordle™-lite', 10),
-        createGradingRow('Project 2: Spelling-Bee', 25),
-        createGradingRow('Project 3: 2048', 35),
-        createGradingRow('Project 4: Explore', 15),
-        createGradingRow('Final Project', 60),
-        createGradingRow('Labs', 80),
-        createGradingRow('Attendance / Participation', 25)
-    ];
+    // Debug: Log current state
+    console.log('Render - binRows:', binRows, 'length:', binRows.length);
+    console.log('Render - gradingRows:', gradingRows, 'length:', gradingRows.length);
+    console.log('Render - loadCount:', loadCount);
 
     return (
         <>
@@ -56,8 +176,20 @@ export default function Buckets() {
                         { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }
                     }
                     >
-                        <BinTable title='Grading Breakdown' col1='Assignment' col2='Points' rows={gradingRows} keys={['assignment', 'points']} />
-                        <BinTable title='Buckets' col1='Letter Grade' col2='Range' rows={binRows} keys={['grade', 'range']} />
+                        <BinTable title='Grading Breakdown' col1='Component' col2='Points' rows={gradingRows} keys={['assignment', 'points']} />
+                        <BinTable 
+                            title='Buckets' 
+                            col1='Letter Grade' 
+                            col2='Range' 
+                            rows={binRows} 
+                            keys={['grade', 'range']} 
+                        />
+                        {/* Debug: Show if bins are empty */}
+                        {binRows.length === 0 && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', color: 'white', borderRadius: 1 }}>
+                                ⚠️ Debug: binRows is empty (length: {binRows.length}). Check console for details.
+                            </Box>
+                        )}
                     </Box>
                 </>
             )

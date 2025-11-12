@@ -11,10 +11,20 @@
   height: 100%;
 }
 
-/* Make all node groups clickable */
+/* Enable smooth transitions for all SVG groups */
+.concept-map-container svg g {
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Make all node groups clickable with smooth animations */
 g.node {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Ensure all child elements of nodes also animate */
+g.node > * {
+  transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
 /* Hover effect for clickable nodes */
@@ -90,6 +100,7 @@ path.path {
   stroke-width: 2px;
   stroke-linecap: round;
   fill: none;
+  transition: d 0.4s ease, stroke 0.4s ease, opacity 0.4s ease;
 }
 
 /* Highlighted path style for "taught" concepts */
@@ -97,4 +108,5 @@ path.path.taught {
   stroke: #8fbc8f !important;
   stroke-width: 2.5px;
   stroke-linecap: round;
+  transition: d 0.4s ease, stroke 0.4s ease, opacity 0.4s ease;
 }

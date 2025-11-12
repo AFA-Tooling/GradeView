@@ -211,7 +211,8 @@ function annotateTreeWithMastery(nodes, masteryMap) {
                 const totalMastery = childrenWithMastery.reduce((sum, child) => 
                     sum + (child.data.student_mastery || 0), 0
                 );
-                const averageMastery = Math.round(totalMastery / childrenWithMastery.length);
+                // Use Math.floor to match old Python behavior (// operator = floor division)
+                const averageMastery = Math.floor(totalMastery / childrenWithMastery.length);
                 node.data = { ...node.data, student_mastery: averageMastery };
             }
             
@@ -240,7 +241,7 @@ function annotateTreeWithMastery(nodes, masteryMap) {
             const totalMastery = childrenWithMastery.reduce((sum, child) => 
                 sum + (child.data.student_mastery || 0), 0
             );
-            const averageMastery = Math.round(totalMastery / childrenWithMastery.length);
+            const averageMastery = Math.floor(totalMastery / childrenWithMastery.length);
             result.data = { ...result.data, student_mastery: averageMastery };
         }
         

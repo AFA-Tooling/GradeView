@@ -27,8 +27,20 @@ export default function ConceptMapTree({
     const safeChildren = Array.isArray(outlineData.nodes.children)
       ? outlineData.nodes.children
       : [];
+    
+    // Use API's calculated root mastery (average of direct children, consistent with other parent nodes)
+    // API calculates this in concept-structure endpoint using average for all parent nodes
+    const rootMastery = outlineData.nodes?.data?.student_mastery ?? 0;
+    
     return {
       name: outlineData.name || 'Concept Map',
+      data: {
+        student_mastery: rootMastery,
+        isRoot: true,
+      },
+      attributes: {
+        student_mastery: rootMastery,
+      },
       children: safeChildren.map(transformNode),
     };
   }, [outlineData]);
@@ -104,11 +116,12 @@ export default function ConceptMapTree({
   return (
     <div ref={containerRef} className="concept-map-container">
       <Tree
+        key={JSON.stringify(treeData).slice(0, 100)}
         data={treeData}
         orientation="horizontal"
         translate={translate}
         nodeSize={nodeSize}
-        separation={{ siblings: 0.5, nonSiblings: 1.5 }}
+        separation={{ siblings: 0.5, nonSiblings: 0.5 }}
         pathClassFunc={pathClassFunc}
         collapsible
         draggable
@@ -117,6 +130,10 @@ export default function ConceptMapTree({
         zoom={zoom}
         minZoom={0.1}
         maxZoom={2}
+        transitionDuration={400}
+        shouldCollapseNeighborNodes={false}
+        initialDepth={Infinity}
+        enableLegacyTransitions={true}
         renderCustomNodeElement={props => {
           console.log('=== ALL NODES DEBUG ===', {
             nodeName: props.nodeDatum.name,

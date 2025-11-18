@@ -1,30 +1,12 @@
-# HTTP server - redirect to HTTPS
+# HTTP server
 server {
     listen 80;
-    server_name gradeview.eecs.berkeley.edu;
+    server_name ${NGINX_SERVER_NAME:-gradeview.eecs.berkeley.edu} _;
     
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
     
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-# HTTPS server
-server {
-    listen 443 ssl http2;
-    server_name gradeview.eecs.berkeley.edu;
-
-    ssl_certificate /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/privkey.pem;
-    
-    # SSL configuration
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
     location / {
         proxy_pass http://gradeview-web:3000;
         proxy_set_header Host $host;
@@ -54,3 +36,46 @@ server {
         root   /usr/share/nginx/html;
     }
 }
+
+# HTTPS server - only enabled in production when SSL certificates are available
+# Uncomment and configure for production use
+# server {
+#     listen 443 ssl http2;
+#     server_name gradeview.eecs.berkeley.edu;
+#
+#     ssl_certificate /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/gradeview.eecs.berkeley.edu/privkey.pem;
+#     
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#     ssl_prefer_server_ciphers on;
+#
+#     location / {
+#         proxy_pass http://gradeview-web:3000;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location /api {
+#         proxy_pass http://gradeview-api:8000;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location /progress {
+#         proxy_pass http://dtgui-progress-report:8080/;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#     
+#     error_page   500 502 503 504  /50x.html;
+#     location = /50x.html {
+#         root   /usr/share/nginx/html;
+#     }
+# }

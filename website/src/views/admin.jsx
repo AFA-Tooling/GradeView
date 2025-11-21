@@ -445,12 +445,7 @@ export default function Admin() {
                 <Typography variant="h6" gutterBottom>
                     📧 Email Student List To
                 </Typography>
-                
-                {mailResult && (
-                    <Alert severity={mailResult.success ? "success" : "error"} sx={{ mb: 2 }}>
-                        {mailResult.message}
-                    </Alert>
-                )}
+              
                 
                 {/* 1. Recipient Email */}
                 <Box mb={2}> 

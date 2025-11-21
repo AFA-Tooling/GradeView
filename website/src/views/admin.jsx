@@ -231,13 +231,10 @@ export default function Admin() {
       const assignmentName = selected.name;
       const score = scoreSelected;
       
-      // 1. 格式化学生列表为纯文本
       const studentListText = studentsByScore
           .map(stu => `- ${stu.name} (${stu.email})`)
           .join('\n');
 
-      // 2. 构造邮件正文
-      // 使用 mailBody（可选的用户输入前缀）和格式化的数据
       const emailBodyContent = `${mailBody ? mailBody + '\n\n' : ''}` + 
                               `---\n` +
                               `Assignment: ${assignmentName}\n` +
@@ -245,30 +242,19 @@ export default function Admin() {
                               `---\n\n` +
                               `Students who achieved this score:\n${studentListText}`;
 
-      // 3. 确定收件人和主题
       const recipient = mailRecipient || '';
       const subject = mailSubject || `Score List for ${assignmentName}`;
 
-      // 4. 编码数据以确保在 URL 中安全传递
       const mailto = `mailto:${encodeURIComponent(recipient)}` + 
                     `?subject=${encodeURIComponent(subject)}` + 
                     `&body=${encodeURIComponent(emailBodyContent)}`;
       
       const link = document.createElement('a');
       
-      // 3. 设置 mailto 链接作为 href
       link.href = mailto;
-      
-      // 4. 🌟 关键：设置 target="_blank" 让其在新窗口打开
       link.target = '_blank'; 
-      
-      // 5. 将链接添加到文档中 (必须步骤)
       document.body.appendChild(link);
-      
-      // 6. 模拟点击链接
       link.click();
-      
-      // 7. 清理：从文档中移除临时链接
       document.body.removeChild(link);
   };
 
@@ -503,11 +489,10 @@ export default function Admin() {
                 </Box>
                 
                 <Box mt={2} display="flex" justifyContent="flex-end">
-                  <Button
+                    <Button
                         variant="contained"
                         color="primary"
-                        onClick={handleGenerateMailto} 
-                        // 移除 mailSending 状态，因为它与 mailto 链接无关
+                        onClick={handleGenerateMailto}
                         disabled={!studentsByScore.length}
                         sx={{ ml: 1 }}
                     >

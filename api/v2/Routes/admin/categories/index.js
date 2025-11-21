@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getEntry, getStudents } from '../../../../lib/redisHelper.mjs';
+import { getEntry } from '../../../../lib/redisHelper.mjs';
 
 const router = Router({ mergeParams: true });
 

@@ -63,7 +63,7 @@ router.get('/:section/:assignment/:score', async (req, res) => {
             students: students
         });
     } catch (error) {
-        console.error(`Error fetching students for score ${targetScore} on ${decodedAssignment}:`, error);
+        console.error('Error fetching students for score %s on %s:', targetScore, decodedAssignment, error);
         res.status(500).json({ 
             error: error.message || 'Failed to fetch students by score',
             students: []

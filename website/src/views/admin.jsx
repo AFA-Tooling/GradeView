@@ -76,8 +76,7 @@ export default function Admin() {
   const [mailRecipient, setMailRecipient] = useState(''); // Email address to send the list to
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
-  const [mailSending, setMailSending] = useState(false);
-  const [mailResult, setMailResult] = useState(null); // { success: boolean, message: string }
+  const [mailSending] = useState(false);
   const handleSort = col => {
     if (sortBy === col) setSortAsc(!sortAsc);
     else {

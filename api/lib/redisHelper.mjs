@@ -170,3 +170,153 @@ export async function getStudents() {
     await client.quit();
     return students;
 }
+
+
+
+/**
+ * Gets the average score for a specific assignment across all students.
+ * @param {string} section - The category of the assignment (e.g., "Projects", "Labs").
+ * @param {string} assignmentName - The name of the assignment.
+ * @returns {number|null} The average score, or null if no valid scores are found.
+ */
+export async function getAverageAssignmentScore(section, assignmentName) {
+    const students = await getStudents();
+    let totalScore = 0;
+    let count = 0;
+
+    const scores = await Promise.all(students.map(async ([, email]) => {
+        const student = await getStudentScores(email);
+        const score = student?.[section]?.[assignmentName];
+        return (score != null && score !== "" && !isNaN(score)) ? +score : null;
+    }));
+
+    for (const score of scores) {
+        if (score !== null) {
+            totalScore += score;
+            count++;
+        }
+    }
+
+    return count > 0 ? totalScore / count : null;
+}
+
+/**
+ * Gets the maximum score for a specific assignment across all students.
+ * @param {string} section - The category of the assignment.
+ * @param {string} assignmentName - The name of the assignment.
+ * @returns {number|null} The highest score found, or null if no scores are found.
+ */
+export async function getMaxAssignmentScore(section, assignmentName) {
+    const students = await getStudents();
+
+    const scores = await Promise.all(students.map(async ([, email]) => {
+        const student = await getStudentScores(email);
+        const score = student?.[section]?.[assignmentName];
+        return (score != null && score !== "" && !isNaN(score)) ? +score : null;
+    }));
+
+    const valid = scores.filter(score => score !== null);
+    return valid.length > 0 ? Math.max(...valid) : null;
+}
+
+/**
+ * Gets the minimum (non-N/A) score for a specific assignment.
+ * @param {string} section - The category of the assignment.
+ * @param {string} assignmentName - The name of the assignment.
+ * @returns {number|null} The lowest valid score, or null if no valid scores found.
+ */
+export async function getMinAssignmentScore(section, assignmentName) {
+    const students = await getStudents();
+
+    const scores = await Promise.all(students.map(async ([, email]) => {
+        const student = await getStudentScores(email);
+        const score = student?.[section]?.[assignmentName];
+        return (score != null && score !== "" && !isNaN(score)) ? +score : null;
+    }));
+
+    const validScores = scores.filter(score => score !== null);
+    return validScores.length > 0 ? Math.min(...validScores) : null;
+}
+
+/**
+ * Gets the top K students by score for a specific assignment.
+ * @param {string} section - The category of the assignment.
+ * @param {string} assignmentName - The name of the assignment.
+ * @param {number} k - The number of top students to return.
+ * @returns {Array<object>} Array of student objects { name, email, score }.
+ */
+export async function getTopKAssignmentScores(section, assignmentName, k) {
+    const students = await getStudents();
+
+    const scored = await Promise.all(students.map(async ([name, email]) => {
+        const student = await getStudentScores(email);
+        const score = student?.[section]?.[assignmentName];
+        return (score != null && score !== "" && !isNaN(score)) ?
+            { name, email, score: +score } : null;
+    }));
+
+    return scored
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, k);
+}
+
+/**
+ * Gets the top K students by total score across all assignments.
+ * @param {number} k - The number of top students to return.
+ * @returns {Array<object>} Array of student objects { name, email, total }.
+ */
+export async function getTopKTotalScores(k) {
+    const students = await getStudents();
+
+    const totals = await Promise.all(students.map(async ([name, email]) => {
+        const scores = await getStudentScores(email);
+        let total = 0;
+
+        for (const category of Object.values(scores)) {
+            for (const score of Object.values(category)) {
+                if (score != null && score !== "" && !isNaN(score)) {
+                    total += +score;
+                }
+            }
+        }
+
+        return { name, email, total };
+    }));
+
+    return totals
+        .sort((a, b) => b.total - a.total)
+        .slice(0, k);
+}
+
+
+/**
+ * Gets a list of students who achieved a specific score on a specific assignment.
+ * @param {string} section - The category of the assignment (e.g., "Quest", "Labs").
+ * @param {string} assignmentName - The name of the assignment (e.g., "Quest 1", "Lab 2").
+ * @param {number|string} targetScore - The score to filter by.
+ * @returns {Promise<Array<object>>} Array of student objects { name, email, score }.
+ */
+export async function getStudentsByAssignmentScore(section, assignmentName, targetScore) {
+    const students = await getStudents(); // List of [legalName, email]
+    const numericTargetScore = +targetScore; // Ensure comparison is numeric
+    console.log(`Looking for students with score: ${numericTargetScore}`);
+    const studentsWithScore = await Promise.all(students.map(async ([name, email]) => {
+        const studentScores = await getStudentScores(email);
+        console.log(`Student ${name} (${email}) scores:`, studentScores);
+        // Safely access the score
+        const rawScore = studentScores?.[section]?.[assignmentName];
+        console.log(`Score for ${section} - ${assignmentName}:`, rawScore);
+        // Convert to number for comparison, handle null/empty strings gracefully
+        const score = (rawScore != null && rawScore !== "" && !isNaN(rawScore)) ? +rawScore : null;
+
+        // Check if the score matches the target score
+        if (score !== null && score === numericTargetScore) {
+            return { name, email, score };
+        }
+        return null;
+    }));
+
+    // Filter out students who didn't match the score or had no score
+    return studentsWithScore.filter(Boolean);
+}

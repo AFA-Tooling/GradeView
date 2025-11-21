@@ -122,14 +122,12 @@ export default function Admin() {
     setStatsError(null);
 
     const { section, name } = selected;
-    console.log('Fetching stats for', section, name);
     Promise.all([
       apiv2.get(`/admin/stats/${encodeURIComponent(section)}/${encodeURIComponent(name)}`),
       apiv2.get(`/admin/distribution/${encodeURIComponent(section)}/${encodeURIComponent(name)}`)
     ])
       .then(([statsRes, distRes]) => {
         setStats(statsRes.data);
-        console.log('Distribution data:', distRes.data);
         setDistribution(distRes.data);
       })
       .catch(err => setStatsError(err.message || 'Failed to load stats'))
@@ -285,7 +283,6 @@ export default function Admin() {
     const { section, name } = selected; // The currently selected assignment
     const score = scoreSelected;
 
-    console.log(`Fetching students for ${section}/${name} with score ${score}`);
     apiv2.get(`/admin/studentScores/${encodeURIComponent(section)}/${encodeURIComponent(name)}/${score}`)
       .then(res => {
         // Assume API returns [{name, email, score}]

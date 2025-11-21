@@ -300,13 +300,10 @@ export async function getTopKTotalScores(k) {
 export async function getStudentsByAssignmentScore(section, assignmentName, targetScore) {
     const students = await getStudents(); // List of [legalName, email]
     const numericTargetScore = +targetScore; // Ensure comparison is numeric
-    console.log(`Looking for students with score: ${numericTargetScore}`);
     const studentsWithScore = await Promise.all(students.map(async ([name, email]) => {
         const studentScores = await getStudentScores(email);
-        console.log(`Student ${name} (${email}) scores:`, studentScores);
         // Safely access the score
         const rawScore = studentScores?.[section]?.[assignmentName];
-        console.log(`Score for ${section} - ${assignmentName}:`, rawScore);
         // Convert to number for comparison, handle null/empty strings gracefully
         const score = (rawScore != null && rawScore !== "" && !isNaN(rawScore)) ? +rawScore : null;
 

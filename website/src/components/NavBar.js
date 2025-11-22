@@ -160,6 +160,9 @@ export default function ButtonAppBar() {
                                 <NavBarItem href='/conceptmap'>
                                     Concept Map
                                 </NavBarItem>
+                                {isAdmin && (
+                                    <NavBarItem href='/admin'>Admin</NavBarItem>
+                                )}
                             </>
                         )}
                     </Box>

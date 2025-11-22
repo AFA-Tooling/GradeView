@@ -29,7 +29,6 @@ router.get('/:section/:name', async (req, res) => {
         const scores = rawScores.filter(score => score !== null);
 
         if (scores.length === 0) {
-            console.log('No valid scores found for', section, name);
             return res.json({
                 average: 0,
                 max: 0,

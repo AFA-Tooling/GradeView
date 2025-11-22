@@ -29,7 +29,7 @@ router.use('/studentScores', StudentScoresRouter);
 
 // Default admin route
 router.get('/', (_, res) => {
-    console.log('Admin route accessed');
+    res.status(200);
     res.json({ message: 'Admin API endpoints available' });
 });
 

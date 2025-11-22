@@ -1,5 +1,5 @@
 // src/views/admin.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Alert,
   Button,
@@ -76,7 +76,6 @@ export default function Admin() {
   const [mailRecipient, setMailRecipient] = useState(''); // Email address to send the list to
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
-  const [mailSending] = useState(false);
   const handleSort = col => {
     if (sortBy === col) setSortAsc(!sortAsc);
     else {
@@ -453,7 +452,7 @@ export default function Admin() {
                         fullWidth
                         label="Recipient Email (e.g., admin@example.com)"
                         value={mailRecipient}
-                        onChange={e => { setMailRecipient(e.target.value); setMailResult(null); }}
+                        onChange={e => { setMailRecipient(e.target.value);}}
                         size="small"
                     />
                 </Box>

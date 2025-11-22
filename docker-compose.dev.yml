@@ -36,12 +36,13 @@ services:
     build: ./api
     volumes:
       - ./api:/api
+      - /api/node_modules
     environment:
       - PORT=${API_PORT}
     networks:
       - frontend
       - db
-    command: npm start
+    command: npm run dev
     restart: unless-stopped
   dtgui-progress-report:
     container_name: dtgui-progress-report

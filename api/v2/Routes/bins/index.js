@@ -7,10 +7,8 @@ const router = Router({ mergeParams: true });
 router.get('/', async (_, res) => {
     try {
         const binsEntry = await getEntry('bins', 1);
-        console.log('Retrieved binsEntry from Redis:', JSON.stringify(binsEntry, null, 2));
         
         if (!binsEntry) {
-            console.warn('No bins entry found in Redis');
             // No bins in Redis – return empty structure to keep UI functional
             return res.status(200).json({
                 bins: [],
@@ -24,12 +22,6 @@ router.get('/', async (_, res) => {
             assignment_points: binsEntry.assignment_points || {},
             total_course_points: binsEntry.total_course_points || 0
         };
-        
-        console.log('Returning bins response:', {
-            binsCount: response.bins.length,
-            assignmentPointsCount: Object.keys(response.assignment_points).length,
-            totalPoints: response.total_course_points
-        });
         
         // Return both bins and assignment_points for the grading breakdown
         return res.status(200).json(response);

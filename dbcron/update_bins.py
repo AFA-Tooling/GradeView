@@ -55,8 +55,6 @@ def update_bins():
             grades_col = int(os.getenv("BINS_GRADES_COL", "1"))  # Column B
             
             print(f"Reading bins from row {start_row} to {end_row}")
-            print(f"Expected format: Points in column {chr(65 + points_col)} (left), Letter grades in column {chr(65 + grades_col)} (right)")
-            print(f"Expected order: Ascending (F at top, A+ at bottom)")
             
             # VALIDATION: Check bins page structure
             print("\n" + "="*60)
@@ -231,20 +229,7 @@ def update_bins():
                         print("\n  VALIDATION WARNINGS:")
                         for warning in warnings:
                             print(f"    {warning}")
-                        print("\n  To fix, update the spreadsheet Constants sheet:")
-                        if c_plus_bin['points'] != 320:
-                            print(f"    - C+ threshold should be 320 (currently {c_plus_bin['points']})")
-                        if c_bin['points'] != 310:
-                            print(f"    - C threshold should be 310 (currently {c_bin['points']})")
-                        if c_minus_bin['points'] != 290:
-                            print(f"    - C- threshold should be 290 (currently {c_minus_bin['points']})")
-                        if d_bin and d_bin['points'] != 280:
-                            print(f"    - D threshold should be 280 (currently {d_bin['points']}) to make C- range 280-290")
-                        if d_bin:
-                            # Check if F threshold is correct for D range 240-280
-                            f_bin = next((b for b in grade_bins if b['letter'] == 'F'), None)
-                            if f_bin and f_bin['points'] != 240:
-                                print(f"    - F threshold should be 240 (currently {f_bin['points']}) to make D range 240-280")
+                        # Validation warnings are logged above, no need to repeat threshold details
                     else:
                         print("  ✅ All C grade ranges are correct!")
                 else:
@@ -280,9 +265,6 @@ def update_bins():
             # This should contain the high-level grading breakdown (Quest, Midterm, Projects, Labs, etc.)
             assignment_start_row = int(os.getenv("ASSIGNMENT_POINTS_START_ROW", "16"))
             assignment_end_row = int(os.getenv("ASSIGNMENT_POINTS_END_ROW", "50"))
-            print(f"\nReading assignment points from rows {assignment_start_row}-{assignment_end_row}...")
-            print(f"Expected format: Column A = Assignment name, Column B = Points")
-            print(f"This should contain the GRADING BREAKDOWN (Quest, Midterm, Projects, Labs, etc.)")
             
             for row in range(assignment_start_row, assignment_end_row + 1):
                 row_values = constants_sheet.row_values(row)
@@ -295,21 +277,8 @@ def update_bins():
                         continue
             
             if assignment_points:
-                print(f"\n✓ Found {len(assignment_points)} assignment point values")
-                print("\n" + "="*60)
-                print("GRADING BREAKDOWN (Assignment Points)")
-                print("="*60)
-                print("This is what will be displayed in the 'Grading Breakdown' table on the website.")
-                print("If this doesn't match what you expect, update the Constants sheet rows 16-50.")
-                print("Format: Column A = Assignment name, Column B = Points")
-                print("-"*60)
-                total_points = 0
-                for assignment, points in sorted(assignment_points.items()):
-                    print(f"  {assignment:40s}: {points:5d} points")
-                    total_points += points
-                print("-"*60)
-                print(f"{'Total Course Points':40s}: {total_points:5d} points")
-                print("="*60 + "\n")
+                total_points = sum(assignment_points.values())
+                print(f"\n✓ Found {len(assignment_points)} assignment point values (Total: {total_points} points)")
                 
                 # Validate if this looks like the expected grading breakdown
                 expected_assignments = ['Quest', 'Midterm', 'Postterm', 'Project', 'Labs', 'Attendance', 'Participation']
@@ -318,20 +287,9 @@ def update_bins():
                     for assignment in assignment_points.keys()
                 )
                 if not found_expected and len(assignment_points) > 10:
-                    print("⚠️  WARNING: The grading breakdown appears to contain individual assignments")
-                    print("   (e.g., Lab0, Lab1, etc.) rather than high-level categories.")
-                    print("   Consider grouping these into categories like:")
-                    print("   - Quest: 25 points")
-                    print("   - Midterm: 50 points")
-                    print("   - Postterm: 75 points")
-                    print("   - Labs: 80 points (sum of all labs)")
-                    print("   - Projects: [individual project points]")
-                    print("   - Attendance / Participation: 15 points")
-                    print()
+                    print("⚠️  WARNING: Grading breakdown contains many individual assignments. Consider grouping into categories.")
             else:
                 print("⚠️  No assignment points found")
-                print("   To add grading breakdown, put assignment names in Column A and")
-                print(f"   points in Column B of the Constants sheet, starting at row {assignment_start_row}.")
                 
         except Exception as sheet_error:
             print(f"Error reading from Constants sheet: {sheet_error}")

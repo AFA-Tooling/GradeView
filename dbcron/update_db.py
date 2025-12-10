@@ -35,19 +35,12 @@ else:  # If running locally
     redis_client = redis.Redis(host="localhost", port=6379, db=DB, password=REDIS_PW)
 
 def update_redis():
-    print(f"Attempting to open spreadsheet with ID: {SPREADSHEET_ID}")
-    print(f"Looking for sheet/tab named: {SHEETNAME}")
-    
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEETNAME)
-        print("Successfully opened spreadsheet!")
         
         categories = sheet.row_values(CATEGORYROW)[CATEGORYCOL:] #gets the categories from row 2, starting from column C
         concepts = sheet.row_values(CONCEPTSROW)[CONCEPTSCOL:] #gets the concepts from row 1, starting from column C
         max_points = sheet.row_values(MAXPOINTSROW)[MAXPOINTSCOL:] #gets the max points from row 3, starting from column C
-
-        print(f"Found categories: {categories[:3]}...")  # Show first 3 categories
-        print(f"Found concepts: {concepts[:3]}...")      # Show first 3 concepts
 
         category_scores = {}
         for category, concept, points in zip(categories, concepts, max_points):
@@ -58,62 +51,42 @@ def update_redis():
         redis_client.set("Categories", json.dumps(category_scores)) #the one record that holds all of the categories info
 
         # VALIDATION: Check spreadsheet structure
-        print("\n" + "="*60)
-        print("SPREADSHEET STRUCTURE VALIDATION")
-        print("="*60)
-        
-        # Check header row structure
-        header_row = sheet.row_values(1)  # Row 1 is header for get_all_records()
-        print(f"\nHeader row (Row 1): {header_row[:5]}...")
-        
-        # Validate column structure per README requirements
         validation_warnings = []
         validation_errors = []
         
+        # Check header row structure
+        header_row = sheet.row_values(1)  # Row 1 is header for get_all_records()
+        
+        # Validate column structure per README requirements
         # Check: First column should be student name (can be empty header)
         if len(header_row) > 0:
             first_col = header_row[0] if header_row[0] else "(empty)"
             if first_col and first_col != "Legal Name" and first_col.strip() != "":
                 validation_warnings.append(f"First column header is '{first_col}' (expected empty or 'Legal Name')")
-            else:
-                print(f"✓ First column (student name): {first_col}")
         else:
             validation_errors.append("No columns found in header row")
         
         # Check: Second column should be Email
         if len(header_row) > 1:
             second_col = header_row[1] if len(header_row) > 1 else None
-            if second_col == "Email":
-                print(f"✓ Second column (Email): {second_col}")
-            else:
+            if second_col != "Email":
                 validation_errors.append(f"Second column should be 'Email', found: '{second_col}'")
         else:
             validation_errors.append("Second column (Email) not found")
-        
-        # Check assignment metadata rows
-        print(f"\nAssignment metadata rows:")
-        print(f"  Row {CONCEPTSROW} (concepts/titles): {sheet.row_values(CONCEPTSROW)[:5]}...")
-        print(f"  Row {CATEGORYROW} (categories/types): {sheet.row_values(CATEGORYROW)[:5]}...")
-        print(f"  Row {MAXPOINTSROW} (max points): {sheet.row_values(MAXPOINTSROW)[:5]}...")
         
         # Validate max points are numeric
         max_points_numeric = all(
             str(val).replace('.', '').isdigit() or val == '' 
             for val in max_points[:10]  # Check first 10
         )
-        if max_points_numeric:
-            print("✓ Max points row contains numeric values")
-        else:
+        if not max_points_numeric:
             validation_warnings.append("Some values in max points row may not be numeric")
         
         # Check categories and concepts
-        if len(categories) > 0 and len(concepts) > 0:
-            print(f"✓ Found {len(categories)} categories and {len(concepts)} concepts")
-        else:
+        if len(categories) == 0 or len(concepts) == 0:
             validation_warnings.append(f"Found {len(categories)} categories and {len(concepts)} concepts (expected > 0)")
         
         records = sheet.get_all_records()
-        print(f"\n✓ Found {len(records)} student records")
         
         # Determine the name column - try multiple strategies
         # get_all_records() uses the first row as headers, so check what keys we have
@@ -123,9 +96,8 @@ def update_redis():
         
         # Get the available column keys from the first record
         available_keys = list(records[0].keys())
-        print(f"Available columns: {available_keys[:5]}...")  # Show first 5 columns
         
-        # Print validation results
+        # Print validation results (only errors and warnings)
         if validation_errors:
             print("\n" + "="*60)
             print("VALIDATION ERRORS (must be fixed):")
@@ -142,11 +114,6 @@ def update_redis():
                 print(f"  ⚠️  {warning}")
             print("="*60 + "\n")
         
-        if not validation_errors and not validation_warnings:
-            print("\n✓ All spreadsheet structure validations passed!")
-        
-        print("="*60 + "\n")
-        
         name_column_key = None
         
         # Strategy 1: Check if 'Legal Name' exists
@@ -155,7 +122,6 @@ def update_redis():
         # Strategy 2: Check for empty string (common when column A has no header)
         elif '' in available_keys and available_keys[0] == '':
             name_column_key = ''
-            print("Found empty header in first column, assuming it's the name column")
         # Strategy 3: Use the first column as fallback (before Email)
         elif len(available_keys) > 0:
             # Find Email column index
@@ -163,11 +129,9 @@ def update_redis():
             # If Email is in column B (index 1), then column A (index 0) is likely the name
             if email_index == 1:
                 name_column_key = available_keys[0]
-                print(f"Warning: 'Legal Name' column not found. Using first column '{name_column_key}' as name column.")
             else:
                 # Last resort: use first column
                 name_column_key = available_keys[0]
-                print(f"Warning: 'Legal Name' column not found. Using first column '{name_column_key}' as name column.")
         
         if name_column_key is None:
             raise ValueError("Could not determine name column. Please ensure the spreadsheet has a name column in the first column.")
@@ -180,7 +144,6 @@ def update_redis():
                 # Last resort: try to get from first column by index
                 first_col_value = list(record.values())[0] if record else None
                 legal_name = first_col_value or "Unknown"
-                print(f"Warning: Could not extract name for email {email}, using '{legal_name}'")
             
             if email == "CATEGORY":
                 continue
@@ -196,7 +159,7 @@ def update_redis():
 
             redis_client.set(email, json.dumps(users_to_assignments)) #sets key value for user:other data
         
-        print("Successfully updated Redis database!")
+        print(f"✓ Successfully updated Redis database with {len(records)} student records")
         
     except Exception as e:
         print(f"Error: {e}")

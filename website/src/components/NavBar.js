@@ -54,7 +54,11 @@ export default function ButtonAppBar() {
             name: 'Concept Map',
             href: '/conceptmap',
             icon: <AccountTree />,
-        },
+        }, {
+            name: 'Admin',
+            href: '/admin',
+            icon: <AccountTree />,
+        }
     ];
     const [tabs, updateTabs] = useState(tabList.slice(1));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -121,14 +125,20 @@ export default function ButtonAppBar() {
     useEffect(() => {
         let mounted = true;
         if (loggedIn) {
-            // Update user admin status
-            apiv2.get('/isadmin').then((res) => {
-                if (mounted) {
-                    setAdminStatus(res.data.isAdmin);
-                }
-                return () => (mounted = false);
-            });
+            apiv2.get('/isadmin')
+                .then((res) => {
+                    if (mounted) {
+                        setAdminStatus(res.data.isAdmin);
+                    }
+                })
+                .catch((err) => {
+                    if (mounted) {
+                        console.error('Failed to check admin status:', err);
+                        setAdminStatus(false);
+                    }
+                });
         }
+        return () => (mounted = false);
     }, [loggedIn]);
 
     return (

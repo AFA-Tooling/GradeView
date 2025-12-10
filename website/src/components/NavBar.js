@@ -54,11 +54,7 @@ export default function ButtonAppBar() {
             name: 'Concept Map',
             href: '/conceptmap',
             icon: <AccountTree />,
-        }, {
-            name: 'Admin',
-            href: '/admin',
-            icon: <AccountTree />,
-        }
+        },
     ];
     const [tabs, updateTabs] = useState(tabList.slice(1));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -73,8 +69,17 @@ export default function ButtonAppBar() {
     }, [loggedIn]);
 
     function renderMenuItems() {
-        return tabs.map((tab) => (
+        let menuItems = tabs;
+        if (isAdmin) {
+            menuItems = [...tabs, {
+                name: 'Admin',
+                href: '/admin',
+                icon: <AccountTree />,
+            }];
+        }
+        return menuItems.map((tab) => (
             <NavMenuItem
+                key={tab.name}
                 icon={tab.icon}
                 text={tab.name}
                 onClick={() => {
@@ -171,7 +176,9 @@ export default function ButtonAppBar() {
                                     Concept Map
                                 </NavBarItem>
                                 {isAdmin && (
+                                    <>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>
+                                    </>
                                 )}
                             </>
                         )}

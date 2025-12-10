@@ -55,6 +55,7 @@ export default function Admin() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError]     = useState();
   const [distribution, setDistribution] = useState(null);
+  const [maxScore, setMaxScore]         = useState(100); // Max possible score for normalization
 
   // --- STUDENT-SCORES + SORT STATE ---
   const [studentScores, setStudentScores] = useState([]); // [{name,email,scores}]
@@ -146,6 +147,18 @@ export default function Admin() {
 
   // Flattened assignment list (for columns)
   const allAssignments = useMemo(() => assignments, [assignments]);
+
+  // Group assignments by section
+  const assignmentsBySection = useMemo(() => {
+    const grouped = {};
+    assignments.forEach(a => {
+      if (!grouped[a.section]) {
+        grouped[a.section] = [];
+      }
+      grouped[a.section].push(a);
+    });
+    return grouped;
+  }, [assignments]);
 
   /** 5) Compute section totals + overall total per student **/
   const studentWithTotals = useMemo(() => {
@@ -312,19 +325,30 @@ export default function Admin() {
             <Typography variant="h6" textAlign="center" mb={2}>
             Assignments Dashboard
             </Typography>
-            <Grid container spacing={2}>
-            {filtered.map((item, i) => (
-                <Grid key={i} item>
-                <Button
-                    variant="outlined"
-                    sx={{ minWidth: 140, height: 56, fontSize: '1rem' }}
-                    onClick={() => handleAssignClick(item)}
-                >
-                    {item.name}
-                </Button>
+            {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => (
+              <Box key={section} mb={4}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', textTransform: 'uppercase' }}>
+                  {section}
+                </Typography>
+                <Grid container spacing={2}>
+                  {sectionAssignments
+                    .filter(item =>
+                      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((item, i) => (
+                      <Grid key={i} item>
+                        <Button
+                          variant="outlined"
+                          sx={{ minWidth: 140, height: 56, fontSize: '1rem' }}
+                          onClick={() => handleAssignClick(item)}
+                        >
+                          {item.name}
+                        </Button>
+                      </Grid>
+                    ))}
                 </Grid>
+              </Box>
             ))}
-            </Grid>
         </>
         )}
 
@@ -369,6 +393,7 @@ export default function Admin() {
                         dataKey="score"
                         allowDecimals={false}
                         label={{ value: 'Score', position: 'insideBottomRight', offset: -5 }}
+                        domain={[0, distribution.maxScore]}
                         />
                         <YAxis
                         allowDecimals={false}

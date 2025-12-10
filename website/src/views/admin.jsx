@@ -270,10 +270,12 @@ export default function Admin() {
   };
 
   const handleScoreClick = (data, index) => {
-    // 'data' here is the data point clicked: {score: N, count: M}
-    if (!selected) return; // Should not happen if dialog is open
+    // 'data' here is the bar data clicked: {range: "50-74", count: N, students: [...], ...}
+    if (!selected || !data.students) return;
 
-    setScoreSelected(data.score);
+    // Data already has students from distribution - use directly!
+    setStudentsByScore(data.students);
+    setScoreSelected(data.range);
     setScoreDetailOpen(true);
   };
 
@@ -284,7 +286,6 @@ export default function Admin() {
     setStudentsByScore([]); // Clear previous data
     setStudentsByScoreError(null);
   };
-
 
   const handleGenerateMailto = () => {
       if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected == null) {
@@ -321,25 +322,6 @@ export default function Admin() {
       link.click();
       document.body.removeChild(link);
   };
-
-  useEffect(() => {
-    if (scoreSelected == null || !selected) {
-      setStudentsByScore([]);
-      return;
-    }
-    setStudentsByScoreLoading(true);
-    setStudentsByScoreError(null);
-    const { section, name } = selected; // The currently selected assignment
-    const score = scoreSelected;
-
-    apiv2.get(`/admin/studentScores/${encodeURIComponent(section)}/${encodeURIComponent(name)}/${score}`)
-      .then(res => {
-        // Assume API returns [{name, email, score}]
-        setStudentsByScore(res.data.students);
-      })
-      .catch(err => setStudentsByScoreError(err.message || 'Failed to load students for this score'))
-      .finally(() => setStudentsByScoreLoading(false));
-  }, [scoreSelected, selected]); // Rerun when scoreSelected or selected assignment changes
 
   return (
     <>
@@ -444,26 +426,16 @@ export default function Admin() {
                 <Box mt={4} height={350}>
                     <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        data={distribution.freq.map((count, index) => {
-                          const binWidth = distribution.binWidth || 1;
-                          const scoreStart = distribution.minScore + (index * binWidth);
-                          const scoreEnd = scoreStart + binWidth - 1;
-                          const label = binWidth === 1 ? scoreStart : `${scoreStart}-${scoreEnd}`;
-                          return {
-                            score: label,
-                            count,
-                            scoreValue: scoreStart
-                          };
-                        })}
+                        data={distribution.distribution || []}
                         margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
-                        dataKey="score"
+                        dataKey="range"
                         angle={-45}
                         textAnchor="end"
                         height={100}
-                        interval={Math.max(0, Math.floor(distribution.freq.length / 10))}
+                        interval={Math.max(0, Math.floor((distribution.distribution?.length || 0) / 10))}
                         label={{ value: 'Score', position: 'bottom', offset: 10 }}
                         />
                         <YAxis
@@ -478,7 +450,7 @@ export default function Admin() {
                         <Bar
                         dataKey="count"
                         onClick={(data) => {
-                          handleScoreClick({ score: data.scoreValue }, 0);
+                          handleScoreClick(data, 0);
                         }}
                         >
                         <LabelList dataKey="count" position="top" />
@@ -512,32 +484,27 @@ export default function Admin() {
 
 
         <DialogContent>
-            {studentsByScoreLoading && <Typography>Loading student list…</Typography>}
-            {studentsByScoreError && <Alert severity="error">{studentsByScoreError}</Alert>}
-
-            {!studentsByScoreLoading && !studentsByScoreError && (
-            <TableContainer component={Paper}>
-                <Table size="small">
-                <TableHead>
-                    <TableRow>
-                    <TableCell><strong>Name</strong></TableCell>
-                    <TableCell><strong>Email</strong></TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {studentsByScore.map((stu, i) => (
-                    <TableRow key={i}>
-                        <TableCell>{stu.name}</TableCell>
-                        <TableCell>{stu.email}</TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
-            </TableContainer>
-            )}
-
-            {!studentsByScoreLoading && !studentsByScore && !studentsByScoreError && (
-            <Typography>No students found with this score.</Typography>
+            {studentsByScore.length === 0 ? (
+                <Typography>No students found with this score.</Typography>
+            ) : (
+                <TableContainer component={Paper}>
+                    <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                        <TableCell><strong>Name</strong></TableCell>
+                        <TableCell><strong>Email</strong></TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {studentsByScore.map((stu, i) => (
+                        <TableRow key={i}>
+                            <TableCell>{stu.name}</TableCell>
+                            <TableCell>{stu.email}</TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </TableContainer>
             )}
 
             <Box mt={4} sx={{ borderTop: 1, borderColor: 'divider', pt: 3 }}>

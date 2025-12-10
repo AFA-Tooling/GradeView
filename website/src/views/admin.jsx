@@ -85,17 +85,60 @@ export default function Admin() {
     }
   };
 
-  /** 1) Load assignment categories **/
+  /** 1) Load assignment categories with max points from grades data **/
   useEffect(() => {
-    apiv2.get('/admin/categories')
+    // First, try to get any student's grades to extract max points
+    apiv2.get('/admin/studentScores')
       .then(res => {
-        const data = res.data;
-        const items = Object.entries(data)
-          .flatMap(([section, obj]) =>
-            Object.keys(obj).map(name => ({ section, name }))
-          );
-        setAssignments(items);
-        setFiltered(items);
+        const students = res.data.students;
+        if (!students || students.length === 0) {
+          // Fallback: no students, just load categories without max points
+          return apiv2.get('/admin/categories')
+            .then(catRes => {
+              const data = catRes.data;
+              const items = Object.entries(data)
+                .flatMap(([section, obj]) =>
+                  Object.keys(obj).map(name => ({ section, name, maxPoints: 0 }))
+                );
+              setAssignments(items);
+              setFiltered(items);
+            });
+        }
+        
+        // Get the first student's email and fetch their grades (which includes max points)
+        const firstStudentEmail = students[0].email;
+        return apiv2.get(`/students/${encodeURIComponent(firstStudentEmail)}/grades`)
+          .then(gradesRes => {
+            const gradesData = gradesRes.data || {};
+            // Extract all assignment names and their max points
+            // grades data structure: { [assignmentName]: { [category]: { student: X, max: Y }, ... }, ... }
+            const maxPointsMap = {};
+            
+            Object.entries(gradesData).forEach(([assignmentName, categoryData]) => {
+              // categoryData is like { [category]: {student: X, max: Y} }
+              Object.entries(categoryData).forEach(([category, scoreObj]) => {
+                if (scoreObj && scoreObj.max) {
+                  maxPointsMap[assignmentName] = scoreObj.max;
+                }
+              });
+            });
+            
+            // Now get categories
+            return apiv2.get('/admin/categories')
+              .then(catRes => {
+                const categoriesData = catRes.data;
+                const items = Object.entries(categoriesData)
+                  .flatMap(([section, obj]) =>
+                    Object.keys(obj).map(name => ({ 
+                      section, 
+                      name,
+                      maxPoints: maxPointsMap[name] || 0
+                    }))
+                  );
+                setAssignments(items);
+                setFiltered(items);
+              });
+          });
       })
       .catch(err => setErrorA(err.message || 'Failed to load assignments'))
       .finally(() => setLoadingA(false));
@@ -148,7 +191,7 @@ export default function Admin() {
   // Flattened assignment list (for columns)
   const allAssignments = useMemo(() => assignments, [assignments]);
 
-  // Group assignments by section
+  // Group assignments by section with max points
   const assignmentsBySection = useMemo(() => {
     const grouped = {};
     assignments.forEach(a => {
@@ -159,6 +202,15 @@ export default function Admin() {
     });
     return grouped;
   }, [assignments]);
+
+  // Calculate max points per section
+  const sectionMaxPoints = useMemo(() => {
+    const maxPoints = {};
+    Object.entries(assignmentsBySection).forEach(([section, sectionAssignments]) => {
+      maxPoints[section] = sectionAssignments.reduce((sum, a) => sum + (a.maxPoints || 0), 0);
+    });
+    return maxPoints;
+  }, [assignmentsBySection]);
 
   /** 5) Compute section totals + overall total per student **/
   const studentWithTotals = useMemo(() => {
@@ -327,9 +379,18 @@ export default function Admin() {
             </Typography>
             {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => (
               <Box key={section} mb={4}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', textTransform: 'uppercase' }}>
-                  {section}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', textTransform: 'uppercase', flex: 1 }}>
+                    {section}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => handleAssignClick({ section, name: `${section} Summary` })}
+                  >
+                    Summary
+                  </Button>
+                </Box>
                 <Grid container spacing={2}>
                   {sectionAssignments
                     .filter(item =>
@@ -380,31 +441,45 @@ export default function Admin() {
                 <strong>Min:</strong> {stats.min ?? 'N/A'}
                 </Typography>
                 {distribution && (
-                <Box mt={4} height={300}>
+                <Box mt={4} height={350}>
                     <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        data={distribution.freq.map((count, index) => ({ 
-                          score: distribution.minScore + index, 
-                          count}))}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        data={distribution.freq.map((count, index) => {
+                          const binWidth = distribution.binWidth || 1;
+                          const scoreStart = distribution.minScore + (index * binWidth);
+                          const scoreEnd = scoreStart + binWidth - 1;
+                          const label = binWidth === 1 ? scoreStart : `${scoreStart}-${scoreEnd}`;
+                          return {
+                            score: label,
+                            count,
+                            scoreValue: scoreStart
+                          };
+                        })}
+                        margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                         dataKey="score"
-                        allowDecimals={false}
-                        label={{ value: 'Score', position: 'insideBottomRight', offset: -5 }}
-                        domain={[0, distribution.maxScore]}
+                        angle={-45}
+                        textAnchor="end"
+                        height={100}
+                        interval={Math.max(0, Math.floor(distribution.freq.length / 10))}
+                        label={{ value: 'Score', position: 'bottom', offset: 10 }}
                         />
                         <YAxis
                         allowDecimals={false}
-                        label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                        label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 10 }}
                         />
-                        <Tooltip />
+                        <Tooltip 
+                        cursor={{ fill: 'rgba(0,0,0,0.1)' }}
+                        formatter={(value) => [`${value}`, 'Count']}
+                        />
 
                         <Bar
                         dataKey="count"
-                        barSize={Math.max(5, Math.floor(400 / distribution.freq.length))}
-                        onClick={handleScoreClick}
+                        onClick={(data) => {
+                          handleScoreClick({ score: data.scoreValue }, 0);
+                        }}
                         >
                         <LabelList dataKey="count" position="top" />
                         </Bar>

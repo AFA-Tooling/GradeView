@@ -12,17 +12,46 @@ router.get('/:section/:name', async (req, res) => {
         const { section, name } = req.params;
         const students = await getStudents();
         
-        const scorePromises = students.map(async student => {
-            const studentId = student[1];
-            const studentScores = await getStudentScores(studentId);
-            const score = studentScores[section] ? studentScores[section][name] : null;
+        let scorePromises;
         
+        // Check if this is a summary request
+        if (name.includes('Summary')) {
+            // Get all assignments in this section and sum their scores
+            scorePromises = students.map(async student => {
+                const studentId = student[1];
+                const studentScores = await getStudentScores(studentId);
+                
+                if (!studentScores[section]) {
+                    return null;
+                }
+                
+                const sectionScores = studentScores[section];
+                let total = 0;
+                let count = 0;
+                
+                Object.values(sectionScores).forEach(score => {
+                    if (score != null && score !== '' && !isNaN(score)) {
+                        total += Number(score);
+                        count++;
+                    }
+                });
+                
+                return count > 0 ? total : null;
+            });
+        } else {
+            // Original logic: get stats for a specific assignment
+            scorePromises = students.map(async student => {
+                const studentId = student[1];
+                const studentScores = await getStudentScores(studentId);
+                const score = studentScores[section] ? studentScores[section][name] : null;
+            
 
-            if (score != null && score !== '') {
-                return Number(score);
-            }
-            return null; 
-        });
+                if (score != null && score !== '') {
+                    return Number(score);
+                }
+                return null; 
+            });
+        }
 
         const rawScores = await Promise.all(scorePromises);
 

@@ -12,22 +12,51 @@ router.get('/:section/:name', async (req, res) => {
         const { section, name } = req.params;
         const students = await getStudents(); 
 
-        const scorePromises = students.map(async student => {
-            const studentId = student[1]; 
-            
-            const studentScores = await getStudentScores(studentId); 
-            
-            // Assuming scores are under section/name and are numbers
-            const score = studentScores[section] ? studentScores[section][name] : null;
-            
-            if (score != null && score !== '' && !isNaN(score)) {
-                // Ensure we are working with integers for binning, 
-                // but keep original value for max/min if needed.
-                // Since scores are typically integers, we convert to Number.
-                return Number(score); 
-            }
-            return null;
-        });
+        let scorePromises;
+        
+        // Check if this is a summary request
+        if (name.includes('Summary')) {
+            // Get sum of all assignments in this section for each student
+            scorePromises = students.map(async student => {
+                const studentId = student[1]; 
+                const studentScores = await getStudentScores(studentId); 
+                
+                if (!studentScores[section]) {
+                    return null;
+                }
+                
+                const sectionScores = studentScores[section];
+                let total = 0;
+                let count = 0;
+                
+                Object.values(sectionScores).forEach(score => {
+                    if (score != null && score !== '' && !isNaN(score)) {
+                        total += Number(score);
+                        count++;
+                    }
+                });
+                
+                return count > 0 ? total : null;
+            });
+        } else {
+            // Original logic: get distribution for a specific assignment
+            scorePromises = students.map(async student => {
+                const studentId = student[1]; 
+                
+                const studentScores = await getStudentScores(studentId); 
+                
+                // Assuming scores are under section/name and are numbers
+                const score = studentScores[section] ? studentScores[section][name] : null;
+                
+                if (score != null && score !== '' && !isNaN(score)) {
+                    // Ensure we are working with integers for binning, 
+                    // but keep original value for max/min if needed.
+                    // Since scores are typically integers, we convert to Number.
+                    return Number(score); 
+                }
+                return null;
+            });
+        }
 
         const rawScores = await Promise.all(scorePromises);
         
@@ -42,33 +71,39 @@ router.get('/:section/:name', async (req, res) => {
         const maxScore = Math.max(...scores);
         const minScore = Math.min(...scores);
         
-        // --- Logic for 1-point buckets ---
-
-        // The number of buckets needed, plus 1 (inclusive range)
+        // --- Logic for binning with max 25 buckets ---
         const range = maxScore - minScore + 1;
+        let numBuckets = range;
+        let binWidth = 1;
         
-        // Initialize frequency array with size 'range', all counts start at 0
-        const freq = Array(range).fill(0); 
-
+        // If range > 25, create bins of equal width
+        if (range > 25) {
+            numBuckets = 25;
+            binWidth = Math.ceil(range / numBuckets);
+        }
+        
+        // Initialize frequency array
+        const freq = Array(numBuckets).fill(0);
+        
         scores.forEach(score => {
-            // Calculate the index relative to the minScore.
-            // A score equal to minScore goes into index 0.
-            const index = score - minScore;
-
-            // This condition is robust because scores are filtered to be between minScore and maxScore.
-            if (index >= 0 && index < range) {
-                freq[index]++;
+            // Calculate which bucket this score falls into
+            let bucketIndex = Math.floor((score - minScore) / binWidth);
+            
+            // Handle edge case where score equals maxScore
+            if (bucketIndex >= numBuckets) {
+                bucketIndex = numBuckets - 1;
             }
+            
+            freq[bucketIndex]++;
         });
         
-        // --- END Logic for 1-point buckets ---
+        // --- END Logic for binning ---
 
         res.json({
-            // freq array now contains counts where freq[i] is the count for score (minScore + i)
             freq,
             minScore,
-            maxScore
-            // Removed: bins, max, min, binWidth
+            maxScore,
+            binWidth  // Include binWidth so frontend knows the bin size
         });
     } catch (error) {
         console.error('Error fetching frequency distribution:', error);

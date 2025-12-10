@@ -43,7 +43,6 @@ async function checkIfTaught(conceptName) {
     try {
         // Get all students
         const students = await getStudents();
-        console.log(`Checking if concept "${conceptName}" has been taught to any of ${students.length} students`);
         
         // Check if any student has any grade for this concept
         for (const [legalName, email] of students) {
@@ -56,17 +55,14 @@ async function checkIfTaught(conceptName) {
                     category[conceptName] > 0
                 );
                 if (hasGrade) {
-                    console.log(`Concept "${conceptName}" has been taught - found grade for student ${email}`);
                     return true;
                 }
             } catch (err) {
                 // Skip this student if we can't get their scores
-                console.log(`Skipping student ${email} due to error:`, err.message);
                 continue;
             }
         }
         
-        console.log(`Concept "${conceptName}" has NOT been taught - no grades found`);
         return false;
     } catch (err) {
         console.error('Error checking if concept is taught:', err);
@@ -90,9 +86,6 @@ async function buildOutline(email) {
         const maxScores = await getMaxScores();
         const studentScores = await getStudentScores(email);
         
-        console.log('buildOutline - maxScores keys:', Object.keys(maxScores));
-        console.log('buildOutline - maxScores structure:', JSON.stringify(maxScores, null, 2));
-        
         // Build tree structure from assignment categories
         const tree = {
             id: 1,
@@ -106,8 +99,6 @@ async function buildOutline(email) {
         
         // Add each assignment category as a child
         for (const [category, assignments] of Object.entries(maxScores)) {
-            console.log(`Adding category: ${category} with ${Object.keys(assignments).length} assignments`);
-            
             // Distribute categories across the first 12 weeks of semester
             const categoryIndex = Object.keys(maxScores).indexOf(category);
             const categoryWeek = Math.min(Math.floor((categoryIndex / totalCategories) * 12) + 1, 12);
@@ -151,8 +142,6 @@ async function buildOutline(email) {
             tree.children.push(categoryNode);
         }
         
-        console.log('buildOutline - final tree children count:', tree.children.length);
-        
         return {
             name: "CS10",
             'start date': ProgressReportData['start date'],
@@ -168,19 +157,12 @@ async function buildOutline(email) {
 
 // Recursively annotate node trees with mastery data and taught status
 function annotateTreeWithMastery(nodes, masteryMap) {
-    console.log('=== MASTERY MAP DEBUG ===', {
-        masteryMapKeys: Object.keys(masteryMap),
-        masteryMapSample: Object.keys(masteryMap).slice(0, 5)
-    });
-    
     const annotated = {
         ...nodes,
         children: nodes.children.map((node) => {
             const annotatedNode = { ...node };
             const key = annotatedNode.name;
-            console.log('Processing node:', key, 'Found in masteryMap:', !!masteryMap[key]);
             if (masteryMap[key]) {
-                console.log('Applying mastery to', key, ':', masteryMap[key]);
                 annotatedNode.data = { ...annotatedNode.data, ...masteryMap[key] };
             }
             if (annotatedNode.children) {

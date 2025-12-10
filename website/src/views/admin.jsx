@@ -213,21 +213,28 @@ export default function Admin() {
     return maxPoints;
   }, [assignmentsBySection]);
 
+  const totalMaxPoints = useMemo(() => {
+    return Object.values(sectionMaxPoints).reduce((sum, v) => sum + v, 0);
+  }, [sectionMaxPoints]);
+
   /** 5) Compute section totals + overall total per student **/
   const studentWithTotals = useMemo(() => {
     return studentScores.map(stu => {
+      // First, flatten the scores from { section: { assignment: score } } to { assignment: score }
+      const flatScores = {};
+      Object.values(stu.scores || {}).forEach(sectionScores => {
+        Object.assign(flatScores, sectionScores);
+      });
+
       const sectionTotals = {};
-      // Dynamically calculate totals for all sections
       Object.keys(assignmentsBySection).forEach(sec => {
         sectionTotals[sec] = allAssignments
           .filter(a => a.section === sec)
-          .reduce((sum, a) => {
-            const raw = stu.scores[sec]?.[a.name];
-            return sum + ((raw != null && raw !== '') ? +raw : 0);
-          }, 0);
+          .reduce((sum, a) => sum + Number(flatScores[a.name] || 0), 0);
       });
+      
       const total = Object.values(sectionTotals).reduce((s, v) => s + v, 0);
-      return { ...stu, sectionTotals, total };
+      return { ...stu, scores: flatScores, sectionTotals, total };
     });
   }, [studentScores, allAssignments, assignmentsBySection]);
 
@@ -243,14 +250,13 @@ export default function Admin() {
         aVal = a.sectionTotals[sortBy];
         bVal = b.sectionTotals[sortBy];
       } else {
-        const sec = allAssignments.find(x => x.name === sortBy)?.section;
-        aVal = +(a.scores[sec]?.[sortBy] ?? 0);
-        bVal = +(b.scores[sec]?.[sortBy] ?? 0);
+        aVal = a.scores[sortBy] ?? 0;
+        bVal = b.scores[sortBy] ?? 0;
       }
       return sortAsc ? aVal - bVal : bVal - aVal;
     });
     return arr;
-  }, [studentWithTotals, sortBy, sortAsc, allAssignments]);
+  }, [studentWithTotals, sortBy, sortAsc]);
 
   // Handlers
   const handleTabChange = (_, newTab) => {
@@ -728,41 +734,53 @@ export default function Admin() {
                 <TableContainer component={Paper}>
                     <Table size="small">
                         <TableHead>
+                            {/* FIRST HEADER ROW */}
                             <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
                                 <TableCell><strong>Student</strong></TableCell>
+                                <TableCell align="center" colSpan={2} sx={{ borderRight: '2px solid #999' }}>
+                                    <strong>Summary</strong>
+                                </TableCell>
                                 
-                                {/* Section Headers with assignments underneath */}
+                                {/* Section Headers */}
                                 {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => {
                                     const visibleInSection = sectionAssignments.filter(a => visibleAssignments[a.name]);
                                     if (visibleInSection.length === 0) return null;
                                     
                                     return (
-                                        <TableCell key={section} colSpan={visibleInSection.length + 1} align="center" sx={{ borderRight: '2px solid #999' }}>
+                                        <TableCell key={section} colSpan={visibleInSection.length + 1} align="center" sx={{ borderLeft: '2px solid #999' }}>
                                             <strong>{section}</strong> (Max: {sectionMaxPoints[section] || 0})
                                         </TableCell>
                                     );
                                 })}
-                                <TableCell align="center" colSpan={2}><strong>Summary</strong></TableCell>
                             </TableRow>
                             
-                            {/* Second header row with assignment names and section totals */}
+                            {/* SECOND HEADER ROW */}
                             <TableRow sx={{ backgroundColor: '#fafafa' }}>
                                 <TableCell />
+                                <TableCell align="center" sx={{ borderRight: '1px solid #ccc' }}>
+                                    <Box display="flex" alignItems="center" justifyContent="center">
+                                        <strong>Total</strong>
+                                        <IconButton size="small" onClick={() => handleSort('total')}>
+                                            {sortBy === 'total' ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>) : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>}
+                                        </IconButton>
+                                    </Box>
+                                </TableCell>
+                                <TableCell align="center" sx={{ borderRight: '2px solid #999' }}>
+                                    <strong>Final %</strong>
+                                </TableCell>
                                 
+                                {/* Section Total + Assignment Sub-headers */}
                                 {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => {
                                     const visibleInSection = sectionAssignments.filter(a => visibleAssignments[a.name]);
                                     if (visibleInSection.length === 0) return null;
                                     
                                     return (
                                         <>
-                                            <TableCell align="center" sx={{ borderRight: '1px solid #ccc' }}>
+                                            <TableCell align="center" sx={{ borderRight: '1px solid #ccc', borderLeft: '2px solid #999' }}>
                                                 <Box display="flex" alignItems="center" justifyContent="center">
                                                     <strong>{section} Total</strong>
                                                     <IconButton size="small" onClick={() => handleSort(section)}>
-                                                        {sortBy === section
-                                                            ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>)
-                                                            : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>
-                                                        }
+                                                        {sortBy === section ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>) : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>}
                                                     </IconButton>
                                                 </Box>
                                             </TableCell>
@@ -771,10 +789,7 @@ export default function Admin() {
                                                     <Box display="flex" alignItems="center" justifyContent="center">
                                                         <strong style={{ fontSize: '11px' }}>{a.name}</strong>
                                                         <IconButton size="small" onClick={() => handleSort(a.name)}>
-                                                            {sortBy === a.name
-                                                                ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>)
-                                                                : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>
-                                                            }
+                                                            {sortBy === a.name ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>) : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>}
                                                         </IconButton>
                                                     </Box>
                                                 </TableCell>
@@ -782,59 +797,47 @@ export default function Admin() {
                                         </>
                                     );
                                 })}
-                                
-                                <TableCell align="center" sx={{ borderRight: '1px solid #ccc' }}>
-                                    <Box display="flex" alignItems="center" justifyContent="center">
-                                        <strong>Total</strong>
-                                        <IconButton size="small" onClick={() => handleSort('total')}>
-                                            {sortBy === 'total'
-                                                ? (sortAsc ? <ArrowUpward fontSize="inherit"/> : <ArrowDownward fontSize="inherit"/>)
-                                                : <ArrowUpward fontSize="inherit" style={{ opacity: 0.3 }}/>
-                                            }
-                                        </IconButton>
-                                    </Box>
-                                </TableCell>
-                                <TableCell align="center">
-                                    <strong>Final %</strong>
-                                </TableCell>
                             </TableRow>
                         </TableHead>
                         
                         <TableBody>
                             {sortedStudents.map(stu => (
                                 <TableRow key={stu.email}>
+                                    {/* Student Info */}
                                     <TableCell>
                                         {stu.name}<br/>
                                         <small>{stu.email}</small>
                                     </TableCell>
                                     
+                                    {/* Summary Scores */}
+                                    <TableCell align="center" sx={{ borderRight: '1px solid #ccc' }}>
+                                        {stu.total.toFixed(2)}
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ borderRight: '2px solid #999' }}>
+                                        {totalMaxPoints > 0 ? ((stu.total / totalMaxPoints) * 100).toFixed(2) : '0.00'}%
+                                    </TableCell>
+                                    
+                                    {/* Section + Assignment Scores */}
                                     {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => {
                                         const visibleInSection = sectionAssignments.filter(a => visibleAssignments[a.name]);
                                         if (visibleInSection.length === 0) return null;
                                         
                                         return (
                                             <>
-                                                <TableCell align="center" sx={{ fontWeight: 'bold', borderRight: '1px solid #ccc' }}>
-                                                    {stu.sectionTotals[section] || 0}
+                                                <TableCell align="center" sx={{ borderRight: '1px solid #ccc', borderLeft: '2px solid #999', fontWeight: 'bold' }}>
+                                                    {stu.sectionTotals[section]?.toFixed(2) || '0.00'}
                                                 </TableCell>
                                                 {visibleInSection.map(a => {
-                                                    const raw = stu.scores[section]?.[a.name];
+                                                    const rawScore = stu.scores[a.name];
                                                     return (
                                                         <TableCell key={a.name} align="center">
-                                                            {raw != null && raw !== '' ? raw : '—'}
+                                                            {(rawScore != null && rawScore !== '') ? Number(rawScore).toFixed(2) : 'N/A'}
                                                         </TableCell>
                                                     );
                                                 })}
                                             </>
                                         );
                                     })}
-                                    
-                                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                                        {stu.total}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        {stu.scores['Exams']?.['Final'] ?? '—'}
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

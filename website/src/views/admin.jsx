@@ -55,7 +55,7 @@ export default function Admin() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError]     = useState();
   const [distribution, setDistribution] = useState(null);
-  const [maxScore, setMaxScore]         = useState(100); // Max possible score for normalization
+  const [maxScore]         = useState(100); // Max possible score for normalization
 
   // --- STUDENT-SCORES + SORT STATE ---
   const [studentScores, setStudentScores] = useState([]); // [{name,email,scores}]

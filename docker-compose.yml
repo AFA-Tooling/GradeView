@@ -38,6 +38,7 @@ services:
       - /api/node_modules
     environment:
       - PORT=${API_PORT}
+      - NODE_ENV=production
     networks:
       - frontend
       - db

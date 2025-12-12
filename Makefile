@@ -13,6 +13,13 @@ dev-up:
 dev-down:
 	@docker compose -f docker-compose.dev.yml down
 
+dev-local:
+	@echo "Starting services locally..."
+	@echo "1. Starting API server..."
+	@cd api && NODE_ENV=development npm run dev &
+	@echo "2. Starting website dev server..."
+	@cd website && REACT_APP_PROXY_SERVER="http://localhost:8000" npm run react
+
 docker:
 	@cd website && npm install && npm run build
 	@docker compose build

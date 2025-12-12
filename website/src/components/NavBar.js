@@ -69,8 +69,17 @@ export default function ButtonAppBar() {
     }, [loggedIn]);
 
     function renderMenuItems() {
-        return tabs.map((tab) => (
+        let menuItems = tabs;
+        if (isAdmin) {
+            menuItems = [...tabs, {
+                name: 'Admin',
+                href: '/admin',
+                icon: <AccountTree />,
+            }];
+        }
+        return menuItems.map((tab) => (
             <NavMenuItem
+                key={tab.name}
                 icon={tab.icon}
                 text={tab.name}
                 onClick={() => {
@@ -121,14 +130,20 @@ export default function ButtonAppBar() {
     useEffect(() => {
         let mounted = true;
         if (loggedIn) {
-            // Update user admin status
-            apiv2.get('/isadmin').then((res) => {
-                if (mounted) {
-                    setAdminStatus(res.data.isAdmin);
-                }
-                return () => (mounted = false);
-            });
+            apiv2.get('/isadmin')
+                .then((res) => {
+                    if (mounted) {
+                        setAdminStatus(res.data.isAdmin);
+                    }
+                })
+                .catch((err) => {
+                    if (mounted) {
+                        console.error('Failed to check admin status:', err);
+                        setAdminStatus(false);
+                    }
+                });
         }
+        return () => (mounted = false);
     }, [loggedIn]);
 
     return (
@@ -161,7 +176,9 @@ export default function ButtonAppBar() {
                                     Concept Map
                                 </NavBarItem>
                                 {isAdmin && (
+                                    <>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>
+                                    </>
                                 )}
                             </>
                         )}

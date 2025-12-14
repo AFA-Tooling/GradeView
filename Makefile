@@ -15,11 +15,38 @@ dev-down:
 
 dev-local:
 	@echo "Starting services locally..."
-	@echo "1. Starting Redis..."
-	@docker-compose up -d redis
-	@echo "2. Starting API server..."
+	@echo "Checking ports..."
+	@if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
+		echo "\n⚠️  Port 8000 is already in use:" ; \
+		lsof -Pi :8000 -sTCP:LISTEN ; \
+		read -p "Kill process on port 8000? [y/N] " -n 1 -r ; \
+		echo ; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]] ; then \
+			lsof -Pi :8000 -sTCP:LISTEN -t | xargs kill -9 ; \
+			echo "✓ Killed process on port 8000" ; \
+		else \
+			echo "Aborted." ; exit 1 ; \
+		fi \
+	fi
+	@if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
+		echo "\n⚠️  Port 3000 is already in use:" ; \
+		lsof -Pi :3000 -sTCP:LISTEN ; \
+		read -p "Kill process on port 3000? [y/N] " -n 1 -r ; \
+		echo ; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]] ; then \
+			lsof -Pi :3000 -sTCP:LISTEN -t | xargs kill -9 ; \
+			echo "✓ Killed process on port 3000" ; \
+		else \
+			echo "Aborted." ; exit 1 ; \
+		fi \
+	fi
+	@echo "1. Starting Redis and dbcron..."
+	@docker-compose up -d redis dbcron
+	@echo "2. Waiting for data to be loaded into Redis..."
+	@sleep 5
+	@echo "3. Starting API server..."
 	@cd api && NODE_ENV=development npm run dev &
-	@echo "3. Starting website dev server..."
+	@echo "4. Starting website dev server..."
 	@cd website && REACT_APP_PROXY_SERVER="http://localhost:8000" npm run react
 
 docker:

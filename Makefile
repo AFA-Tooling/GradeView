@@ -14,32 +14,36 @@ dev-down:
 	@docker compose -f docker-compose.dev.yml down
 
 dev-local:
-	@echo "Starting services locally..."
-	@echo "Checking ports..."
-	@if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
-		echo "\n⚠️  Port 8000 is already in use:" ; \
+	@bash -c '\
+	echo "Starting services locally..."; \
+	echo "Checking ports..."; \
+	if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
+		echo ""; \
+		echo "⚠️  Port 8000 is already in use:"; \
 		lsof -Pi :8000 -sTCP:LISTEN ; \
-		read -p "Kill process on port 8000? [y/N] " -n 1 -r ; \
-		echo ; \
-		if [[ $$REPLY =~ ^[Yy]$$ ]] ; then \
-			lsof -Pi :8000 -sTCP:LISTEN -t | xargs kill -9 ; \
-			echo "✓ Killed process on port 8000" ; \
+		read -p "Kill process on port 8000? [y/N] " -n 1 reply; \
+		echo ""; \
+		if [[ "$$reply" =~ ^[Yy]$$ ]] ; then \
+			lsof -Pi :8000 -sTCP:LISTEN -t | xargs kill -9; \
+			echo "✓ Killed process on port 8000"; \
 		else \
-			echo "Aborted." ; exit 1 ; \
+			echo "Aborted."; exit 1; \
 		fi \
-	fi
-	@if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
-		echo "\n⚠️  Port 3000 is already in use:" ; \
+	fi; \
+	if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
+		echo ""; \
+		echo "⚠️  Port 3000 is already in use:"; \
 		lsof -Pi :3000 -sTCP:LISTEN ; \
-		read -p "Kill process on port 3000? [y/N] " -n 1 -r ; \
-		echo ; \
-		if [[ $$REPLY =~ ^[Yy]$$ ]] ; then \
-			lsof -Pi :3000 -sTCP:LISTEN -t | xargs kill -9 ; \
-			echo "✓ Killed process on port 3000" ; \
+		read -p "Kill process on port 3000? [y/N] " -n 1 reply; \
+		echo ""; \
+		if [[ "$$reply" =~ ^[Yy]$$ ]] ; then \
+			lsof -Pi :3000 -sTCP:LISTEN -t | xargs kill -9; \
+			echo "✓ Killed process on port 3000"; \
 		else \
-			echo "Aborted." ; exit 1 ; \
+			echo "Aborted."; exit 1; \
 		fi \
-	fi
+	fi; \
+	'
 	@echo "1. Starting Redis and dbcron..."
 	@docker-compose up -d redis dbcron
 	@echo "2. Waiting for data to be loaded into Redis..."

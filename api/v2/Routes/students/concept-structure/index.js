@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getMaxScores, getStudentScores, getStudents } from '../../../../lib/redisHelper.mjs';
-import ProgressReportData from '../../../../assets/progressReport/CS10.json' assert { type: 'json' };
+import ProgressReportData from '../../../../assets/progressReport/CS10.json' with { type: 'json' };
 import KeyNotFoundError from '../../../../lib/errors/redis/KeyNotFound.js';
 import StudentNotEnrolledError from '../../../../lib/errors/redis/StudentNotEnrolled.js';
 

@@ -429,12 +429,34 @@ export default function Admin() {
                 <Typography>
                 <strong>Min:</strong> {stats.min ?? 'N/A'}
                 </Typography>
-                {distribution && (
+                {distribution && (() => {
+                  const numBins = distribution.distribution?.length || 0;
+                  const maxScore = distribution.maxScore || 10;
+                  // Calculate appropriate bar size based on number of bins
+                  let barSize = undefined; // Let recharts decide by default
+                  let barCategoryGap = '10%';
+                  
+                  if (numBins <= 5) {
+                    // Very few bins: set fixed narrow bar width
+                    barSize = 30;
+                    barCategoryGap = '50%';
+                  } else if (numBins <= 10) {
+                    // Small number of bins: moderate bar width
+                    barSize = 20;
+                    barCategoryGap = '30%';
+                  } else if (numBins <= 25) {
+                    // Medium bins: standard width
+                    barCategoryGap = '15%';
+                  }
+                  
+                  return (
                 <Box mt={4} height={350}>
                     <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={distribution.distribution || []}
                         margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
+                        barSize={barSize}
+                        barCategoryGap={barCategoryGap}
                     >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -442,8 +464,12 @@ export default function Admin() {
                         angle={-45}
                         textAnchor="end"
                         height={100}
-                        interval={Math.max(0, Math.floor((distribution.distribution?.length || 0) / 10))}
+                        domain={[0, maxScore]}
+                        type="number"
+                        interval={distribution.suggestedTickInterval - 1 || Math.max(0, Math.floor(numBins / 20))}
                         label={{ value: 'Score', position: 'bottom', offset: 10 }}
+                        tick={{ fontSize: numBins > 50 ? 10 : 12 }}
+                        ticks={Array.from({ length: Math.floor(maxScore) + 1 }, (_, i) => i)}
                         />
                         <YAxis
                         allowDecimals={false}
@@ -459,14 +485,34 @@ export default function Admin() {
                         onClick={(data) => {
                           handleScoreClick(data, 0);
                         }}
+                        fill="#002676"
                         >
-                        <LabelList dataKey="count" position="top" />
+                        <LabelList 
+                          dataKey="count" 
+                          position="top"
+                          content={(props) => {
+                            const { x, y, width, value } = props;
+                            if (!value || value === 0) return null;
+                            return (
+                              <text 
+                                x={x + width / 2} 
+                                y={y - 4} 
+                                fill="#666" 
+                                textAnchor="middle"
+                                fontSize={12}
+                              >
+                                {value}
+                              </text>
+                            );
+                          }}
+                        />
                         </Bar>
 
                     </BarChart>
                     </ResponsiveContainer>
                 </Box>
-                )}
+                  );
+                })()}
             </>
             )}
 

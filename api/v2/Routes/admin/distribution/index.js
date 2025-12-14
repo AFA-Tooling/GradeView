@@ -16,7 +16,16 @@ const router = Router({ mergeParams: true });
 router.get('/:section/:name', async (req, res) => {
     try {
         const { section, name } = req.params;
-        const students = await getStudents(); 
+        const students = await getStudents();
+        
+        // Get max possible score for this assignment
+        const { getMaxScores } = await import('../../../../lib/redisHelper.mjs');
+        const maxScoresData = await getMaxScores();
+        let maxPossibleScore = null;
+        
+        if (!name.includes('Summary') && maxScoresData[section] && maxScoresData[section][name]) {
+            maxPossibleScore = Number(maxScoresData[section][name]);
+        } 
 
         let scoreData; // Array of {studentName, studentEmail, score}
         
@@ -71,6 +80,7 @@ router.get('/:section/:name', async (req, res) => {
         }
 
         if (scoreData.length === 0) {
+            console.log(`No score data found for section: ${section}, name: ${name}`);
             // Return empty data structure
             return res.json({ 
                 freq: [], 
@@ -82,21 +92,78 @@ router.get('/:section/:name', async (req, res) => {
         }
 
         const scores = scoreData.map(d => d.score);
+        console.log(`Distribution for ${section}/${name}: ${scoreData.length} students, scores:`, scores.slice(0, 5));
         const maxScore = Math.max(...scores);
         const minScore = Math.min(...scores);
         
-        // --- Logic for binning with max 25 buckets ---
-        const range = maxScore - minScore + 1;
-        let numBuckets = range;
-        let binWidth = 1;
+        // --- Logic for binning: Always use 1-point bins for accuracy ---
+        const range = maxScore - minScore;
+        const isSummary = name.includes('Summary');
         
-        // If range > 25, create bins of equal width
-        if (range > 25) {
-            numBuckets = 25;
-            binWidth = Math.ceil(range / numBuckets);
+        // Validate range
+        if (!isFinite(range) || range < 0) {
+            console.error('Invalid range calculation:', { minScore, maxScore, range });
+            return res.status(500).json({ 
+                error: 'Invalid score range',
+                details: { minScore, maxScore, range }
+            });
+        }
+        
+        // Handle case where all scores are the same
+        if (range === 0) {
+            return res.json({
+                freq: [scoreData.length],
+                minScore,
+                maxScore,
+                binWidth: 1,
+                totalStudents: scoreData.length,
+                isSummary,
+                suggestedTickInterval: 1,
+                distribution: [{
+                    range: `${minScore}`,
+                    rangeStart: minScore,
+                    rangeEnd: minScore,
+                    count: scoreData.length,
+                    students: scoreData.map(d => ({
+                        name: d.studentName,
+                        email: d.studentEmail,
+                        score: d.score
+                    }))
+                }]
+            });
+        }
+        
+        // Always use 1-point bins for data accuracy
+        const binWidth = 1;
+        
+        // Determine the actual range to use (0 to maxPossibleScore if available)
+        const displayMinScore = 0;
+        const displayMaxScore = maxPossibleScore || maxScore;
+        const displayRange = displayMaxScore - displayMinScore;
+        const numBuckets = Math.ceil(displayRange) + 1;
+        
+        // Calculate suggested tick interval for display
+        // This helps the frontend show appropriate x-axis labels
+        let suggestedTickInterval = 1;
+        if (displayRange > 100) {
+            suggestedTickInterval = 10;
+        } else if (displayRange > 50) {
+            suggestedTickInterval = 5;
+        } else if (displayRange > 25) {
+            suggestedTickInterval = 2;
+        }
+        
+        // Additional validation before creating arrays
+        if (numBuckets > 1000) {
+            console.error('Too many buckets requested:', numBuckets);
+            return res.status(500).json({ 
+                error: 'Score range too large',
+                details: { minScore, maxScore, range, numBuckets }
+            });
         }
         
         // Initialize frequency array and distribution map
+        // Fill from 0 to displayMaxScore
         const freq = Array(numBuckets).fill(0);
         const distributionBuckets = Array(numBuckets).fill(null).map(() => ({
             students: []
@@ -105,10 +172,10 @@ router.get('/:section/:name', async (req, res) => {
         // Group students by bucket
         scoreData.forEach(data => {
             const score = data.score;
-            // Calculate which bucket this score falls into
-            let bucketIndex = Math.floor((score - minScore) / binWidth);
+            // Calculate which bucket this score falls into (from 0)
+            let bucketIndex = Math.floor(score / binWidth);
             
-            // Handle edge case where score equals maxScore
+            // Handle edge case where score equals or exceeds displayMaxScore
             if (bucketIndex >= numBuckets) {
                 bucketIndex = numBuckets - 1;
             }
@@ -122,15 +189,14 @@ router.get('/:section/:name', async (req, res) => {
         });
         
         // Convert distribution buckets to array with range labels
+        // Start from 0 and go to displayMaxScore
         const distribution = distributionBuckets.map((bucket, index) => {
-            const rangeStart = minScore + (index * binWidth);
-            const rangeEnd = Math.min(rangeStart + binWidth - 1, maxScore);
-            const rangeLabel = binWidth === 1 ? `${rangeStart}` : `${rangeStart}-${rangeEnd}`;
+            const scoreValue = index * binWidth;
             
             return {
-                range: rangeLabel,
-                rangeStart,
-                rangeEnd,
+                range: `${scoreValue}`,
+                rangeStart: scoreValue,
+                rangeEnd: scoreValue,
                 count: bucket.students.length,
                 students: bucket.students
             };
@@ -140,10 +206,16 @@ router.get('/:section/:name', async (req, res) => {
 
         res.json({
             freq,
-            minScore,
-            maxScore,
+            minScore: displayMinScore,  // Always 0
+            maxScore: displayMaxScore,  // Max possible score or highest student score
+            actualMinScore: minScore,   // Actual lowest student score
+            actualMaxScore: maxScore,   // Actual highest student score
+            maxPossibleScore,           // Max possible score for this assignment (null for summary)
             binWidth,
-            distribution  // New: includes all students grouped by score range
+            totalStudents: scoreData.length,
+            isSummary,
+            suggestedTickInterval,  // Frontend can use this to reduce x-axis label density
+            distribution  // Includes all students grouped by score range (0 to maxScore)
         });
     } catch (error) {
         console.error('Error fetching frequency distribution:', error);

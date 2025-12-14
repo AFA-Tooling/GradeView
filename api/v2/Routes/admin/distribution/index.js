@@ -80,7 +80,6 @@ router.get('/:section/:name', async (req, res) => {
         }
 
         if (scoreData.length === 0) {
-            console.log(`No score data found for section: ${section}, name: ${name}`);
             // Return empty data structure
             return res.json({ 
                 freq: [], 
@@ -92,7 +91,6 @@ router.get('/:section/:name', async (req, res) => {
         }
 
         const scores = scoreData.map(d => d.score);
-        console.log(`Distribution for ${section}/${name}: ${scoreData.length} students, scores:`, scores.slice(0, 5));
         const maxScore = Math.max(...scores);
         const minScore = Math.min(...scores);
         

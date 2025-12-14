@@ -15,8 +15,8 @@ router.get('/', async (req, res) => {
             const categoriesEntry = await getEntry('Categories');
             return res.status(200).json(categoriesEntry);
         } catch (err) {
-            // If not in Redis, build from student scores
-            console.log('Categories not in Redis, building from student data...');
+            // If not found in Redis, proceed to build from student scores
+            console.log('Categories not found in Redis, building from student scores.');
         }
         
         // Build categories from student scores

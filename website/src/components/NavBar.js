@@ -21,6 +21,7 @@ import {
     StorageOutlined,
     AccountCircleOutlined,
     AccountTree,
+    Warning,
     Logout,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -75,6 +76,10 @@ export default function ButtonAppBar() {
                 name: 'Admin',
                 href: '/admin',
                 icon: <AccountTree />,
+            }, {
+                name: 'Alerts',
+                href: '/alerts',
+                icon: <Warning />,
             }];
         }
         return menuItems.map((tab) => (
@@ -178,6 +183,7 @@ export default function ButtonAppBar() {
                                 {isAdmin && (
                                     <>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>
+                                    <NavBarItem href='/alerts'>Alerts</NavBarItem>
                                     </>
                                 )}
                             </>

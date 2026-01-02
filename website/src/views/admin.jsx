@@ -24,6 +24,7 @@ import {
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import Grid from '@mui/material/Grid';
 import PageHeader from '../components/PageHeader';
+import StudentProfile from '../components/StudentProfile';
 import apiv2 from '../utils/apiv2';
 import {
   ResponsiveContainer,
@@ -70,6 +71,10 @@ export default function Admin() {
 
   const [sortBy, setSortBy]   = useState(null); // 'Quest','Midterm','Labs','total' or assignment.name
   const [sortAsc, setSortAsc] = useState(true);
+  
+  // --- STUDENT PROFILE DIALOG ---
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null); // {email, name}
   
   // --- STUDENT PAGE CUSTOMIZATION ---
   const [visibleAssignments, setVisibleAssignments] = useState({}); // {assignmentName: boolean}
@@ -850,8 +855,22 @@ export default function Admin() {
                                 <TableRow key={stu.email}>
                                     {/* Student Info */}
                                     <TableCell>
-                                        {stu.name}<br/>
-                                        <small>{stu.email}</small>
+                                        <Box
+                                            sx={{
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                    color: '#1976d2',
+                                                    textDecoration: 'underline',
+                                                }
+                                            }}
+                                            onClick={() => {
+                                                setSelectedStudent({ email: stu.email, name: stu.name });
+                                                setProfileOpen(true);
+                                            }}
+                                        >
+                                            <strong>{stu.name}</strong><br/>
+                                            <small>{stu.email}</small>
+                                        </Box>
                                     </TableCell>
                                     
                                     {/* Summary Scores */}
@@ -892,6 +911,17 @@ export default function Admin() {
             )}
         </Box>
         )}
+
+        {/* Student Profile Dialog */}
+        <StudentProfile 
+          open={profileOpen}
+          onClose={() => {
+            setProfileOpen(false);
+            setSelectedStudent(null);
+          }}
+          studentEmail={selectedStudent?.email}
+          studentName={selectedStudent?.name}
+        />
 
     </>
   );

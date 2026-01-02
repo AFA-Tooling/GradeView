@@ -30,6 +30,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -64,8 +65,8 @@ export default function Admin() {
 
   // score details
   const [scoreDetailOpen, setScoreDetailOpen]     = useState(false);
-  const [scoreSelected, setScoreSelected]         = useState(null); // The score that was clicked
-  const [studentsByScore, setStudentsByScore]     = useState([]); // Students with that score
+  const [scoreSelected, setScoreSelected]         = useState([]); // Array of selected score ranges
+  const [studentsByScore, setStudentsByScore]     = useState([]); // Array of {range, students} objects
   const [studentsByScoreLoading, setStudentsByScoreLoading] = useState(false);
   const [studentsByScoreError, setStudentsByScoreError] = useState(null);
 
@@ -282,39 +283,59 @@ export default function Admin() {
     // 'data' here is the bar data clicked: {range: "50-74", count: N, students: [...], ...}
     if (!selected || !data.students) return;
 
-    // Data already has students from distribution - use directly!
-    setStudentsByScore(data.students);
-    setScoreSelected(data.range);
-    setScoreDetailOpen(true);
+    const clickedRange = data.range;
+    
+    // Check if this score range is already selected
+    const isAlreadySelected = scoreSelected.includes(clickedRange);
+    
+    let newSelectedScores;
+    let newStudentsByScore;
+    
+    if (isAlreadySelected) {
+      // Remove this score range
+      newSelectedScores = scoreSelected.filter(r => r !== clickedRange);
+      newStudentsByScore = studentsByScore.filter(group => group.range !== clickedRange);
+    } else {
+      // Add this score range
+      newSelectedScores = [...scoreSelected, clickedRange];
+      newStudentsByScore = [...studentsByScore, { range: clickedRange, students: data.students }];
+    }
+    
+    setScoreSelected(newSelectedScores);
+    setStudentsByScore(newStudentsByScore);
   };
 
   /** Close the student list dialog **/
   const handleCloseScoreDialog = () => {
     setScoreDetailOpen(false);
-    setScoreSelected(null);
+    setScoreSelected([]);
     setStudentsByScore([]); // Clear previous data
     setStudentsByScoreError(null);
   };
 
   // Generate email with empty fields
   const handleGenerateEmail = () => {
-      if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected == null) {
+      if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected.length === 0) {
           alert('Student list, assignment name, or score data is missing.');
           return;
       }
 
       const assignmentName = selected.name;
-      const score = scoreSelected;
       
-      const studentListText = studentsByScore
-          .map(stu => `- ${stu.name} (${stu.email})`)
-          .join('\n');
+      // Build content for each score range
+      const scoreGroupsText = studentsByScore
+          .map(group => {
+              const studentListText = group.students
+                  .map(stu => `  - ${stu.name} (${stu.email})`)
+                  .join('\n');
+              return `Score: ${group.range}\n${studentListText}`;
+          })
+          .join('\n\n');
 
       const emailBodyContent = `---\n` +
                               `Assignment: ${assignmentName}\n` +
-                              `Score: ${score}\n` +
                               `---\n\n` +
-                              `Students who achieved this score:\n${studentListText}`;
+                              `Students by score:\n\n${scoreGroupsText}`;
 
       const subject = `Score List for ${assignmentName}`;
 
@@ -332,23 +353,27 @@ export default function Admin() {
 
   // Generate text and copy to clipboard
   const handleGenerateTxt = async () => {
-      if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected == null) {
+      if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected.length === 0) {
           alert('Student list, assignment name, or score data is missing.');
           return;
       }
 
       const assignmentName = selected.name;
-      const score = scoreSelected;
       
-      const studentListText = studentsByScore
-          .map(stu => `- ${stu.name} (${stu.email})`)
-          .join('\n');
+      // Build content for each score range
+      const scoreGroupsText = studentsByScore
+          .map(group => {
+              const studentListText = group.students
+                  .map(stu => `  - ${stu.name} (${stu.email})`)
+                  .join('\n');
+              return `Score: ${group.range}\n${studentListText}`;
+          })
+          .join('\n\n');
 
       const textContent = `---\n` +
                          `Assignment: ${assignmentName}\n` +
-                         `Score: ${score}\n` +
                          `---\n\n` +
-                         `Students who achieved this score:\n${studentListText}`;
+                         `Students by score:\n\n${scoreGroupsText}`;
 
       try {
           await navigator.clipboard.writeText(textContent);
@@ -479,7 +504,23 @@ export default function Admin() {
                   }
                   
                   return (
-                <Box mt={4} height={350}>
+                <Box mt={4}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Typography variant="body2" color="textSecondary">
+                        💡 Click on bars to select/deselect score ranges. Selected ranges will turn green.
+                      </Typography>
+                      {scoreSelected.length > 0 && (
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          size="small"
+                          onClick={() => setScoreDetailOpen(true)}
+                        >
+                          View Selected ({scoreSelected.length})
+                        </Button>
+                      )}
+                    </Box>
+                    <Box height={350}>
                     <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={distribution.distribution || []}
@@ -514,8 +555,14 @@ export default function Admin() {
                         onClick={(data) => {
                           handleScoreClick(data, 0);
                         }}
-                        fill="#002676"
+                        style={{ cursor: 'pointer' }}
                         >
+                        {(distribution.distribution || []).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={scoreSelected.includes(entry.range) ? '#4caf50' : '#002676'}
+                          />
+                        ))}
                         <LabelList 
                           dataKey="count" 
                           position="top"
@@ -539,6 +586,7 @@ export default function Admin() {
 
                     </BarChart>
                     </ResponsiveContainer>
+                    </Box>
                 </Box>
                   );
                 })()}
@@ -561,32 +609,53 @@ export default function Admin() {
         maxWidth="sm"
         >
         <DialogTitle>
-            Students with Score **{scoreSelected}** on **{selected?.name}**
+            Students with Selected Scores on **{selected?.name}**
+            {scoreSelected.length > 0 && (
+              <Typography variant="subtitle2" color="textSecondary">
+                Selected ranges: {scoreSelected.join(', ')}
+              </Typography>
+            )}
         </DialogTitle>
 
 
         <DialogContent>
             {studentsByScore.length === 0 ? (
-                <Typography>No students found with this score.</Typography>
+                <Typography>No students found with the selected scores.</Typography>
             ) : (
-                <TableContainer component={Paper}>
-                    <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                        <TableCell><strong>Name</strong></TableCell>
-                        <TableCell><strong>Email</strong></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {studentsByScore.map((stu, i) => (
-                        <TableRow key={i}>
-                            <TableCell>{stu.name}</TableCell>
-                            <TableCell>{stu.email}</TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
-                </TableContainer>
+                studentsByScore
+                  .sort((a, b) => {
+                    // Extract the lower bound of the range for sorting
+                    const getMinScore = (range) => {
+                      const match = range.match(/^(\d+)/);
+                      return match ? parseInt(match[1]) : 0;
+                    };
+                    return getMinScore(a.range) - getMinScore(b.range);
+                  })
+                  .map((group, groupIndex) => (
+                  <Box key={groupIndex} mb={3}>
+                    <Typography variant="h6" gutterBottom color="primary" sx={{ mt: groupIndex > 0 ? 2 : 0 }}>
+                      Score Range: {group.range}
+                    </Typography>
+                    <TableContainer component={Paper} sx={{ mb: 2 }}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell><strong>Name</strong></TableCell>
+                            <TableCell><strong>Email</strong></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {group.students.map((stu, i) => (
+                            <TableRow key={i}>
+                              <TableCell>{stu.name}</TableCell>
+                              <TableCell>{stu.email}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                ))
             )}
 
             <Box mt={4} sx={{ borderTop: 1, borderColor: 'divider', pt: 3 }}>

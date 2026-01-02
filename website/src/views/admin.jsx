@@ -79,9 +79,6 @@ export default function Admin() {
   // --- STUDENT PAGE CUSTOMIZATION ---
   const [visibleAssignments, setVisibleAssignments] = useState({}); // {assignmentName: boolean}
   const [selectorDialogOpen, setSelectorDialogOpen] = useState(null); // Section name or null
-  const [mailRecipient, setMailRecipient] = useState(''); // Email address to send the list to
-  const [mailSubject, setMailSubject] = useState('');
-  const [mailBody, setMailBody] = useState('');
   const handleSort = col => {
     if (sortBy === col) setSortAsc(!sortAsc);
     else {
@@ -299,7 +296,8 @@ export default function Admin() {
     setStudentsByScoreError(null);
   };
 
-  const handleGenerateMailto = () => {
+  // Generate email with empty fields
+  const handleGenerateEmail = () => {
       if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected == null) {
           alert('Student list, assignment name, or score data is missing.');
           return;
@@ -312,27 +310,53 @@ export default function Admin() {
           .map(stu => `- ${stu.name} (${stu.email})`)
           .join('\n');
 
-      const emailBodyContent = `${mailBody ? mailBody + '\n\n' : ''}` + 
-                              `---\n` +
+      const emailBodyContent = `---\n` +
                               `Assignment: ${assignmentName}\n` +
                               `Score: ${score}\n` +
                               `---\n\n` +
                               `Students who achieved this score:\n${studentListText}`;
 
-      const recipient = mailRecipient || '';
-      const subject = mailSubject || `Score List for ${assignmentName}`;
+      const subject = `Score List for ${assignmentName}`;
 
-      const mailto = `mailto:${encodeURIComponent(recipient)}` + 
+      const mailto = `mailto:` + 
                     `?subject=${encodeURIComponent(subject)}` + 
                     `&body=${encodeURIComponent(emailBodyContent)}`;
       
       const link = document.createElement('a');
-      
       link.href = mailto;
       link.target = '_blank'; 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+  };
+
+  // Generate text and copy to clipboard
+  const handleGenerateTxt = async () => {
+      if (!studentsByScore || !studentsByScore.length || !selected || scoreSelected == null) {
+          alert('Student list, assignment name, or score data is missing.');
+          return;
+      }
+
+      const assignmentName = selected.name;
+      const score = scoreSelected;
+      
+      const studentListText = studentsByScore
+          .map(stu => `- ${stu.name} (${stu.email})`)
+          .join('\n');
+
+      const textContent = `---\n` +
+                         `Assignment: ${assignmentName}\n` +
+                         `Score: ${score}\n` +
+                         `---\n\n` +
+                         `Students who achieved this score:\n${studentListText}`;
+
+      try {
+          await navigator.clipboard.writeText(textContent);
+          alert('Text copied to clipboard!');
+      } catch (err) {
+          console.error('Failed to copy text:', err);
+          alert('Failed to copy to clipboard');
+      }
   };
 
   return (
@@ -567,56 +591,30 @@ export default function Admin() {
 
             <Box mt={4} sx={{ borderTop: 1, borderColor: 'divider', pt: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                    📧 Email Student List To
+                    📧 Email Student List
                 </Typography>
               
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Generate an email draft or copy the text content to clipboard
+                </Typography>
                 
-                {/* 1. Recipient Email */}
-                <Box mb={2}> 
-                    <TextField
-                        fullWidth
-                        label="Recipient Email (e.g., admin@example.com)"
-                        value={mailRecipient}
-                        onChange={e => { setMailRecipient(e.target.value);}}
-                        size="small"
-                    />
-                </Box>
-                
-                {/* 2. Subject */}
-                <Box mb={2}>
-                    <TextField
-                        fullWidth
-                        label="Subject (e.g., Score List for Quest 1)"
-                        value={mailSubject}
-                        onChange={e => setMailSubject(e.target.value)}
-                        size="small"
-                    />
-                </Box>
-                
-                {/* 3. Email Body */}
-                <Box mb={2}>
-                    <TextField
-                        fullWidth
-                        label="Email Body (Optional intro text)"
-                        multiline
-                        rows={3}
-                        value={mailBody}
-                        onChange={e => setMailBody(e.target.value)}
-                        size="small"
-                        placeholder="This text will appear above the student list in the email."
-                    />
-                </Box>
-                
-                <Box mt={2} display="flex" justifyContent="flex-end">
+                <Box mt={2} display="flex" justifyContent="flex-end" gap={2}>
                     <Button
                         variant="contained"
                         color="primary"
-                        onClick={handleGenerateMailto}
+                        onClick={handleGenerateEmail}
                         disabled={!studentsByScore.length}
-                        sx={{ ml: 1 }}
                     >
-                    Generate Email
-                  </Button>
+                        Generate Email
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={handleGenerateTxt}
+                        disabled={!studentsByScore.length}
+                    >
+                        Copy to Clipboard
+                    </Button>
                 </Box>
         </Box>
         

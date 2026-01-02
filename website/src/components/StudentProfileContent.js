@@ -43,50 +43,63 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
   return (
     <Box>
       {/* Overall Summary */}
-      <Paper elevation={2} sx={{ p: 3, mb: 3, backgroundColor: '#f5f5f5' }}>
-        <Typography variant="h6" gutterBottom color="primary">
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 4, 
+          mb: 3, 
+          backgroundColor: 'white',
+          borderRadius: 3,
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
           Overall Summary
         </Typography>
-        <Grid container spacing={3} sx={{ mt: 1 }}>
+        <Grid container spacing={3}>
           <Grid item xs={12} sm={3}>
-            <Box textAlign="center">
-              <Typography variant="body2" color="textSecondary">Total Score</Typography>
-              <Typography variant="h4" color="primary">
+            <Box textAlign="center" sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', mb: 1 }}>Total Score</Typography>
+              <Typography variant="h4" sx={{ color: '#1e3a8a', fontWeight: 600, mb: 0.5 }}>
                 {studentData.totalScore.toFixed(2)}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                 / {studentData.totalMaxPoints.toFixed(2)}
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Box textAlign="center">
-              <Typography variant="body2" color="textSecondary">Percentage</Typography>
-              <Typography variant="h4" color="secondary">
+            <Box textAlign="center" sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', mb: 1 }}>Percentage</Typography>
+              <Typography variant="h4" sx={{ color: '#ea580c', fontWeight: 600 }}>
                 {studentData.overallPercentage.toFixed(2)}%
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Box textAlign="center">
-              <Typography variant="body2" color="textSecondary">Grade</Typography>
+            <Box textAlign="center" sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', mb: 1 }}>Grade</Typography>
               <Chip 
                 label={gradeLevel.grade}
                 sx={{ 
                   mt: 1,
-                  fontSize: '24px',
-                  height: '50px',
-                  backgroundColor: gradeLevel.color,
-                  color: 'white',
-                  fontWeight: 'bold'
+                  fontSize: '1.5rem',
+                  height: '56px',
+                  minWidth: '56px',
+                  backgroundColor: `${gradeLevel.color}20`,
+                  color: gradeLevel.color,
+                  fontWeight: 700,
+                  border: `2px solid ${gradeLevel.color}40`,
+                  borderRadius: '12px'
                 }}
               />
             </Box>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Box textAlign="center">
-              <Typography variant="body2" color="textSecondary">Total Assignments</Typography>
-              <Typography variant="h4">
+            <Box textAlign="center" sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', mb: 1 }}>Total Assignments</Typography>
+              <Typography variant="h4" sx={{ color: '#1e3a8a', fontWeight: 600 }}>
                 {studentData.assignmentsList.length}
               </Typography>
             </Box>
@@ -95,14 +108,24 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
       </Paper>
 
       {/* Performance by Category */}
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom color="primary">
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 4, 
+          mb: 3,
+          backgroundColor: 'white',
+          borderRadius: 3,
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
           Performance by Category
         </Typography>
-        <TableContainer sx={{ mt: 2 }}>
+        <TableContainer sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#e3f2fd' }}>
+              <TableRow sx={{ backgroundColor: '#f9fafb' }}>
                 <TableCell><strong>Category</strong></TableCell>
                 <TableCell align="center"><strong>Score</strong></TableCell>
                 <TableCell align="center"><strong>Max</strong></TableCell>
@@ -125,9 +148,11 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                         label={`${data.percentage.toFixed(2)}%`}
                         size="small"
                         sx={{ 
-                          backgroundColor: gradeInfo.color,
-                          color: 'white',
-                          fontWeight: 'bold'
+                          backgroundColor: `${gradeInfo.color}20`,
+                          color: gradeInfo.color,
+                          fontWeight: 600,
+                          border: `1px solid ${gradeInfo.color}40`,
+                          borderRadius: '8px'
                         }}
                       />
                     </TableCell>
@@ -138,8 +163,11 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                         label={gradeInfo.grade}
                         size="small"
                         sx={{ 
-                          backgroundColor: gradeInfo.color,
-                          color: 'white'
+                          backgroundColor: `${gradeInfo.color}20`,
+                          color: gradeInfo.color,
+                          fontWeight: 600,
+                          border: `1px solid ${gradeInfo.color}40`,
+                          borderRadius: '8px'
                         }}
                       />
                     </TableCell>
@@ -155,8 +183,17 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Radar Chart */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom color="primary">
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 3,
+              backgroundColor: 'white',
+              borderRadius: 3,
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Category Performance Radar
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
@@ -211,8 +248,17 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
 
         {/* Bar Chart */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom color="primary">
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 3,
+              backgroundColor: 'white',
+              borderRadius: 3,
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Category Scores Comparison
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
@@ -252,8 +298,17 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
 
         {/* Line Chart */}
         <Grid item xs={12}>
-          <Paper elevation={2} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom color="primary">
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 3,
+              backgroundColor: 'white',
+              borderRadius: 3,
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Score Trend
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
@@ -291,21 +346,30 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
       </Grid>
 
       {/* Detailed Assignment Scores */}
-      <Paper elevation={2} sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom color="primary">
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 4,
+          backgroundColor: 'white',
+          borderRadius: 3,
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
           Detailed Assignment Scores
         </Typography>
-        <TableContainer sx={{ mt: 2, maxHeight: 400 }}>
+        <TableContainer sx={{ mt: 2, maxHeight: 400, borderRadius: 2, overflow: 'hidden' }}>
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ backgroundColor: '#e3f2fd' }}><strong>#</strong></TableCell>
-                <TableCell sx={{ backgroundColor: '#e3f2fd' }}><strong>Category</strong></TableCell>
-                <TableCell sx={{ backgroundColor: '#e3f2fd' }}><strong>Assignment</strong></TableCell>
-                <TableCell align="center" sx={{ backgroundColor: '#e3f2fd' }}><strong>Score</strong></TableCell>
-                <TableCell align="center" sx={{ backgroundColor: '#e3f2fd' }}><strong>Max</strong></TableCell>
-                <TableCell align="center" sx={{ backgroundColor: '#e3f2fd' }}><strong>%</strong></TableCell>
-                <TableCell align="center" sx={{ backgroundColor: '#e3f2fd' }}><strong>Grade</strong></TableCell>
+                <TableCell sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>#</TableCell>
+                <TableCell sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Category</TableCell>
+                <TableCell sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Assignment</TableCell>
+                <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Score</TableCell>
+                <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Max</TableCell>
+                <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>%</TableCell>
+                <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Grade</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -323,8 +387,11 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                         label={`${assignment.percentage.toFixed(2)}%`}
                         size="small"
                         sx={{ 
-                          backgroundColor: gradeInfo.color,
-                          color: 'white'
+                          backgroundColor: `${gradeInfo.color}20`,
+                          color: gradeInfo.color,
+                          fontWeight: 600,
+                          border: `1px solid ${gradeInfo.color}40`,
+                          borderRadius: '8px'
                         }}
                       />
                     </TableCell>
@@ -333,8 +400,11 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                         label={gradeInfo.grade}
                         size="small"
                         sx={{ 
-                          backgroundColor: gradeInfo.color,
-                          color: 'white'
+                          backgroundColor: `${gradeInfo.color}20`,
+                          color: gradeInfo.color,
+                          fontWeight: 600,
+                          border: `1px solid ${gradeInfo.color}40`,
+                          borderRadius: '8px'
                         }}
                       />
                     </TableCell>

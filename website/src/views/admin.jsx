@@ -385,10 +385,31 @@ export default function Admin() {
   };
 
   return (
-    <>
+    <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e5e7eb', px: 4, py: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 600, color: '#1a202c', mb: 1 }}>
+          Class Overview
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          Manage assignments and track student progress
+        </Typography>
+      </Box>
+
       {/* Tabs */}
-      <Box px={10}>
-        <Tabs value={tab} onChange={handleTabChange}>
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e5e7eb', px: 4 }}>
+        <Tabs 
+          value={tab} 
+          onChange={handleTabChange}
+          sx={{
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 500,
+              minHeight: 48,
+            }
+          }}
+        >
           <Tab label="Assignments" />
           <Tab label="Students" />
         </Tabs>
@@ -396,16 +417,19 @@ export default function Admin() {
 
       {/* ASSIGNMENTS TAB */}
     {tab === 0 && (
-    <Box pl={10} pr={10} pb={6}>
+    <Box px={4} py={4}>
         {/* Search Field */}
-        <Box mt={4} mb={2} display="flex" gap={2}>
-        <TextField
-            placeholder="Search assignments…"
-            size="small"
-            sx={{ flex: '1 1 auto', maxWidth: 300 }}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-        />
+        <Box mb={3}>
+          <Paper elevation={0} sx={{ p: 2, border: '1px solid #e5e7eb' }}>
+            <TextField
+              placeholder="Search assignments…"
+              size="small"
+              fullWidth
+              sx={{ maxWidth: 400 }}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </Paper>
         </Box>
 
         {/* Loading / Error */}
@@ -415,40 +439,58 @@ export default function Admin() {
         {/* Assignment Buttons */}
         {!loadingA && !errorA && (
         <>
-            <Typography variant="h6" textAlign="center" mb={2}>
-            Assignments Dashboard
-            </Typography>
             {Object.entries(assignmentsBySection).map(([section, sectionAssignments]) => (
               <Box key={section} mb={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', textTransform: 'uppercase', flex: 1 }}>
-                    {section}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => handleAssignClick({ section, name: `${section} Summary` })}
-                  >
-                    Summary
-                  </Button>
-                </Box>
-                <Grid container spacing={2}>
-                  {sectionAssignments
-                    .filter(item =>
-                      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((item, i) => (
-                      <Grid key={i} item>
-                        <Button
-                          variant="outlined"
-                          sx={{ minWidth: 140, height: 56, fontSize: '1rem' }}
-                          onClick={() => handleAssignClick(item)}
-                        >
+                <Paper elevation={0} sx={{ p: 3, border: '1px solid #e5e7eb', borderRadius: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a202c', flex: 1 }}>
+                      {section}
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{ 
+                        bgcolor: '#4f46e5', 
+                        '&:hover': { bgcolor: '#4338ca' },
+                        textTransform: 'none',
+                        fontWeight: 500
+                      }}
+                      onClick={() => handleAssignClick({ section, name: `${section} Summary` })}
+                    >
+                      View Summary
+                    </Button>
+                  </Box>
+                  <Grid container spacing={2}>
+                    {sectionAssignments
+                      .filter(item =>
+                        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map((item, i) => (
+                        <Grid key={i} item>
+                          <Button
+                            variant="outlined"
+                            sx={{ 
+                              minWidth: 140, 
+                              height: 56, 
+                              fontSize: '0.95rem',
+                              borderColor: '#d1d5db',
+                              color: '#374151',
+                              textTransform: 'none',
+                              fontWeight: 500,
+                              '&:hover': {
+                                borderColor: '#4f46e5',
+                                color: '#4f46e5',
+                                bgcolor: '#eef2ff'
+                              }
+                            }}
+                            onClick={() => handleAssignClick(item)}
+                          >
                           {item.name}
                         </Button>
                       </Grid>
                     ))}
                 </Grid>
+                </Paper>
               </Box>
             ))}
         </>
@@ -699,24 +741,35 @@ export default function Admin() {
 
       {/* STUDENTS × ASSIGNMENTS TAB */}
         {tab === 1 && (
-        <Box pl={10} pr={10} pb={6}>
-            {loadingSS && <Typography>Loading student scores…</Typography>}
-            {errorSS && <Alert severity="error">{errorSS}</Alert>}
+        <Box px={4} py={4}>
+            {loadingSS && (
+              <Box display="flex" justifyContent="center" p={4}>
+                <Typography>Loading student scores…</Typography>
+              </Box>
+            )}
+            {errorSS && <Alert severity="error" sx={{ mb: 3 }}>{errorSS}</Alert>}
 
             {!loadingSS && !errorSS && (
-            <>
-                <Typography variant="h6" textAlign="center" mb={3}>
-                Students
-                </Typography>
+            <Paper elevation={0} sx={{ border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
+                <Box sx={{ bgcolor: 'white', p: 3, borderBottom: '1px solid #e5e7eb' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a202c' }}>
+                    Student Scores Overview
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
+                    Click on column headers to sort, click on student names to view details
+                  </Typography>
+                </Box>
                 
                 {/* Assignment Selector - Buttons for each section */}
-                <Box mb={3} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mr: 1 }}>
+                <Box sx={{ p: 3, bgcolor: '#f9fafb' }}>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
                         Show Columns:
                     </Typography>
                     <Button
                         size="small"
                         variant="outlined"
+                        sx={{ textTransform: 'none', fontWeight: 500 }}
                         onClick={() => {
                             const allAssignments = {};
                             Object.values(assignmentsBySection).forEach(assignments => {
@@ -732,6 +785,7 @@ export default function Admin() {
                     <Button
                         size="small"
                         variant="outlined"
+                        sx={{ textTransform: 'none', fontWeight: 500 }}
                         onClick={() => {
                             const allAssignments = {};
                             Object.values(assignmentsBySection).forEach(assignments => {
@@ -756,11 +810,17 @@ export default function Admin() {
                             <Box key={section}>
                                 <Button
                                     size="small"
-                                    variant={allVisible ? "contained" : someVisible ? "outlined" : "outlined"}
+                                    variant={allVisible ? "contained" : "outlined"}
                                     sx={{
-                                        backgroundColor: allVisible ? '#2196F3' : 'transparent',
-                                        color: allVisible ? 'white' : 'inherit',
-                                        borderColor: '#2196F3'
+                                        backgroundColor: allVisible ? '#4f46e5' : 'transparent',
+                                        color: allVisible ? 'white' : '#374151',
+                                        borderColor: allVisible ? '#4f46e5' : '#d1d5db',
+                                        textTransform: 'none',
+                                        fontWeight: 500,
+                                        '&:hover': {
+                                          backgroundColor: allVisible ? '#4338ca' : '#f3f4f6',
+                                          borderColor: '#4f46e5'
+                                        }
                                     }}
                                     onClick={() => setSelectorDialogOpen(section)}
                                 >
@@ -844,10 +904,11 @@ export default function Admin() {
                         );
                     })}
                 </Box>
+                </Box>
 
                 {/* Main Table with Tree Structure Headers */}
-                <TableContainer component={Paper}>
-                    <Table size="small">
+                <TableContainer sx={{ bgcolor: 'white' }}>
+                    <Table size="small" sx={{ '& .MuiTableCell-root': { fontSize: '0.875rem' } }}>
                         <TableHead>
                             {/* FIRST HEADER ROW */}
                             <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
@@ -972,7 +1033,7 @@ export default function Admin() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-            </>
+            </Paper>
             )}
         </Box>
         )}
@@ -988,6 +1049,6 @@ export default function Admin() {
           studentName={selectedStudent?.name}
         />
 
-    </>
+    </Box>
   );
 }

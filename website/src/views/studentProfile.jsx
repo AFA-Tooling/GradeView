@@ -140,17 +140,26 @@ export default function StudentProfile() {
   }
 
   return (
-    <>
+    <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', pb: 4 }}>
       {/* Page Header with Student Name and Admin Student Selector */}
-      <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          backgroundColor: 'white',
+          borderRadius: 0,
+          borderBottom: '1px solid #e5e7eb'
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4" component="h1" color="primary">
+          <Typography variant="h4" component="h1" sx={{ color: '#1e3a8a', fontWeight: 600 }}>
             {studentData?.studentName || studentName || 'Loading...'}
           </Typography>
           
           {/* Admin Student Selector */}
           {isAdmin && (
-            <FormControl sx={{ minWidth: 200 }}>
+            <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>Select Student</InputLabel>
               <Select
                 value={adminSelectedStudent}
@@ -169,15 +178,23 @@ export default function StudentProfile() {
         </Box>
       </Paper>
 
-      {/* Tabs */}
-      <Tabs 
-        value={tab} 
-        onChange={(e, newValue) => setTab(newValue)}
-        sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
-      >
-        <Tab label="Performance Analytics" />
-        <Tab label="Buckets" />
-        <Tab label="Concept Map" />
+      <Box sx={{ px: 4 }}>
+        {/* Tabs */}
+        <Tabs 
+          value={tab} 
+          onChange={(e, newValue) => setTab(newValue)}
+          sx={{ 
+            mb: 3,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 500
+            }
+          }}
+        >
+          <Tab label="Performance Analytics" />
+          <Tab label="Buckets" />
+          <Tab label="Concept Map" />
       </Tabs>
 
       {/* Performance Analytics Tab */}
@@ -213,6 +230,7 @@ export default function StudentProfile() {
           <ConceptMap embedded />
         </Box>
       )}
-    </>
+      </Box>
+    </Box>
   );
 }

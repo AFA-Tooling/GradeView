@@ -25,6 +25,7 @@ import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import Grid from '@mui/material/Grid';
 import PageHeader from '../components/PageHeader';
 import StudentProfile from '../components/StudentProfile';
+import AIAnalytics from './aiAnalytics';
 import apiv2 from '../utils/apiv2';
 import {
   ResponsiveContainer,
@@ -402,6 +403,7 @@ export default function Admin() {
         >
           <Tab label="Assignments" />
           <Tab label="Students" />
+          <Tab label="AI Analytics" />
         </Tabs>
       </Box>
 
@@ -1026,6 +1028,11 @@ export default function Admin() {
             </Paper>
             )}
         </Box>
+        )}
+
+        {/* AI ANALYTICS TAB */}
+        {tab === 2 && (
+          <AIAnalytics />
         )}
 
         {/* Student Profile Dialog */}

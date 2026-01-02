@@ -10,6 +10,8 @@ import PrivateRoutes from './components/privateRoutes';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Home from './views/home';
+import Dashboard from './views/dashboard';
+import StudentProfile from './views/studentProfile';
 import Login from './views/login';
 import Buckets from './views/buckets';
 import HTTPError from './views/httpError';
@@ -49,13 +51,12 @@ export default function App() {
 						<div className="content">
 							<Routes>
 								<Route exact path='/login' element={localStorage.getItem('token') ? <Navigate to='/' /> : <Login />} />
-								<Route exact path='/buckets' element={<Buckets />} />
 								<Route element={<PrivateRoutes />}>
-									<Route exact path='/' element={<Home />} />
+									<Route exact path='/' element={<Dashboard />} />
+									<Route exact path='/profile' element={<StudentProfile />} />
+									<Route exact path='/admin' element={<Admin />} />
+									<Route exact path='/alerts' element={<Alerts />} />
 								</Route>
-								<Route exact path='/conceptmap' element={<ConceptMap />} />
-								<Route exact path='/admin' element={<Admin />} />
-								<Route exact path='/alerts' element={<Alerts />} />
 								<Route exact path='/serverError' element={<HTTPError errorCode={500} />} />
 								<Route exact path='/clientError' element={<HTTPError errorCode={400} />} />
 								<Route exact path='*' element={<HTTPError errorCode={404} />} />

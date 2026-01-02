@@ -43,18 +43,8 @@ export default function ButtonAppBar() {
     const tabList = [
         {
             name: 'Profile',
-            href: '/',
+            href: '/profile',
             icon: <AccountCircleOutlined />,
-        },
-        {
-            name: 'Buckets',
-            href: '/buckets',
-            icon: <StorageOutlined />,
-        },
-        {
-            name: 'Concept Map',
-            href: '/conceptmap',
-            icon: <AccountTree />,
         },
     ];
     const [tabs, updateTabs] = useState(tabList.slice(1));
@@ -174,12 +164,8 @@ export default function ButtonAppBar() {
                         {!mobileView && (
                             <>
                                 {loggedIn && (
-                                    <NavBarItem href='/'>My Grades</NavBarItem>
+                                    <NavBarItem href='/profile'>Profile</NavBarItem>
                                 )}
-                                <NavBarItem href='/buckets'>Buckets</NavBarItem>
-                                <NavBarItem href='/conceptmap'>
-                                    Concept Map
-                                </NavBarItem>
                                 {isAdmin && (
                                     <>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>

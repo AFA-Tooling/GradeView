@@ -9,8 +9,14 @@ export default function GradeGrid({ category, assignments }) {
     const [cumGrade, setCumGrade] = useState(0);
     const [cumMaxGrade, setCumMaxGrade] = useState(0);
 
-
     useEffect(() => {
+        // Guard against undefined/null assignments
+        if (!assignments || typeof assignments !== 'object') {
+            setCumGrade(0);
+            setCumMaxGrade(0);
+            return;
+        }
+        
         let cg = 0;
         let cmg = 0;
         Object.values(assignments).forEach((category) => {

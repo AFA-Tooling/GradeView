@@ -1,6 +1,7 @@
 import React from 'react';
 import { useContext, useEffect, useState } from 'react';
 import Loader from '../components/Loader';
+import PageHeader from '../components/PageHeader';
 import './css/conceptMap.css';
 import { StudentSelectionContext } from "../components/StudentSelectionWrapper";
 import apiv2 from "../utils/apiv2";
@@ -25,7 +26,7 @@ import { Box, useMediaQuery, Typography } from '@mui/material';
  * @component
  * @returns {JSX.Element} The ConceptMap component.
  */
-export default function ConceptMap() {
+export default function ConceptMap({ embedded = false }) {
     const [loading, setLoading] = useState(false);
     const [outline, setOutline] = useState(null);
     const [needsSelection, setNeedsSelection] = useState(false);
@@ -84,18 +85,28 @@ export default function ConceptMap() {
     if (loading) return <Loader />;
     if (needsSelection) {
         return (
-            <div style={{ padding: 24, textAlign: 'center' }}>
-                Please select a student to view the Concept Map.
-            </div>
+            <>
+                {!embedded && <PageHeader>Concept Map</PageHeader>}
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        Please select a student from the dropdown menu in the navigation bar.
+                    </Typography>
+                </Box>
+            </>
         );
     }
     if (!outline) return null;
     const hasChildren = Array.isArray(outline?.nodes?.children) && outline.nodes.children.length > 0;
     if (!hasChildren) {
         return (
-            <div style={{ padding: 24, textAlign: 'center' }}>
-                No concept data available yet. Try refreshing after a minute.
-            </div>
+            <>
+                {!embedded && <PageHeader>Concept Map</PageHeader>}
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        No concept data available yet. Try refreshing after a minute.
+                    </Typography>
+                </Box>
+            </>
         );
     }
 
@@ -113,14 +124,16 @@ export default function ConceptMap() {
   ];
 
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        width: '100%',
-        height: 'calc(100vh - 64px)',
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      {!embedded && <PageHeader>Concept Map</PageHeader>}
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: embedded ? 'calc(100vh - 200px)' : 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
       {/* === LEGEND ROW 1: student‐mastery rings === */}
       <Box
         sx={{
@@ -198,5 +211,6 @@ export default function ConceptMap() {
         hasCurrWeek={hasCurrWeek}
       />
     </Box>
+    </>
   );
 }

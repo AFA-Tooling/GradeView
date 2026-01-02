@@ -177,36 +177,6 @@ export default function ButtonAppBar() {
                     </Box>
                     {loggedIn ? (
                         <>
-                            {isAdmin && (
-                                <Box>
-                                    <FormControl
-                                        size='small'
-                                        sx={{ m: 1, minWidth: 100 }}
-                                        variant={'filled'}
-                                    >
-                                        <InputLabel id='student-dropdown-label'>
-                                            Student
-                                        </InputLabel>
-                                        <Select
-                                            labelId='student-dropdown-label'
-                                            id='student-dropdown'
-                                            label='student'
-                                            onChange={loadStudentData}
-                                            style={{ backgroundColor: 'white' }}
-                                            defaultValue={selectedStudent}
-                                        >
-                                            {students.map((student) => (
-                                                <MenuItem
-                                                    key={student[1]}
-                                                    value={student[1]}
-                                                >
-                                                    {student[0]}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Box>
-                            )}
                             <IconButton 
                                 aria-label="user profile"
                                 onClick={handleMenu}

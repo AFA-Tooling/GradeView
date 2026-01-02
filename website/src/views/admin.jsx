@@ -386,10 +386,8 @@ export default function Admin() {
 
   return (
     <>
-      <PageHeader>Admin</PageHeader>
-
       {/* Tabs */}
-      <Box px={10} pt={4}>
+      <Box px={10}>
         <Tabs value={tab} onChange={handleTabChange}>
           <Tab label="Assignments" />
           <Tab label="Students" />

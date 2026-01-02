@@ -223,6 +223,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                   score: data.total,
                   maxPoints: data.maxPoints,
                 }))}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="category" />

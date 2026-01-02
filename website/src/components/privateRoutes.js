@@ -7,19 +7,30 @@ export default function PrivateRoutes() {
     const [loaded, setLoaded] = useState(false);
     const [authorized, setAuthorized] = useState(false);
     useEffect(() => {
-        if (localStorage.getItem('token') === '') {
+        const token = localStorage.getItem('token');
+        if (!token || token === '') {
             setAuthorized(false);
             setLoaded(true);
             return;
         }
         let mounted = true;
-        apiv2.get('/login').then((res) => {
-            if (mounted) {
-                setAuthorized(res.data.status);
-            }
-            setLoaded(true);
-        });
-        return () => (mounted = false);
+        apiv2.get('/login')
+            .then((res) => {
+                if (mounted) {
+                    setAuthorized(res.data.status);
+                    setLoaded(true);
+                }
+            })
+            .catch((err) => {
+                console.error('Login verification failed:', err);
+                if (mounted) {
+                    setAuthorized(false);
+                    setLoaded(true);
+                }
+            });
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     return loaded ? (

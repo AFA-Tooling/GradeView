@@ -3,6 +3,11 @@ import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper
 
 export default function GradeTable({ assignments, headerLeft, headerRight }) {
 
+    // Guard against undefined/null assignments
+    if (!assignments || typeof assignments !== 'object') {
+        return null;
+    }
+
     /**
      * Gets the formatting for the font-weight.
      * @param {Float} student

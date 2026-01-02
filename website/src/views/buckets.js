@@ -1,16 +1,40 @@
-import React, { useEffect, useState } from 'react'
-import { Box, useMediaQuery } from '@mui/material';
+import React, { useEffect, useState, useContext } from 'react'
+import { Box, useMediaQuery, Typography } from '@mui/material';
 import apiv2 from '../utils/apiv2';
 import BinTable from '../components/BinTable';
 import Loader from '../components/Loader';
+import PageHeader from '../components/PageHeader';
+import { StudentSelectionContext } from '../components/StudentSelectionWrapper';
 
-export default function Buckets() {
+export default function Buckets({ embedded = false }) {
+    const { selectedStudent } = useContext(StudentSelectionContext);
 
     const minMedia = useMediaQuery('(min-width:600px)');
     const [binRows, setBins] = useState([]);
     const [loadCount, setLoadCount] = useState(0);
-
     const [gradingRows, setGradingRows] = useState([]);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [needsSelection, setNeedsSelection] = useState(false);
+
+    // Check if user is admin
+    useEffect(() => {
+        let mounted = true;
+        apiv2.get('/isadmin')
+            .then((res) => {
+                if (mounted) {
+                    const adminStatus = res?.data?.isAdmin === true;
+                    setIsAdmin(adminStatus);
+                    // If admin and no student selected, show message
+                    if (adminStatus && !selectedStudent && !localStorage.getItem('email')) {
+                        setNeedsSelection(true);
+                    }
+                }
+            })
+            .catch(() => {
+                if (mounted) setIsAdmin(false);
+            });
+        return () => { mounted = false; };
+    }, [selectedStudent]);
 
     useEffect(() => {
         let mounted = true;
@@ -167,8 +191,23 @@ export default function Buckets() {
     console.log('Render - gradingRows:', gradingRows, 'length:', gradingRows.length);
     console.log('Render - loadCount:', loadCount);
 
+    // Show message if admin needs to select a student
+    if (needsSelection) {
+        return (
+            <>
+                {!embedded && <PageHeader>Buckets</PageHeader>}
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        Please select a student from the dropdown menu in the navigation bar.
+                    </Typography>
+                </Box>
+            </>
+        );
+    }
+
     return (
         <>
+            {!embedded && <PageHeader>Buckets</PageHeader>}
             {loadCount > 0 ? (<Loader />) : (
                 <>
                     <Box sx={minMedia ?

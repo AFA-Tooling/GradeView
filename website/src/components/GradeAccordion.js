@@ -11,6 +11,13 @@ export default function GradeAccordion({ category, assignments }) {
     const [expanded, setExpanded] = useState(true);
 
     useEffect(() => {
+        // Guard against undefined/null assignments
+        if (!assignments || typeof assignments !== 'object') {
+            setCumGrade(0);
+            setCumMaxGrade(0);
+            return;
+        }
+        
         let cg = 0;
         let cmg = 0;
         Object.values(assignments).forEach((category) => {

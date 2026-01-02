@@ -386,16 +386,6 @@ export default function Admin() {
 
   return (
     <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh' }}>
-      {/* Header Section */}
-      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e5e7eb', px: 4, py: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, color: '#1a202c', mb: 1 }}>
-          Class Overview
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Manage assignments and track student progress
-        </Typography>
-      </Box>
-
       {/* Tabs */}
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e5e7eb', px: 4 }}>
         <Tabs 

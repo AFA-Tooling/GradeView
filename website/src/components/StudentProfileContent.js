@@ -359,7 +359,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
         <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
           Detailed Assignment Scores
         </Typography>
-        <TableContainer sx={{ mt: 2, maxHeight: 400, borderRadius: 2, overflow: 'hidden' }}>
+        <TableContainer sx={{ mt: 2, maxHeight: 600, borderRadius: 2, overflow: 'auto' }}>
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>

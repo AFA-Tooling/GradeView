@@ -28,16 +28,31 @@ import StudentProfile from '../components/StudentProfile';
 import AIAnalytics from './aiAnalytics';
 import apiv2 from '../utils/apiv2';
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
   Tooltip,
-  LabelList,
-} from 'recharts';
+  Legend,
+} from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  ChartDataLabels,
+  Tooltip,
+  Legend
+);
 
 
 
@@ -488,33 +503,107 @@ export default function Admin() {
                 {distribution && (() => {
                   const numBins = distribution.distribution?.length || 0;
                   const maxScore = distribution.maxScore || 10;
-                  // Calculate appropriate bar size based on number of bins
-                  let barSize = undefined; // Let recharts decide by default
-                  let barCategoryGap = '10%';
+                  const useLineChart = numBins > 40; // Switch to line chart for >40 bins
                   
-                  // Calculate if we need horizontal scrolling
-                  const minWidthPerBar = 25; // Minimum pixels per bar for readability
-                  const calculatedWidth = Math.max(numBins * minWidthPerBar, 800); // At least 800px
-                  const needsScroll = calculatedWidth > 1200; // Enable scroll if > 1200px
-                  
-                  if (numBins <= 5) {
-                    // Very few bins: set fixed narrow bar width
-                    barSize = 30;
-                    barCategoryGap = '50%';
-                  } else if (numBins <= 10) {
-                    // Small number of bins: moderate bar width
-                    barSize = 20;
-                    barCategoryGap = '30%';
-                  } else if (numBins <= 25) {
-                    // Medium bins: standard width
-                    barCategoryGap = '15%';
-                  }
+                  // Prepare data for Chart.js
+                  const chartData = {
+                    labels: (distribution.distribution || []).map(d => d.range),
+                    datasets: [{
+                      label: 'Count',
+                      data: (distribution.distribution || []).map(d => d.count),
+                      backgroundColor: (distribution.distribution || []).map(d => 
+                        scoreSelected.includes(d.range) ? '#4caf50' : '#002676'
+                      ),
+                      borderColor: useLineChart ? '#002676' : undefined,
+                      borderWidth: useLineChart ? 3 : 0,
+                      pointRadius: useLineChart ? (distribution.distribution || []).map(d =>
+                        scoreSelected.includes(d.range) ? 7 : 5
+                      ) : 0,
+                      pointHoverRadius: useLineChart ? 10 : 0,
+                      pointBackgroundColor: useLineChart ? (distribution.distribution || []).map(d =>
+                        scoreSelected.includes(d.range) ? '#4caf50' : '#002676'
+                      ) : undefined,
+                      pointBorderColor: useLineChart ? '#fff' : undefined,
+                      pointBorderWidth: useLineChart ? 2 : 0,
+                      tension: 0.1, // Slight curve for line chart
+                    }]
+                  };
+
+                  // Chart.js options
+                  const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (event, elements) => {
+                      if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const clickedData = distribution.distribution[index];
+                        handleScoreClick(clickedData, index);
+                      }
+                    },
+                    plugins: {
+                      legend: {
+                        display: false
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            return `Count: ${context.parsed.y}`;
+                          }
+                        }
+                      },
+                      datalabels: {
+                        display: true,
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (value) => value > 0 ? value : '',
+                        color: '#666',
+                        font: {
+                          size: useLineChart ? 11 : 12,
+                          weight: useLineChart ? 500 : 'normal'
+                        }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: 'Score'
+                        },
+                        min: 0,
+                        max: maxScore,
+                        ticks: {
+                          stepSize: 1,
+                          autoSkip: numBins > 20,
+                          maxRotation: 45,
+                          minRotation: 45,
+                          font: {
+                            size: numBins > 50 ? 10 : 12
+                          }
+                        }
+                      },
+                      y: {
+                        title: {
+                          display: true,
+                          text: 'Count'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                          stepSize: 1,
+                          precision: 0
+                        }
+                      }
+                    },
+                    interaction: {
+                      mode: 'nearest',
+                      intersect: false
+                    }
+                  };
                   
                   return (
                 <Box mt={4}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Typography variant="body2" color="textSecondary">
-                        💡 Click on bars to select/deselect score ranges. Selected ranges will turn green.
+                        💡 Click on {useLineChart ? 'points' : 'bars'} to select/deselect score ranges. Selected ranges will turn green.
                       </Typography>
                       {scoreSelected.length > 0 && (
                         <Button 
@@ -527,100 +616,17 @@ export default function Admin() {
                         </Button>
                       )}
                     </Box>
-                    {needsScroll && (
-                      <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#1976d2', fontWeight: 500 }}>
-                        📊 Chart has {numBins} bars - scroll horizontally to see all
+                    {useLineChart && (
+                      <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#9c27b0', fontStyle: 'italic' }}>
+                        📈 Switched to line chart for better readability with {numBins} data points
                       </Typography>
                     )}
-                    <Box 
-                      sx={{
-                        height: 350,
-                        overflowX: needsScroll ? 'auto' : 'visible',
-                        overflowY: 'hidden',
-                        '&::-webkit-scrollbar': {
-                          height: '12px'
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          backgroundColor: '#e5e7eb',
-                          borderRadius: '6px'
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          backgroundColor: '#1976d2',
-                          borderRadius: '6px',
-                          border: '2px solid #e5e7eb',
-                          '&:hover': {
-                            backgroundColor: '#1565c0'
-                          }
-                        }
-                      }}
-                    >
-                    <Box sx={{ minWidth: needsScroll ? `${calculatedWidth}px` : '100%', height: '100%' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={distribution.distribution || []}
-                        margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
-                        barSize={barSize}
-                        barCategoryGap={barCategoryGap}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                        dataKey="range"
-                        angle={-45}
-                        textAnchor="end"
-                        height={100}
-                        domain={[0, maxScore]}
-                        type="number"
-                        interval={distribution.suggestedTickInterval - 1 || Math.max(0, Math.floor(numBins / 20))}
-                        label={{ value: 'Score', position: 'bottom', offset: 10 }}
-                        tick={{ fontSize: numBins > 50 ? 10 : 12 }}
-                        ticks={Array.from({ length: Math.floor(maxScore) + 1 }, (_, i) => i)}
-                        />
-                        <YAxis
-                        allowDecimals={false}
-                        label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 10 }}
-                        />
-                        <Tooltip 
-                        cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                        formatter={(value) => [`${value}`, 'Count']}
-                        />
-
-                        <Bar
-                        dataKey="count"
-                        onClick={(data) => {
-                          handleScoreClick(data, 0);
-                        }}
-                        style={{ cursor: 'pointer' }}
-                        >
-                        {(distribution.distribution || []).map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={scoreSelected.includes(entry.range) ? '#4caf50' : '#002676'}
-                          />
-                        ))}
-                        <LabelList 
-                          dataKey="count" 
-                          position="top"
-                          content={(props) => {
-                            const { x, y, width, value } = props;
-                            if (!value || value === 0) return null;
-                            return (
-                              <text 
-                                x={x + width / 2} 
-                                y={y - 4} 
-                                fill="#666" 
-                                textAnchor="middle"
-                                fontSize={12}
-                              >
-                                {value}
-                              </text>
-                            );
-                          }}
-                        />
-                        </Bar>
-
-                    </BarChart>
-                    </ResponsiveContainer>
-                    </Box>
+                    <Box sx={{ height: 350, cursor: 'pointer' }}>
+                      {useLineChart ? (
+                        <Line data={chartData} options={chartOptions} />
+                      ) : (
+                        <Bar data={chartData} options={chartOptions} />
+                      )}
                     </Box>
                 </Box>
                   );

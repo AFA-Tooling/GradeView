@@ -135,6 +135,8 @@ function processAssignmentSortedData(data, email, name) {
     Object.entries(assignments).forEach(([assignmentName, assignmentData]) => {
       const score = parseFloat(assignmentData.student) || 0;
       const maxPoints = parseFloat(assignmentData.max) || 0;
+      const submissionTime = assignmentData.submissionTime;
+      const lateness = assignmentData.lateness;
       
       if (maxPoints > 0) {
         categoryScores.push({
@@ -154,6 +156,8 @@ function processAssignmentSortedData(data, email, name) {
           score: score,
           maxPoints: maxPoints,
           percentage: (score / maxPoints) * 100,
+          submissionTime: submissionTime,
+          lateness: lateness,
         });
       }
     });

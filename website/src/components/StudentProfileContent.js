@@ -1,5 +1,5 @@
 // src/components/StudentProfileContent.js
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -12,7 +12,11 @@ import {
   Paper,
   Grid,
   Chip,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
+import CategoryIcon from '@mui/icons-material/Category';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,6 +32,7 @@ import {
   Legend as ChartLegend,
 } from 'chart.js';
 import { Bar as ChartBar, Line as ChartLine, Radar as ChartRadar } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 // Register Chart.js components
 ChartJS.register(
@@ -40,6 +45,7 @@ ChartJS.register(
   ArcElement,
   Filler,
   Title,
+  ChartDataLabels,
   ChartTooltip,
   ChartLegend
 );
@@ -48,10 +54,55 @@ ChartJS.register(
  * Shared Student Profile Content Component
  * Used by both the dialog version and the page version
  */
-export default function StudentProfileContent({ studentData, getGradeLevel, sortMode = 'assignment' }) {
+export default function StudentProfileContent({ studentData, getGradeLevel }) {
   if (!studentData) return null;
 
+  // Local state for sort mode (only affects line chart and detail table)
+  const [sortMode, setSortMode] = useState('assignment');
+
   const gradeLevel = getGradeLevel(studentData.overallPercentage);
+
+  // Sort the trend data for line chart based on sortMode
+  const sortedTrendData = useMemo(() => {
+    if (!studentData.trendData) return [];
+    const data = [...studentData.trendData];
+    
+    console.log('Sorting trend data, mode:', sortMode);
+    console.log('First item submissionTime:', data[0]?.submissionTime);
+    
+    if (sortMode === 'time') {
+      // Sort by submission time - newest first (descending)
+      const sorted = data.sort((a, b) => {
+        if (!a.submissionTime) return 1;
+        if (!b.submissionTime) return -1;
+        return new Date(b.submissionTime) - new Date(a.submissionTime);
+      });
+      console.log('Sorted by time, first item:', sorted[0]?.name, sorted[0]?.submissionTime);
+      return sorted;
+    } else {
+      // Keep assignment order (already sorted by category and name)
+      console.log('Using assignment order');
+      return data;
+    }
+  }, [studentData.trendData, sortMode]);
+
+  // Sort the assignments list for detail table based on sortMode
+  const sortedAssignments = useMemo(() => {
+    if (!studentData.assignmentsList) return [];
+    const data = [...studentData.assignmentsList];
+    
+    if (sortMode === 'time') {
+      // Sort by submission time - newest first (descending)
+      return data.sort((a, b) => {
+        if (!a.submissionTime) return 1;
+        if (!b.submissionTime) return -1;
+        return new Date(b.submissionTime) - new Date(a.submissionTime);
+      });
+    } else {
+      // Keep assignment order (already sorted by category and name)
+      return data;
+    }
+  }, [studentData.assignmentsList, sortMode]);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -222,7 +273,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
             <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Category Performance Radar
             </Typography>
-            <Box sx={{ height: 300, position: 'relative' }}>
+            <Box sx={{ height: 400, position: 'relative' }}>
               <ChartRadar 
                 data={{
                   labels: studentData.radarData.map(d => d.category),
@@ -233,7 +284,8 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                       borderColor: '#1565c0',
                       backgroundColor: 'rgba(25, 118, 210, 0.4)',
                       borderWidth: 3,
-                      pointRadius: 5,
+                      pointRadius: 6,
+                      pointHoverRadius: 10,
                       pointBackgroundColor: '#1565c0',
                       pointBorderColor: '#fff',
                       pointBorderWidth: 2,
@@ -245,7 +297,8 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                       backgroundColor: 'rgba(255, 152, 0, 0.2)',
                       borderWidth: 3,
                       borderDash: [5, 5],
-                      pointRadius: 4,
+                      pointRadius: 5,
+                      pointHoverRadius: 9,
                       pointBackgroundColor: '#ef6c00',
                       pointBorderColor: '#fff',
                       pointBorderWidth: 2,
@@ -262,7 +315,13 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                       beginAtZero: true,
                       ticks: {
                         stepSize: 20,
-                        backdropColor: 'transparent'
+                        backdropColor: 'transparent',
+                        font: {
+                          size: 13
+                        },
+                        callback: function(value) {
+                          return value + '%';
+                        }
                       },
                       grid: {
                         color: 'rgba(0, 0, 0, 0.1)'
@@ -271,32 +330,67 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                         color: 'rgba(0, 0, 0, 0.1)'
                       },
                       pointLabels: {
-                        font: {
-                          size: 12
-                        }
+                        display: false  // Hide category labels around the radar
                       }
                     }
+                  },
+                  interaction: {
+                    mode: 'point',
+                    intersect: false
                   },
                   plugins: {
                     legend: {
                       position: 'bottom',
                       labels: {
-                        padding: 10,
-                        usePointStyle: true
+                        padding: 15,
+                        usePointStyle: true,
+                        font: {
+                          size: 13
+                        }
                       }
                     },
                     tooltip: {
+                      enabled: true,
+                      mode: 'nearest',
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      padding: 12,
+                      titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                      },
+                      bodyFont: {
+                        size: 13
+                      },
                       callbacks: {
+                        title: function(context) {
+                          return studentData.radarData[context[0].dataIndex].category;
+                        },
                         label: function(context) {
                           const dataIndex = context.dataIndex;
                           const data = studentData.radarData[dataIndex];
                           if (context.datasetIndex === 0) {
-                            return `Score: ${context.parsed.r.toFixed(2)}% (${Math.round(data.score)}/${Math.round(data.maxPoints)})`;
+                            return `Score: ${context.parsed.r.toFixed(1)}% (${Math.round(data.score)}/${Math.round(data.maxPoints)})`;
                           } else {
-                            return `Average: ${context.parsed.r.toFixed(2)}%`;
+                            return `Average: ${context.parsed.r.toFixed(1)}%`;
                           }
+                        },
+                        afterLabel: function(context) {
+                          if (context.datasetIndex === 0) {
+                            const dataIndex = context.dataIndex;
+                            const data = studentData.radarData[dataIndex];
+                            const diff = data.percentage - data.average;
+                            if (Math.abs(diff) > 0.5) {
+                              return diff > 0 
+                                ? `▲ ${diff.toFixed(1)}% above average` 
+                                : `▼ ${Math.abs(diff).toFixed(1)}% below average`;
+                            }
+                          }
+                          return '';
                         }
                       }
+                    },
+                    datalabels: {
+                      display: false  // Hide labels on chart, show only on hover via tooltip
                     }
                   }
                 }}
@@ -402,16 +496,51 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
             }}
           >
-            <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
-              Score Trend {sortMode === 'time' ? '(Sorted by Submission Time)' : '(Sorted by Assignment)'}
-            </Typography>
-            <Box sx={{ height: 300, position: 'relative' }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" sx={{ color: '#1e3a8a', fontWeight: 600 }}>
+                Score Trend
+              </Typography>
+              <ToggleButtonGroup
+                value={sortMode}
+                exclusive
+                onChange={(e, newMode) => newMode && setSortMode(newMode)}
+                size="small"
+                sx={{ 
+                  '& .MuiToggleButton-root': {
+                    px: 2,
+                    py: 0.5,
+                    fontSize: '0.875rem',
+                    textTransform: 'none',
+                    color: '#1976d2',
+                    border: '1px solid rgba(25, 118, 210, 0.5)',
+                    '&.Mui-selected': {
+                      backgroundColor: '#1976d2',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#1565c0',
+                      }
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="assignment">
+                  <CategoryIcon sx={{ mr: 0.5, fontSize: 16 }} />
+                  By Assignment
+                </ToggleButton>
+                <ToggleButton value="time">
+                  <AccessTimeIcon sx={{ mr: 0.5, fontSize: 16 }} />
+                  By Time
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            <Box sx={{ height: 300, position: 'relative' }} key={sortMode}>
               <ChartLine
+                key={`line-chart-${sortMode}`}
                 data={{
-                  labels: studentData.trendData.map(d => d.index),
+                  labels: sortedTrendData.map((d, idx) => idx + 1),
                   datasets: [{
                     label: 'Percentage',
-                    data: studentData.trendData.map(d => d.percentage),
+                    data: sortedTrendData.map(d => d.percentage),
                     borderColor: '#1976d2',
                     backgroundColor: 'rgba(25, 118, 210, 0.1)',
                     borderWidth: 2,
@@ -451,7 +580,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                       },
                       title: {
                         display: true,
-                        text: sortMode === 'time' ? 'Submission Order' : 'Assignment #',
+                        text: 'Assignment Order',
                         font: {
                           size: 12
                         }
@@ -469,13 +598,13 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                       callbacks: {
                         title: function(context) {
                           const index = context[0].dataIndex;
-                          return studentData.trendData[index].name;
+                          return sortedTrendData[index].name;
                         },
                         label: function(context) {
                           const index = context.dataIndex;
-                          const data = studentData.trendData[index];
+                          const data = sortedTrendData[index];
                           let label = `Score: ${data.percentage.toFixed(2)}%`;
-                          if (sortMode === 'time' && data.submissionTime) {
+                          if (data.submissionTime) {
                             label += `\nSubmitted: ${formatDate(data.submissionTime)}`;
                           }
                           return label;
@@ -507,7 +636,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
         }}
       >
         <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
-          Detailed Assignment Scores {sortMode === 'time' && '(Sorted by Submission Time)'}
+          Detailed Assignment Scores
         </Typography>
         <TableContainer sx={{ mt: 2, maxHeight: 600, borderRadius: 2, overflow: 'auto' }}>
           <Table size="small" stickyHeader>
@@ -520,13 +649,11 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Max</TableCell>
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>%</TableCell>
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Grade</TableCell>
-                {sortMode === 'time' && (
-                  <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Submitted</TableCell>
-                )}
+                <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Submitted</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {studentData.assignmentsList.map((assignment, idx) => {
+              {sortedAssignments.map((assignment, idx) => {
                 const gradeInfo = getGradeLevel(assignment.percentage);
                 return (
                   <TableRow key={idx} hover>
@@ -561,16 +688,14 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                         }}
                       />
                     </TableCell>
-                    {sortMode === 'time' && (
-                      <TableCell align="center" sx={{ fontSize: '0.875rem' }}>
-                        {formatDate(assignment.submissionTime)}
-                        {assignment.lateness && assignment.lateness !== '00:00:00' && (
-                          <Box component="span" sx={{ display: 'block', color: '#f44336', fontSize: '0.75rem', mt: 0.5 }}>
-                            Late: {assignment.lateness}
-                          </Box>
-                        )}
-                      </TableCell>
-                    )}
+                    <TableCell align="center" sx={{ fontSize: '0.875rem' }}>
+                      {formatDate(assignment.submissionTime)}
+                      {assignment.lateness && assignment.lateness !== '00:00:00' && (
+                        <Box component="span" sx={{ display: 'block', color: '#f44336', fontSize: '0.75rem', mt: 0.5 }}>
+                          Late: {assignment.lateness}
+                        </Box>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}

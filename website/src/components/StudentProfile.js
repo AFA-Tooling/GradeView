@@ -10,11 +10,7 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  ToggleButtonGroup,
-  ToggleButton,
 } from '@mui/material';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import CategoryIcon from '@mui/icons-material/Category';
 import apiv2 from '../utils/apiv2';
 import { processStudentData, getGradeLevel } from '../utils/studentDataProcessor';
 import StudentProfileContent from './StudentProfileContent';
@@ -27,7 +23,6 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [studentData, setStudentData] = useState(null);
-  const [sortMode, setSortMode] = useState('assignment'); // 'assignment' or 'time'
 
   // Load student detailed data
   useEffect(() => {
@@ -39,14 +34,10 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
     setLoading(true);
     setError(null);
 
-    const endpoint = sortMode === 'time' 
-      ? `/students/${encodeURIComponent(studentEmail)}/grades?sort=time`
-      : `/students/${encodeURIComponent(studentEmail)}/grades`;
-
-    apiv2.get(endpoint)
+    apiv2.get(`/students/${encodeURIComponent(studentEmail)}/grades?format=db`)
       .then(res => {
         const data = res.data;
-        setStudentData(processStudentData(data, studentEmail, studentName, sortMode));
+        setStudentData(processStudentData(data, studentEmail, studentName));
         setLoading(false);
       })
       .catch(err => {
@@ -54,13 +45,7 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
         setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load student data');
         setLoading(false);
       });
-  }, [open, studentEmail, studentName, sortMode]);
-
-  const handleSortModeChange = (event, newMode) => {
-    if (newMode !== null) {
-      setSortMode(newMode);
-    }
-  };
+  }, [open, studentEmail, studentName]);
 
   return (
     <Dialog 
@@ -73,43 +58,13 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
       }}
     >
       <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="h5">Student Profile</Typography>
-            {studentName && (
-              <Typography variant="subtitle1" sx={{ mt: 1 }}>
-                {studentName} ({studentEmail})
-              </Typography>
-            )}
-          </Box>
-          <ToggleButtonGroup
-            value={sortMode}
-            exclusive
-            onChange={handleSortModeChange}
-            size="small"
-            sx={{ 
-              backgroundColor: 'white',
-              '& .MuiToggleButton-root': {
-                color: '#1976d2',
-                '&.Mui-selected': {
-                  backgroundColor: '#1976d2',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: '#1565c0',
-                  }
-                }
-              }
-            }}
-          >
-            <ToggleButton value="assignment">
-              <CategoryIcon sx={{ mr: 1, fontSize: 18 }} />
-              By Assignment
-            </ToggleButton>
-            <ToggleButton value="time">
-              <AccessTimeIcon sx={{ mr: 1, fontSize: 18 }} />
-              By Time
-            </ToggleButton>
-          </ToggleButtonGroup>
+        <Box>
+          <Typography variant="h5" sx={{ color: 'white' }}>Student Profile</Typography>
+          {studentName && (
+            <Typography variant="subtitle2" sx={{ mt: 1, color: 'rgba(255,255,255,0.9)' }}>
+              {studentName} ({studentEmail})
+            </Typography>
+          )}
         </Box>
       </DialogTitle>
 
@@ -130,7 +85,6 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
           <StudentProfileContent 
             studentData={studentData} 
             getGradeLevel={getGradeLevel}
-            sortMode={sortMode}
           />
         )}
       </DialogContent>

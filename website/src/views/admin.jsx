@@ -255,12 +255,16 @@ export default function Admin() {
     }
   };
 
-  const handleAssignClick = item => setSelected(item);
+  const handleAssignClick = item => {
+    setSelected(item);
+    setScoreSelected([]);  // Clear previous selection
+  };
   const handleCloseDialog  = () => {
     setSelected(null);
     setStats(null);
     setDistribution(null);
     setStatsError(null);
+    setScoreSelected([]);  // Clear selection when closing
   };
 
   const handleScoreClick = (data, index) => {
@@ -515,9 +519,9 @@ export default function Admin() {
                       borderColor: useLineChart ? '#002676' : undefined,
                       borderWidth: useLineChart ? 3 : 0,
                       pointRadius: useLineChart ? (distribution.distribution || []).map(d =>
-                        scoreSelected.includes(d.range) ? 7 : 5
+                        scoreSelected.includes(d.range) ? 6 : 0  // Show small dot only when selected
                       ) : 0,
-                      pointHoverRadius: useLineChart ? 10 : 0,
+                      pointHoverRadius: useLineChart ? 8 : 0,  // Show hover dot
                       pointBackgroundColor: useLineChart ? (distribution.distribution || []).map(d =>
                         scoreSelected.includes(d.range) ? '#4caf50' : '#002676'
                       ) : undefined,

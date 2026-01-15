@@ -492,6 +492,11 @@ export default function Admin() {
                   let barSize = undefined; // Let recharts decide by default
                   let barCategoryGap = '10%';
                   
+                  // Calculate if we need horizontal scrolling
+                  const minWidthPerBar = 25; // Minimum pixels per bar for readability
+                  const calculatedWidth = Math.max(numBins * minWidthPerBar, 800); // At least 800px
+                  const needsScroll = calculatedWidth > 1200; // Enable scroll if > 1200px
+                  
                   if (numBins <= 5) {
                     // Very few bins: set fixed narrow bar width
                     barSize = 30;
@@ -522,7 +527,34 @@ export default function Admin() {
                         </Button>
                       )}
                     </Box>
-                    <Box height={350}>
+                    {needsScroll && (
+                      <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#1976d2', fontWeight: 500 }}>
+                        📊 Chart has {numBins} bars - scroll horizontally to see all
+                      </Typography>
+                    )}
+                    <Box 
+                      sx={{
+                        height: 350,
+                        overflowX: needsScroll ? 'auto' : 'visible',
+                        overflowY: 'hidden',
+                        '&::-webkit-scrollbar': {
+                          height: '12px'
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '6px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          backgroundColor: '#1976d2',
+                          borderRadius: '6px',
+                          border: '2px solid #e5e7eb',
+                          '&:hover': {
+                            backgroundColor: '#1565c0'
+                          }
+                        }
+                      }}
+                    >
+                    <Box sx={{ minWidth: needsScroll ? `${calculatedWidth}px` : '100%', height: '100%' }}>
                     <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={distribution.distribution || []}
@@ -588,6 +620,7 @@ export default function Admin() {
 
                     </BarChart>
                     </ResponsiveContainer>
+                    </Box>
                     </Box>
                 </Box>
                   );
@@ -720,6 +753,9 @@ export default function Admin() {
                   <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
                     Click on column headers to sort, click on student names to view details. 
                     Use the buttons below to select which assignment columns to display.
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#1976d2', fontWeight: 500 }}>
+                    💡 Tip: Table scrolls horizontally - use your mouse or trackpad to scroll left/right to see all columns
                   </Typography>
                 </Box>
                 
@@ -926,7 +962,6 @@ export default function Admin() {
                                 zIndex: 100,
                                 fontWeight: 600
                             }
-                            }
                         }}
                     >
                         <TableHead>
@@ -997,7 +1032,7 @@ export default function Admin() {
                                                 </Box>
                                             </TableCell>
                                             {visibleInSection.map(a => (
-                                                <TableCell key={a.name} align="center" sx={{ minWidth: '60px', backgroundColor: '#fafafa' }}>
+                                                <TableCell key={a.name} align="center" sx={{ minWidth: '120px', backgroundColor: '#fafafa' }}>
                                                     <Box display="flex" alignItems="center" justifyContent="center">
                                                         <strong style={{ fontSize: '11px' }}>{a.name}</strong>
                                                         <IconButton size="small" onClick={() => handleSort(a.name)}>
@@ -1064,7 +1099,7 @@ export default function Admin() {
                                                 {visibleInSection.map(a => {
                                                     const rawScore = stu.scores[a.name];
                                                     return (
-                                                        <TableCell key={a.name} align="center">
+                                                        <TableCell key={a.name} align="center" sx={{ minWidth: '120px' }}>
                                                             {(rawScore != null && rawScore !== '') ? Number(rawScore).toFixed(2) : 'N/A'}
                                                         </TableCell>
                                                     );

@@ -14,22 +14,35 @@ import {
   Chip,
 } from '@mui/material';
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-} from 'recharts';
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  RadialLinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Filler,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
+import { Bar as ChartBar, Line as ChartLine, Radar as ChartRadar } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  RadialLinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Filler,
+  Title,
+  ChartTooltip,
+  ChartLegend
+);
 
 /**
  * Shared Student Profile Content Component
@@ -75,10 +88,10 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
             <Box textAlign="center" sx={{ p: 2 }}>
               <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', mb: 1 }}>Total Score</Typography>
               <Typography variant="h4" sx={{ color: '#1e3a8a', fontWeight: 600, mb: 0.5 }}>
-                {studentData.totalScore.toFixed(2)}
+                {Math.round(studentData.totalScore)}
               </Typography>
               <Typography variant="body2" sx={{ color: '#9ca3af' }}>
-                / {studentData.totalMaxPoints.toFixed(2)}
+                / {Math.round(studentData.totalMaxPoints)}
               </Typography>
             </Box>
           </Grid>
@@ -154,8 +167,8 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                 return (
                   <TableRow key={category} hover>
                     <TableCell><strong>{category}</strong></TableCell>
-                    <TableCell align="center">{data.total.toFixed(2)}</TableCell>
-                    <TableCell align="center">{data.maxPoints.toFixed(2)}</TableCell>
+                    <TableCell align="center">{Math.round(data.total)}</TableCell>
+                    <TableCell align="center">{Math.round(data.maxPoints)}</TableCell>
                     <TableCell align="center">
                       <Chip 
                         label={`${data.percentage.toFixed(2)}%`}
@@ -209,53 +222,86 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
             <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Category Performance Radar
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={studentData.radarData}>
-                <PolarGrid stroke="#ccc" />
-                <PolarAngleAxis dataKey="category" tick={{ fontSize: 12 }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                <Radar 
-                  name="Score %" 
-                  dataKey="percentage" 
-                  stroke="#1565c0" 
-                  strokeWidth={3}
-                  fill="#1976d2" 
-                  fillOpacity={0.4} 
-                  dot={{ r: 5, fill: '#1565c0', strokeWidth: 2, stroke: '#fff' }}
-                />
-                <Radar 
-                  name="Average %" 
-                  dataKey="average" 
-                  stroke="#ef6c00" 
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  fill="#ff9800" 
-                  fillOpacity={0.2} 
-                  dot={{ r: 4, fill: '#ef6c00', strokeWidth: 2, stroke: '#fff' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
-                  content={({ payload }) => {
-                    if (payload && payload.length > 0) {
-                      const data = payload[0].payload;
-                      return (
-                        <Paper sx={{ p: 1 }}>
-                          <Typography variant="body2"><strong>{data.category}</strong></Typography>
-                          {payload.map((entry, index) => (
-                            <Typography key={index} variant="body2" sx={{ color: entry.color }}>
-                              {entry.name}: {entry.value}%
-                              {entry.dataKey === 'percentage' && ` (${data.score}/${data.maxPoints})`}
-                            </Typography>
-                          ))}
-                        </Paper>
-                      );
+            <Box sx={{ height: 300, position: 'relative' }}>
+              <ChartRadar 
+                data={{
+                  labels: studentData.radarData.map(d => d.category),
+                  datasets: [
+                    {
+                      label: 'Score %',
+                      data: studentData.radarData.map(d => d.percentage),
+                      borderColor: '#1565c0',
+                      backgroundColor: 'rgba(25, 118, 210, 0.4)',
+                      borderWidth: 3,
+                      pointRadius: 5,
+                      pointBackgroundColor: '#1565c0',
+                      pointBorderColor: '#fff',
+                      pointBorderWidth: 2,
+                    },
+                    {
+                      label: 'Average %',
+                      data: studentData.radarData.map(d => d.average),
+                      borderColor: '#ef6c00',
+                      backgroundColor: 'rgba(255, 152, 0, 0.2)',
+                      borderWidth: 3,
+                      borderDash: [5, 5],
+                      pointRadius: 4,
+                      pointBackgroundColor: '#ef6c00',
+                      pointBorderColor: '#fff',
+                      pointBorderWidth: 2,
                     }
-                    return null;
-                  }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    r: {
+                      min: 0,
+                      max: 100,
+                      beginAtZero: true,
+                      ticks: {
+                        stepSize: 20,
+                        backdropColor: 'transparent'
+                      },
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                      },
+                      angleLines: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                      },
+                      pointLabels: {
+                        font: {
+                          size: 12
+                        }
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        padding: 10,
+                        usePointStyle: true
+                      }
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const dataIndex = context.dataIndex;
+                          const data = studentData.radarData[dataIndex];
+                          if (context.datasetIndex === 0) {
+                            return `Score: ${context.parsed.r.toFixed(2)}% (${Math.round(data.score)}/${Math.round(data.maxPoints)})`;
+                          } else {
+                            return `Average: ${context.parsed.r.toFixed(2)}%`;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
+            </Box>
           </Paper>
         </Grid>
 
@@ -274,38 +320,73 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
             <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Category Scores Comparison
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart 
-                data={Object.entries(studentData.categoriesData).map(([cat, data]) => ({
-                  category: cat,
-                  percentage: data.percentage,
-                  score: data.total,
-                  maxPoints: data.maxPoints,
-                }))}
-                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip 
-                  content={({ payload }) => {
-                    if (payload && payload.length > 0) {
-                      const data = payload[0].payload;
-                      return (
-                        <Paper sx={{ p: 1 }}>
-                          <Typography variant="body2"><strong>{data.category}</strong></Typography>
-                          <Typography variant="body2" color="primary">
-                            {data.percentage.toFixed(2)}% ({data.score.toFixed(2)}/{data.maxPoints.toFixed(2)})
-                          </Typography>
-                        </Paper>
-                      );
+            <Box sx={{ height: 300, position: 'relative' }}>
+              <ChartBar
+                data={{
+                  labels: Object.keys(studentData.categoriesData),
+                  datasets: [{
+                    label: 'Percentage',
+                    data: Object.values(studentData.categoriesData).map(d => d.percentage),
+                    backgroundColor: '#1976d2',
+                    borderColor: '#1565c0',
+                    borderWidth: 1,
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      min: 0,
+                      max: 100,
+                      beginAtZero: true,
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                      },
+                      ticks: {
+                        stepSize: 20
+                      },
+                      title: {
+                        display: true,
+                        text: 'Percentage (%)',
+                        font: {
+                          size: 12
+                        }
+                      }
+                    },
+                    x: {
+                      grid: {
+                        display: false
+                      },
+                      title: {
+                        display: true,
+                        text: 'Category',
+                        font: {
+                          size: 12
+                        }
+                      }
                     }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="percentage" fill="#1976d2" />
-              </BarChart>
-            </ResponsiveContainer>
+                  },
+                  plugins: {
+                    legend: {
+                      display: false
+                    },
+                    datalabels: {
+                      display: false  // Hide labels, show only on hover
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const category = context.label;
+                          const data = studentData.categoriesData[category];
+                          return `${data.percentage.toFixed(2)}% (${Math.round(data.total)}/${Math.round(data.maxPoints)})`;
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
+            </Box>
           </Paper>
         </Grid>
 
@@ -324,41 +405,92 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
             <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
               Score Trend {sortMode === 'time' ? '(Sorted by Submission Time)' : '(Sorted by Assignment)'}
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={studentData.trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="index" label={{ value: sortMode === 'time' ? 'Submission Order' : 'Assignment #', position: 'insideBottom', offset: -5 }} />
-                <YAxis domain={[0, 100]} label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip 
-                  content={({ payload }) => {
-                    if (payload && payload.length > 0) {
-                      const data = payload[0].payload;
-                      return (
-                        <Paper sx={{ p: 1.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{data.name}</Typography>
-                          <Typography variant="body2" color="primary">
-                            Score: {data.percentage.toFixed(2)}%
-                          </Typography>
-                          {sortMode === 'time' && data.submissionTime && (
-                            <Typography variant="caption" color="text.secondary">
-                              Submitted: {formatDate(data.submissionTime)}
-                            </Typography>
-                          )}
-                        </Paper>
-                      );
+            <Box sx={{ height: 300, position: 'relative' }}>
+              <ChartLine
+                data={{
+                  labels: studentData.trendData.map(d => d.index),
+                  datasets: [{
+                    label: 'Percentage',
+                    data: studentData.trendData.map(d => d.percentage),
+                    borderColor: '#1976d2',
+                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#1976d2',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      min: 0,
+                      max: 100,
+                      beginAtZero: true,
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                      },
+                      ticks: {
+                        stepSize: 20
+                      },
+                      title: {
+                        display: true,
+                        text: 'Percentage (%)',
+                        font: {
+                          size: 12
+                        }
+                      }
+                    },
+                    x: {
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                      },
+                      title: {
+                        display: true,
+                        text: sortMode === 'time' ? 'Submission Order' : 'Assignment #',
+                        font: {
+                          size: 12
+                        }
+                      }
                     }
-                    return null;
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="percentage" 
-                  stroke="#1976d2" 
-                  strokeWidth={2}
-                  dot={{ fill: '#1976d2', r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                  },
+                  plugins: {
+                    legend: {
+                      display: false
+                    },
+                    datalabels: {
+                      display: false  // Hide labels, show only on hover
+                    },
+                    tooltip: {
+                      callbacks: {
+                        title: function(context) {
+                          const index = context[0].dataIndex;
+                          return studentData.trendData[index].name;
+                        },
+                        label: function(context) {
+                          const index = context.dataIndex;
+                          const data = studentData.trendData[index];
+                          let label = `Score: ${data.percentage.toFixed(2)}%`;
+                          if (sortMode === 'time' && data.submissionTime) {
+                            label += `\nSubmitted: ${formatDate(data.submissionTime)}`;
+                          }
+                          return label;
+                        }
+                      }
+                    }
+                  },
+                  interaction: {
+                    mode: 'index',  // Show tooltip when hovering near any x-position
+                    intersect: false,
+                    axis: 'x'  // Trigger based on x-axis proximity
+                  }
+                }}
+              />
+            </Box>
           </Paper>
         </Grid>
       </Grid>
@@ -401,8 +533,8 @@ export default function StudentProfileContent({ studentData, getGradeLevel, sort
                     <TableCell>{idx + 1}</TableCell>
                     <TableCell>{assignment.category}</TableCell>
                     <TableCell>{assignment.name}</TableCell>
-                    <TableCell align="center">{assignment.score.toFixed(2)}</TableCell>
-                    <TableCell align="center">{assignment.maxPoints.toFixed(2)}</TableCell>
+                    <TableCell align="center">{Math.round(assignment.score)}</TableCell>
+                    <TableCell align="center">{Math.round(assignment.maxPoints)}</TableCell>
                     <TableCell align="center">
                       <Chip 
                         label={`${assignment.percentage.toFixed(2)}%`}

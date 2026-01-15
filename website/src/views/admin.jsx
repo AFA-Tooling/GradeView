@@ -39,7 +39,6 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 // Register Chart.js components
 ChartJS.register(
@@ -49,7 +48,6 @@ ChartJS.register(
   PointElement,
   LineElement,
   Title,
-  ChartDataLabels,
   Tooltip,
   Legend
 );
@@ -552,15 +550,7 @@ export default function Admin() {
                         }
                       },
                       datalabels: {
-                        display: true,
-                        anchor: 'end',
-                        align: 'top',
-                        formatter: (value) => value > 0 ? value : '',
-                        color: '#666',
-                        font: {
-                          size: useLineChart ? 11 : 12,
-                          weight: useLineChart ? 500 : 'normal'
-                        }
+                        display: false  // Hide labels, only show on hover via tooltip
                       }
                     },
                     scales: {
@@ -594,8 +584,9 @@ export default function Admin() {
                       }
                     },
                     interaction: {
-                      mode: 'nearest',
-                      intersect: false
+                      mode: useLineChart ? 'index' : 'nearest',  // 'index' for line chart makes it easier to hover
+                      intersect: false,
+                      axis: 'x'  // Trigger tooltip when hovering near x-axis position
                     }
                   };
                   

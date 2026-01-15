@@ -1,5 +1,5 @@
 // src/views/admin.jsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useTransition } from 'react';
 import {
   Alert,
   Button,
@@ -44,6 +44,9 @@ import {
 export default function Admin() {
   // TAB STATE
   const [tab, setTab] = useState(0);
+  
+  // Performance optimization for Select All
+  const [isPending, startTransition] = useTransition();
 
   // --- ASSIGNMENTS UI & STATS ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,60 +92,27 @@ export default function Admin() {
     }
   };
 
-  /** 1) Load assignment categories with max points from grades data **/
+  /** 1) Load assignment categories with max points from DATABASE (not Redis) **/
   useEffect(() => {
-    // First, try to get any student's grades to extract max points
-    apiv2.get('/admin/studentScores')
+    // NEW: Get assignments directly from database instead of Redis
+    apiv2.get('/admin/assignments')
       .then(res => {
-        const students = res.data.students;
-        if (!students || students.length === 0) {
-          // Fallback: no students, just load categories without max points
-          return apiv2.get('/admin/categories')
-            .then(catRes => {
-              const data = catRes.data;
-              const items = Object.entries(data)
-                .flatMap(([section, obj]) =>
-                  Object.keys(obj).map(name => ({ section, name, maxPoints: 0 }))
-                );
-              setAssignments(items);
-              setFiltered(items);
-            });
-        }
+        const categoriesData = res.data; // { "Projects": { "Project 1": 100, ... }, "Labs": { ... }, ... }
+        const items = Object.entries(categoriesData)
+          .flatMap(([section, assignmentsObj]) =>
+            Object.entries(assignmentsObj).map(([name, maxPoints]) => ({ 
+              section, 
+              name,
+              maxPoints: Number(maxPoints) || 0
+            }))
+          );
+        setAssignments(items);
+        setFiltered(items);
+        console.log(`[INFO] Loaded ${items.length} assignments from database`);
         
-        // Get the first student's email and fetch their grades (which includes max points)
-        const firstStudentEmail = students[0].email;
-        return apiv2.get(`/students/${encodeURIComponent(firstStudentEmail)}/grades`)
-          .then(gradesRes => {
-            const gradesData = gradesRes.data || {};
-            // Extract all assignment names and their max points
-            // grades data structure: { [assignmentName]: { [category]: { student: X, max: Y }, ... }, ... }
-            const maxPointsMap = {};
-            
-            Object.entries(gradesData).forEach(([assignmentName, categoryData]) => {
-              // categoryData is like { [category]: {student: X, max: Y} }
-              Object.entries(categoryData).forEach(([category, scoreObj]) => {
-                if (scoreObj && scoreObj.max) {
-                  maxPointsMap[assignmentName] = scoreObj.max;
-                }
-              });
-            });
-            
-            // Now get categories
-            return apiv2.get('/admin/categories')
-              .then(catRes => {
-                const categoriesData = catRes.data;
-                const items = Object.entries(categoriesData)
-                  .flatMap(([section, obj]) =>
-                    Object.keys(obj).map(name => ({ 
-                      section, 
-                      name,
-                      maxPoints: maxPointsMap[name] || 0
-                    }))
-                  );
-                setAssignments(items);
-                setFiltered(items);
-              });
-          });
+        // Initialize with NO columns visible for better initial performance
+        // User can click "Select All" or select specific sections
+        setVisibleAssignments({});
       })
       .catch(err => setErrorA(err.message || 'Failed to load assignments'))
       .finally(() => setLoadingA(false));
@@ -748,7 +718,8 @@ export default function Admin() {
                     Student Scores Overview
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
-                    Click on column headers to sort, click on student names to view details
+                    Click on column headers to sort, click on student names to view details. 
+                    Use the buttons below to select which assignment columns to display.
                   </Typography>
                 </Box>
                 
@@ -758,37 +729,48 @@ export default function Admin() {
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
                         Show Columns:
                     </Typography>
+                    {isPending && (
+                        <Typography variant="caption" sx={{ color: '#6366f1', fontStyle: 'italic' }}>
+                            Updating table (this may take a moment for large tables)...
+                        </Typography>
+                    )}
                     <Button
                         size="small"
                         variant="outlined"
                         sx={{ textTransform: 'none', fontWeight: 500 }}
+                        disabled={isPending}
                         onClick={() => {
-                            const allAssignments = {};
-                            Object.values(assignmentsBySection).forEach(assignments => {
-                                assignments.forEach(a => {
-                                    allAssignments[a.name] = true;
+                            startTransition(() => {
+                                const allAssignments = {};
+                                Object.values(assignmentsBySection).forEach(assignments => {
+                                    assignments.forEach(a => {
+                                        allAssignments[a.name] = true;
+                                    });
                                 });
+                                setVisibleAssignments(allAssignments);
                             });
-                            setVisibleAssignments(allAssignments);
                         }}
                     >
-                        Select All
+                        {isPending ? 'Selecting...' : 'Select All'}
                     </Button>
                     <Button
                         size="small"
                         variant="outlined"
                         sx={{ textTransform: 'none', fontWeight: 500 }}
+                        disabled={isPending}
                         onClick={() => {
-                            const allAssignments = {};
-                            Object.values(assignmentsBySection).forEach(assignments => {
-                                assignments.forEach(a => {
-                                    allAssignments[a.name] = false;
+                            startTransition(() => {
+                                const allAssignments = {};
+                                Object.values(assignmentsBySection).forEach(assignments => {
+                                    assignments.forEach(a => {
+                                        allAssignments[a.name] = false;
+                                    });
                                 });
+                                setVisibleAssignments(allAssignments);
                             });
-                            setVisibleAssignments(allAssignments);
                         }}
                     >
-                        Deselect All
+                        {isPending ? 'Deselecting...' : 'Deselect All'}
                     </Button>
                     
                     {/* Section Buttons */}
@@ -899,13 +881,69 @@ export default function Admin() {
                 </Box>
 
                 {/* Main Table with Tree Structure Headers */}
-                <TableContainer sx={{ bgcolor: 'white' }}>
-                    <Table size="small" sx={{ '& .MuiTableCell-root': { fontSize: '0.875rem' } }}>
+                <TableContainer 
+                    sx={{ 
+                        bgcolor: 'white',
+                        maxHeight: '70vh',
+                        overflow: 'auto',
+                        position: 'relative',
+                        '&::-webkit-scrollbar': {
+                            height: '14px',
+                            width: '14px'
+                        },
+                        '&::-webkit-scrollbar-track': {
+                            backgroundColor: '#e5e7eb',
+                            borderRadius: '8px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: '#1976d2',
+                            borderRadius: '8px',
+                            border: '2px solid #e5e7eb',
+                            '&:hover': {
+                                backgroundColor: '#1565c0'
+                            }
+                        },
+                        '&::-webkit-scrollbar-corner': {
+                            backgroundColor: '#e5e7eb'
+                        }
+                    }}
+                >
+                    <Table 
+                        size="small" 
+                        stickyHeader
+                        sx={{ 
+                            minWidth: 'max-content', // 允许表格超出容器
+                            '& .MuiTableCell-root': { 
+                                fontSize: '0.875rem',
+                                minWidth: '100px', // 增加最小宽度，更宽敞
+                                padding: '10px 16px', // 增加内边距
+                                whiteSpace: 'nowrap'
+                            },
+                            '& .MuiTableCell-head': {
+                                backgroundColor: '#f9f9f9',
+                                position: 'sticky',
+                                top: 0,
+                                zIndex: 100,
+                                fontWeight: 600
+                            }
+                            }
+                        }}
+                    >
                         <TableHead>
                             {/* FIRST HEADER ROW */}
                             <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
-                                <TableCell><strong>Student</strong></TableCell>
-                                <TableCell align="center" colSpan={2} sx={{ borderRight: '2px solid #999' }}>
+                                <TableCell sx={{ 
+                                    position: 'sticky', 
+                                    left: 0, 
+                                    zIndex: 101, 
+                                    backgroundColor: '#f9f9f9',
+                                    borderRight: '2px solid #999',
+                                    minWidth: '200px', // 学生名称列更宽
+                                    maxWidth: '250px'
+                                }}>
+                                    <strong>Student</strong>
+                                </TableCell>
+                                <TableCell align="center" colSpan={2} sx={{ borderRight: '2px solid #999', backgroundColor: '#f9f9f9' }}>
                                     <strong>Summary</strong>
                                 </TableCell>
                                 
@@ -915,7 +953,7 @@ export default function Admin() {
                                     if (visibleInSection.length === 0) return null;
                                     
                                     return (
-                                        <TableCell key={section} colSpan={visibleInSection.length + 1} align="center" sx={{ borderLeft: '2px solid #999' }}>
+                                        <TableCell key={section} colSpan={visibleInSection.length + 1} align="center" sx={{ borderLeft: '2px solid #999', backgroundColor: '#f9f9f9' }}>
                                             <strong>{section}</strong> (Max: {sectionMaxPoints[section] || 0})
                                         </TableCell>
                                     );
@@ -924,8 +962,14 @@ export default function Admin() {
                             
                             {/* SECOND HEADER ROW */}
                             <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                                <TableCell />
-                                <TableCell align="center" sx={{ borderRight: '1px solid #ccc' }}>
+                                <TableCell sx={{
+                                    position: 'sticky',
+                                    left: 0,
+                                    zIndex: 101,
+                                    backgroundColor: '#fafafa',
+                                    borderRight: '2px solid #999'
+                                }} />
+                                <TableCell align="center" sx={{ borderRight: '1px solid #ccc', backgroundColor: '#fafafa' }}>
                                     <Box display="flex" alignItems="center" justifyContent="center">
                                         <strong>Total</strong>
                                         <IconButton size="small" onClick={() => handleSort('total')}>
@@ -933,7 +977,7 @@ export default function Admin() {
                                         </IconButton>
                                     </Box>
                                 </TableCell>
-                                <TableCell align="center" sx={{ borderRight: '2px solid #999' }}>
+                                <TableCell align="center" sx={{ borderRight: '2px solid #999', backgroundColor: '#fafafa' }}>
                                     <strong>Final %</strong>
                                 </TableCell>
                                 
@@ -944,7 +988,7 @@ export default function Admin() {
                                     
                                     return (
                                         <>
-                                            <TableCell align="center" sx={{ borderRight: '1px solid #ccc', borderLeft: '2px solid #999' }}>
+                                            <TableCell align="center" sx={{ borderRight: '1px solid #ccc', borderLeft: '2px solid #999', backgroundColor: '#fafafa' }}>
                                                 <Box display="flex" alignItems="center" justifyContent="center">
                                                     <strong>{section} Total</strong>
                                                     <IconButton size="small" onClick={() => handleSort(section)}>
@@ -953,7 +997,7 @@ export default function Admin() {
                                                 </Box>
                                             </TableCell>
                                             {visibleInSection.map(a => (
-                                                <TableCell key={a.name} align="center" sx={{ minWidth: '60px' }}>
+                                                <TableCell key={a.name} align="center" sx={{ minWidth: '60px', backgroundColor: '#fafafa' }}>
                                                     <Box display="flex" alignItems="center" justifyContent="center">
                                                         <strong style={{ fontSize: '11px' }}>{a.name}</strong>
                                                         <IconButton size="small" onClick={() => handleSort(a.name)}>
@@ -972,7 +1016,15 @@ export default function Admin() {
                             {sortedStudents.map(stu => (
                                 <TableRow key={stu.email}>
                                     {/* Student Info */}
-                                    <TableCell>
+                                    <TableCell sx={{
+                                        position: 'sticky',
+                                        left: 0,
+                                        zIndex: 10,
+                                        backgroundColor: 'white',
+                                        borderRight: '2px solid #999',
+                                        minWidth: '200px', // 学生名称列更宽
+                                        maxWidth: '250px'
+                                    }}>
                                         <Box
                                             sx={{
                                                 cursor: 'pointer',

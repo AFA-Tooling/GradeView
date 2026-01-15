@@ -35,10 +35,23 @@ import {
  * Shared Student Profile Content Component
  * Used by both the dialog version and the page version
  */
-export default function StudentProfileContent({ studentData, getGradeLevel }) {
+export default function StudentProfileContent({ studentData, getGradeLevel, sortMode = 'assignment' }) {
   if (!studentData) return null;
 
   const gradeLevel = getGradeLevel(studentData.overallPercentage);
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <Box>
@@ -309,23 +322,28 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
             }}
           >
             <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
-              Score Trend
+              Score Trend {sortMode === 'time' ? '(Sorted by Submission Time)' : '(Sorted by Assignment)'}
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={studentData.trendData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="index" label={{ value: 'Assignment #', position: 'insideBottom', offset: -5 }} />
+                <XAxis dataKey="index" label={{ value: sortMode === 'time' ? 'Submission Order' : 'Assignment #', position: 'insideBottom', offset: -5 }} />
                 <YAxis domain={[0, 100]} label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip 
                   content={({ payload }) => {
                     if (payload && payload.length > 0) {
                       const data = payload[0].payload;
                       return (
-                        <Paper sx={{ p: 1 }}>
-                          <Typography variant="body2">{data.name}</Typography>
+                        <Paper sx={{ p: 1.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{data.name}</Typography>
                           <Typography variant="body2" color="primary">
-                            {data.percentage.toFixed(2)}%
+                            Score: {data.percentage.toFixed(2)}%
                           </Typography>
+                          {sortMode === 'time' && data.submissionTime && (
+                            <Typography variant="caption" color="text.secondary">
+                              Submitted: {formatDate(data.submissionTime)}
+                            </Typography>
+                          )}
                         </Paper>
                       );
                     }
@@ -357,7 +375,7 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
         }}
       >
         <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600, mb: 3 }}>
-          Detailed Assignment Scores
+          Detailed Assignment Scores {sortMode === 'time' && '(Sorted by Submission Time)'}
         </Typography>
         <TableContainer sx={{ mt: 2, maxHeight: 600, borderRadius: 2, overflow: 'auto' }}>
           <Table size="small" stickyHeader>
@@ -370,6 +388,9 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Max</TableCell>
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>%</TableCell>
                 <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Grade</TableCell>
+                {sortMode === 'time' && (
+                  <TableCell align="center" sx={{ backgroundColor: '#f9fafb', fontWeight: 600 }}>Submitted</TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -408,6 +429,16 @@ export default function StudentProfileContent({ studentData, getGradeLevel }) {
                         }}
                       />
                     </TableCell>
+                    {sortMode === 'time' && (
+                      <TableCell align="center" sx={{ fontSize: '0.875rem' }}>
+                        {formatDate(assignment.submissionTime)}
+                        {assignment.lateness && assignment.lateness !== '00:00:00' && (
+                          <Box component="span" sx={{ display: 'block', color: '#f44336', fontSize: '0.75rem', mt: 0.5 }}>
+                            Late: {assignment.lateness}
+                          </Box>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

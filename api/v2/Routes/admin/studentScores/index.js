@@ -1,39 +1,64 @@
 import { Router } from 'express';
 import { getStudents, getStudentScores, getStudentsByAssignmentScore } from '../../../../lib/redisHelper.mjs'; 
+import { getAllStudentScores } from '../../../../lib/dbHelper.mjs';
 
 const router = Router({ mergeParams: true });
 
 /**
  * GET /admin/student-scores
  * Returns all student scores in the format expected by admin.jsx
+ * OPTIMIZED: Uses single database query instead of N+1 Redis calls
  */
 router.get('/', async (req, res) => {
+    const startTime = Date.now();
+    
     try {
-        const students = await getStudents();
-
-        const studentDataPromises = students.map(async (student) => {
-            const studentId = student[1]; 
-            
-            const scores = await getStudentScores(studentId); 
-
-            return {
-                name: student[0] || 'Unknown',
-                email: student[1] || '',
-                scores: scores || {}
-            };
-        });
-
-        const formattedStudents = await Promise.all(studentDataPromises);
-
+        // NEW: Single database query instead of 200+ Redis queries
+        const students = await getAllStudentScores();
+        
+        const queryTime = Date.now() - startTime;
+        console.log(`[PERF] Fetched all student scores from DB in ${queryTime}ms (${students.length} students)`);
+        
         res.json({
-            students: formattedStudents
+            students: students,
+            dataSource: 'database',
+            queryTime: queryTime
         });
-    } catch (error) {
-        console.error('Error fetching student scores:', error);
-        res.status(500).json({ 
-            error: error.message || 'Failed to fetch student scores',
-            students: []
-        });
+    } catch (dbError) {
+        console.warn(`[PERF] Database query failed, falling back to Redis:`, dbError.message);
+        
+        // FALLBACK: Use original Redis logic
+        try {
+            const students = await getStudents();
+
+            const studentDataPromises = students.map(async (student) => {
+                const studentId = student[1]; 
+                const scores = await getStudentScores(studentId); 
+
+                return {
+                    name: student[0] || 'Unknown',
+                    email: student[1] || '',
+                    scores: scores || {}
+                };
+            });
+
+            const formattedStudents = await Promise.all(studentDataPromises);
+            
+            const fallbackTime = Date.now() - startTime;
+            console.log(`[PERF] Redis fallback completed in ${fallbackTime}ms`);
+
+            res.json({
+                students: formattedStudents,
+                dataSource: 'redis-fallback',
+                queryTime: fallbackTime
+            });
+        } catch (error) {
+            console.error('Error fetching student scores:', error);
+            res.status(500).json({ 
+                error: error.message || 'Failed to fetch student scores',
+                students: []
+            });
+        }
     }
 });
 

@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { getStudents, getStudentScores } from '../../../../lib/redisHelper.mjs'; 
+import { getStudents, getStudentScores, getMaxScores } from '../../../../lib/redisHelper.mjs';
+import { getAssignmentDistribution, getCategorySummaryDistribution, getAssignmentsSummaryDistribution } from '../../../../lib/dbHelper.mjs';
 const router = Router({ mergeParams: true });
 
 /**
  * GET /admin/distribution/:section/:name
  * Returns score distribution with student data.
+ * OPTIMIZED: First tries PostgreSQL (single JOIN query), falls back to Redis if needed
  * Returns: { 
  *   freq: [count0, count1, ...], 
  *   minScore: number, 
@@ -16,69 +18,105 @@ const router = Router({ mergeParams: true });
 router.get('/:section/:name', async (req, res) => {
     try {
         const { section, name } = req.params;
-        const students = await getStudents();
+        const startTime = Date.now();
         
-        // Get max possible score for this assignment
-        const { getMaxScores } = await import('../../../../lib/redisHelper.mjs');
-        const maxScoresData = await getMaxScores();
+        console.log(`[DEBUG] Distribution request - section: "${section}", name: "${name}"`);
+        
+        let scoreData = []; // Array of {studentName, studentEmail, score}
         let maxPossibleScore = null;
+        let dataSource = 'unknown';
         
-        if (!name.includes('Summary') && maxScoresData[section] && maxScoresData[section][name]) {
-            maxPossibleScore = Number(maxScoresData[section][name]);
-        } 
-
-        let scoreData; // Array of {studentName, studentEmail, score}
-        
-        // Check if this is a summary request
-        if (name.includes('Summary')) {
-            // Get sum of all assignments in this section for each student
-            scoreData = [];
-            for (const student of students) {
-                const studentId = student[1]; 
-                const studentScores = await getStudentScores(studentId); 
+        // OPTIMIZATION: Try database first (single query with JOIN)
+        try {
+            if (name.includes('Summary')) {
+                console.log(`[PERF] Fetching category summary from DB: ${section}`);
                 
-                if (!studentScores[section]) {
-                    continue;
+                // NEW: Directly query database by category (section name = category name now)
+                scoreData = await getCategorySummaryDistribution(section);
+                dataSource = 'database-summary';
+                
+                console.log(`[DEBUG] DB returned ${scoreData.length} students for category "${section}"`);
+            } else {
+                console.log(`[PERF] Fetching assignment distribution from DB: ${section}/${name}`);
+                const dbData = await getAssignmentDistribution(name, section);
+                scoreData = dbData;
+                console.log(`[DEBUG] DB returned ${dbData.length} records`);
+                if (dbData.length > 0 && dbData[0].maxPoints) {
+                    maxPossibleScore = dbData[0].maxPoints;
                 }
-                
-                const sectionScores = studentScores[section];
-                let total = 0;
-                let count = 0;
-                
-                Object.values(sectionScores).forEach(score => {
-                    if (score != null && score !== '' && !isNaN(score)) {
-                        total += Number(score);
-                        count++;
+                dataSource = 'database-assignment';
+            }
+            
+            const dbTime = Date.now() - startTime;
+            console.log(`[PERF] Database query completed in ${dbTime}ms, found ${scoreData.length} students`);
+            
+        } catch (dbError) {
+            console.warn(`[PERF] Database query failed (${Date.now() - startTime}ms), falling back to Redis:`, dbError.message);
+            dataSource = 'redis-fallback';
+            
+            // FALLBACK: Use original Redis logic
+            const students = await getStudents();
+        
+            // Get max possible score for this assignment
+            const { getMaxScores } = await import('../../../../lib/redisHelper.mjs');
+            const maxScoresData = await getMaxScores();
+            
+            if (!name.includes('Summary') && maxScoresData[section] && maxScoresData[section][name]) {
+                maxPossibleScore = Number(maxScoresData[section][name]);
+            }
+
+            // Check if this is a summary request
+            if (name.includes('Summary')) {
+                // Get sum of all assignments in this section for each student
+                for (const student of students) {
+                    const studentId = student[1]; 
+                    const studentScores = await getStudentScores(studentId); 
+                    
+                    if (!studentScores[section]) {
+                        continue;
                     }
-                });
-                
-                if (count > 0) {
-                    scoreData.push({
-                        studentName: student[0],
-                        studentEmail: student[1],
-                        score: total
+                    
+                    const sectionScores = studentScores[section];
+                    let total = 0;
+                    let count = 0;
+                    
+                    Object.values(sectionScores).forEach(score => {
+                        if (score != null && score !== '' && !isNaN(score)) {
+                            total += Number(score);
+                            count++;
+                        }
                     });
+                    
+                    if (count > 0) {
+                        scoreData.push({
+                            studentName: student[0],
+                            studentEmail: student[1],
+                            score: total
+                        });
+                    }
+                }
+            } else {
+                // Get score for a specific assignment
+                for (const student of students) {
+                    const studentId = student[1]; 
+                    const studentScores = await getStudentScores(studentId); 
+                    
+                    const score = studentScores[section] ? studentScores[section][name] : null;
+                    
+                    if (score != null && score !== '' && !isNaN(score)) {
+                        scoreData.push({
+                            studentName: student[0],
+                            studentEmail: student[1],
+                            score: Number(score)
+                        });
+                    }
                 }
             }
-        } else {
-            // Get score for a specific assignment
-            scoreData = [];
-            for (const student of students) {
-                const studentId = student[1]; 
-                const studentScores = await getStudentScores(studentId); 
-                
-                const score = studentScores[section] ? studentScores[section][name] : null;
-                
-                if (score != null && score !== '' && !isNaN(score)) {
-                    scoreData.push({
-                        studentName: student[0],
-                        studentEmail: student[1],
-                        score: Number(score)
-                    });
-                }
-            }
+            
+            console.log(`[PERF] Redis fallback completed in ${Date.now() - startTime}ms`);
         }
-
+        
+        // Continue with distribution calculation (same for both DB and Redis)
         if (scoreData.length === 0) {
             // Return empty data structure
             return res.json({ 
@@ -86,7 +124,9 @@ router.get('/:section/:name', async (req, res) => {
                 minScore: 0, 
                 maxScore: 0,
                 binWidth: 1,
-                distribution: [] 
+                distribution: [],
+                dataSource,
+                queryTime: Date.now() - startTime
             });
         }
 
@@ -202,6 +242,9 @@ router.get('/:section/:name', async (req, res) => {
         
         // --- END Logic for binning ---
 
+        const totalTime = Date.now() - startTime;
+        console.log(`[PERF] Total request time: ${totalTime}ms (source: ${dataSource})`);
+
         res.json({
             freq,
             minScore: displayMinScore,  // Always 0
@@ -213,7 +256,9 @@ router.get('/:section/:name', async (req, res) => {
             totalStudents: scoreData.length,
             isSummary,
             suggestedTickInterval,  // Frontend can use this to reduce x-axis label density
-            distribution  // Includes all students grouped by score range (0 to maxScore)
+            distribution,  // Includes all students grouped by score range (0 to maxScore)
+            dataSource,    // 'database-assignment', 'database-summary', or 'redis-fallback'
+            queryTime: totalTime  // Time in milliseconds
         });
     } catch (error) {
         console.error('Error fetching frequency distribution:', error);

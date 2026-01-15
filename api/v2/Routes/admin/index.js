@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { validateAdminMiddleware } from '../../../lib/authlib.mjs';
 import ProgressReportsRouter from './progressReports/index.js';
 import CategoriesRouter from './categories/index.js';
+import AssignmentsRouter from './assignments/index.js';
 import StatsRouter from './stats/index.js';
 import DistributionRouter from './distribution/index.js';
 import StudentScoresRouter from './studentScores/index.js';
@@ -22,7 +23,8 @@ router.use(validateAdminMiddleware);
 
 // Mount sub-routers
 router.use('/progressreports', ProgressReportsRouter);
-router.use('/categories', CategoriesRouter);
+router.use('/categories', CategoriesRouter); // Legacy Redis endpoint
+router.use('/assignments', AssignmentsRouter); // New database endpoint
 router.use('/stats', StatsRouter);
 router.use('/distribution', DistributionRouter);
 router.use('/studentScores', StudentScoresRouter);

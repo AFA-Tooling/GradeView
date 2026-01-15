@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradeView - Mode Comparison</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .mode-box {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .mode-box h2 {
+            color: #1976d2;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mode-box h3 {
+            color: #374151;
+            font-size: 16px;
+            margin: 20px 0 10px 0;
+            border-bottom: 1px solid #d1d5db;
+            padding-bottom: 5px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: start;
+        }
+        .feature-list li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .data-example {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .instruction-box {
+            background: #dbeafe;
+            border-left: 4px solid #1976d2;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .instruction-box strong {
+            color: #1e40af;
+        }
+        .api-test {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+        }
+        .api-test button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .api-test button:hover {
+            background: #1565c0;
+        }
+        #apiResult {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 GradeView - 排序模式对比说明</h1>
+        <p class="subtitle">理解两种排序模式的区别</p>
+
+        <div class="instruction-box">
+            <strong>🎯 如何查看变化：</strong>
+            <ol style="margin: 10px 0 0 20px;">
+                <li>打开 <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                <li>进入 Admin 页面</li>
+                <li>点击任意学生名字打开详细对话框</li>
+                <li><strong style="color: #dc2626;">点击对话框右上角的切换按钮</strong>（📊 By Assignment ↔️ 🕐 By Time）</li>
+                <li>观察图表和表格的变化</li>
+            </ol>
+        </div>
+
+        <div class="comparison">
+            <div class="mode-box">
+                <h2>📊 By Assignment（按作业）</h2>
+                
+                <h3>图表特征：</h3>
+                <ul class="feature-list">
+                    <li>标题：Score Trend <span class="highlight">(Sorted by Assignment)</span></li>
+                    <li>X轴：<span class="highlight">Assignment #</span></li>
+                    <li>数据点数量：<span class="highlight">86个</span>（所有作业）</li>
+                    <li>排序方式：按类别和作业名称</li>
+                </ul>
+
+                <h3>示例数据顺序：</h3>
+                <div class="data-example">
+1. Quest (pre-clobber) - Lecture Quiz 1<br>
+2. Quest (pre-clobber) - Lecture Quiz 2<br>
+3. Quest (pre-clobber) - Lecture Quiz 3<br>
+...<br>
+30. Projects - Project 1<br>
+31. Projects - Project 2<br>
+...<br>
+86. Postterm - Final
+                </div>
+
+                <h3>表格特征：</h3>
+                <ul class="feature-list">
+                    <li>列：# | Category | Assignment | Score | Max | % | Grade</li>
+                    <li><strong>无</strong> Submitted 列</li>
+                    <li>按类别分组排序</li>
+                </ul>
+            </div>
+
+            <div class="mode-box">
+                <h2>🕐 By Time（按时间）</h2>
+                
+                <h3>图表特征：</h3>
+                <ul class="feature-list">
+                    <li>标题：Score Trend <span class="highlight">(Sorted by Submission Time)</span></li>
+                    <li>X轴：<span class="highlight">Submission Order</span></li>
+                    <li>数据点数量：<span class="highlight">43个</span>（已提交作业）</li>
+                    <li>排序方式：按提交时间倒序（最新在前）</li>
+                </ul>
+
+                <h3>示例数据顺序：</h3>
+                <div class="data-example">
+1. Project 5 RESUBMISSION (2025-12-16)<br>
+2. Project 5 (2025-12-06)<br>
+3. Postterm 1 (2025-11-23)<br>
+...<br>
+41. Lecture Quiz 2 (2025-08-28)<br>
+42. Lecture Quiz 3 (2025-08-28)<br>
+43. Lecture Quiz 1 (2025-08-27)
+                </div>
+
+                <h3>表格特征：</h3>
+                <ul class="feature-list">
+                    <li>列：# | Category | Assignment | Score | Max | % | Grade | <strong style="color: #dc2626;">Submitted</strong></li>
+                    <li><strong>新增</strong> Submitted 列显示提交时间</li>
+                    <li>按时间倒序排列</li>
+                    <li>迟交显示红色 "Late" 徽章</li>
+                </ul>
+
+                <h3>Tooltip 增强：</h3>
+                <div class="data-example">
+<strong>Assignment Name</strong><br>
+Score: 90.00%<br>
+<strong style="color: #dc2626;">Submitted: Nov 23, 2025 14:30</strong> ← 新增
+                </div>
+            </div>
+        </div>
+
+        <div class="api-test">
+            <h2 style="margin-top: 0; color: #065f46;">🔍 实时API数据对比测试</h2>
+            <p>点击按钮查看两种模式返回的实际数据差异：</p>
+            <button onclick="testAssignmentMode()">测试 Assignment 模式</button>
+            <button onclick="testTimeMode()">测试 Time 模式</button>
+            <button onclick="compareData()">对比数据差异</button>
+            <div id="apiResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v2';
+        const TEST_EMAIL = 'jippebraams@berkeley.edu';
+
+        async function testAssignmentMode() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.textContent = '加载中...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/students/${encodeURIComponent(TEST_EMAIL)}/grades`);
+                const data = await response.json();
+                
+                const categories = Object.keys(data);
+                let totalAssignments = 0;
+                const sampleAssignments = [];
+                
+                categories.forEach(cat => {
+                    const assignments = Object.keys(data[cat]);
+                    totalAssignments += assignments.length;
+                    if (sampleAssignments.length < 5) {
+                        assignments.slice(0, 3).forEach(name => {
+                            sampleAssignments.push(`${cat} - ${name}`);
+                        });
+                    }
+                });
+                
+                resultDiv.textContent = `✅ Assignment 模式数据：\n\n` +
+                    `总作业数：${totalAssignments}\n` +
+                    `类别数：${categories.length}\n` +
+                    `类别：${categories.join(', ')}\n\n` +
+                    `前5个作业示例：\n${sampleAssignments.slice(0, 5).map((a, i) => `  ${i+1}. ${a}`).join('\n')}`;
+            } catch (error) {
+                resultDiv.textContent = `❌ 错误：${error.message}`;
+            }
+        }
+
+        async function testTimeMode() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.textContent = '加载中...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/students/${encodeURIComponent(TEST_EMAIL)}/grades?sort=time`);
+                const data = await response.json();
+                
+                const submissions = data.submissions || [];
+                
+                resultDiv.textContent = `✅ Time 模式数据：\n\n` +
+                    `总提交数：${submissions.length}\n` +
+                    `排序方式：${data.sortBy}\n\n` +
+                    `前5个提交（按时间倒序）：\n${submissions.slice(0, 5).map((s, i) => 
+                        `  ${i+1}. ${s.name}\n     提交时间：${s.submissionTime}\n     分数：${s.score}/${s.maxPoints} (${s.percentage.toFixed(2)}%)`
+                    ).join('\n\n')}`;
+            } catch (error) {
+                resultDiv.textContent = `❌ 错误：${error.message}`;
+            }
+        }
+
+        async function compareData() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.textContent = '加载并对比数据...';
+            
+            try {
+                const [assignmentResponse, timeResponse] = await Promise.all([
+                    fetch(`${API_BASE}/students/${encodeURIComponent(TEST_EMAIL)}/grades`),
+                    fetch(`${API_BASE}/students/${encodeURIComponent(TEST_EMAIL)}/grades?sort=time`)
+                ]);
+                
+                const assignmentData = await assignmentResponse.json();
+                const timeData = await timeResponse.json();
+                
+                const categories = Object.keys(assignmentData);
+                let totalAssignments = 0;
+                categories.forEach(cat => {
+                    totalAssignments += Object.keys(assignmentData[cat]).length;
+                });
+                
+                const submissions = timeData.submissions || [];
+                
+                resultDiv.textContent = `📊 数据对比分析：\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `Assignment 模式：\n` +
+                    `  • 总作业数：${totalAssignments}\n` +
+                    `  • 类别数：${categories.length}\n` +
+                    `  • 数据结构：按类别分组的对象\n` +
+                    `  • 包含：所有作业（包括未提交）\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `Time 模式：\n` +
+                    `  • 总提交数：${submissions.length}\n` +
+                    `  • 排序方式：按提交时间倒序\n` +
+                    `  • 数据结构：提交数组\n` +
+                    `  • 包含：仅已提交作业\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `关键差异：\n` +
+                    `  ⚠️  数据点数量不同：${totalAssignments} vs ${submissions.length}\n` +
+                    `  ⚠️  排序逻辑不同：类别/名称 vs 时间\n` +
+                    `  ⚠️  Time模式包含提交时间信息\n` +
+                    `  ⚠️  Time模式仅显示已提交作业\n\n` +
+                    `💡 这就是为什么切换模式后图表会明显不同！`;
+            } catch (error) {
+                resultDiv.textContent = `❌ 错误：${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

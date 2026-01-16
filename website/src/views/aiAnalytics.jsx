@@ -1,5 +1,5 @@
 // src/views/aiAnalytics.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -19,6 +19,12 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
 } from '@mui/material';
 import {
   Search,
@@ -30,117 +36,177 @@ import {
   TrendingDown,
   Help,
   AutoAwesome,
+  Lightbulb,
+  Settings,
 } from '@mui/icons-material';
+import aiAgent from '../services/aiAgent';
+import AIAgentSettings from '../components/AIAgentSettings';
 
 /**
- * AI Analytics - 4个智能分析模块
- * 1. 语义化数据侦探
- * 2. 知识盲点诊断
- * 3. 学生成功预警
- * 4. 试题质量分析
+ * AI Analytics - 4 Intelligent Analysis Modules
+ * 1. Semantic Data Detective
+ * 2. Knowledge Gap Diagnosis
+ * 3. Student Success Alert
+ * 4. Question Quality Analysis
  */
 export default function AIAnalytics() {
   const [queryInput, setQueryInput] = useState('');
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // 示例查询建议
-  const suggestedQueries = [
-    '找出这学期成绩波动最大的 5 个学生',
-    '哪些题目是高分段学生也普遍出错的？',
-    '对比班级 A 和班级 B 在递归函数的表现',
-    '上周作业平均完成时间是多少？'
-  ];
+  // Initialize AI Agent
+  useEffect(() => {
+    aiAgent.initialize(); // API key empty, use demo mode
+  }, []);
 
-  // 处理自然语言查询
-  const handleQuery = () => {
+  // Example query suggestions
+  const suggestedQueries = aiAgent.getSuggestions();
+
+  // Handle natural language queries
+  const handleQuery = async () => {
+    if (!queryInput.trim()) return;
+
     setQueryLoading(true);
-    // TODO: 调用MCP服务处理查询
-    setTimeout(() => {
+    
+    try {
+      // Call AI Agent to process query (auto-generate SQL)
+      const result = await aiAgent.processQuery(queryInput);
+      
+      setQueryResult(result);
+    } catch (error) {
+      console.error('Query processing error:', error);
       setQueryResult({
-        query: queryInput,
-        answer: '这是一个示例回答。实际数据将通过MCP服务获取。',
-        data: [
-          { name: '张三', score: 85, trend: 'up' },
-          { name: '李四', score: 78, trend: 'down' },
-        ]
+        type: 'error',
+        answer: 'Sorry, an error occurred while processing the query. Please try again later.',
+        data: null,
+        suggestions: ['Check network connection', 'Ensure you are logged in', 'Try a simpler query']
       });
+    } finally {
       setQueryLoading(false);
-    }, 1500);
+    }
   };
 
-  // 示例知识盲点数据
+  // Render data table
+  const renderDataTable = (data) => {
+    if (!data || data.length === 0) return null;
+
+    const columns = Object.keys(data[0]);
+
+    return (
+      <TableContainer component={Paper} sx={{ mt: 2 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              {columns.map((col) => (
+                <TableCell key={col} sx={{ fontWeight: 600 }}>
+                  {col}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.map((row, idx) => (
+              <TableRow key={idx}>
+                {columns.map((col) => (
+                  <TableCell key={col}>
+                    {col === 'trend' ? (
+                      row[col] === 'up' ? (
+                        <TrendingUp sx={{ color: '#10b981', fontSize: 20 }} />
+                      ) : (
+                        <TrendingDown sx={{ color: '#ef4444', fontSize: 20 }} />
+                      )
+                    ) : (
+                      row[col]
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
+
+  // Sample knowledge gap data
   const knowledgeGaps = [
     {
-      topic: '递归函数',
+      topic: 'Recursive Functions',
       errorRate: 65,
       affectedStudents: 28,
-      commonMistakes: ['基础条件未定义', '递归深度过大', '返回值错误'],
+      commonMistakes: ['Base condition undefined', 'Recursion depth too large', 'Return value error'],
       severity: 'high'
     },
     {
-      topic: '内存管理',
+      topic: 'Memory Management',
       errorRate: 48,
       affectedStudents: 21,
-      commonMistakes: ['内存泄漏', '指针使用错误'],
+      commonMistakes: ['Memory leak', 'Pointer usage error'],
       severity: 'medium'
     },
     {
-      topic: '算法复杂度',
+      topic: 'Algorithm Complexity',
       errorRate: 32,
       affectedStudents: 14,
-      commonMistakes: ['时间复杂度计算错误'],
+      commonMistakes: ['Time complexity calculation error'],
       severity: 'low'
     },
   ];
 
-  // 示例风险学生数据
+  // Sample risk student data
   const riskStudents = [
     {
-      name: '张三',
+      name: 'Zhang San',
       email: 'zhang@example.com',
       riskLevel: 'high',
-      reasons: ['连续3次作业延迟提交', '分数持续下降15%', '最近未参加Office Hour'],
+      reasons: ['3 consecutive late submissions', 'Score continuously dropped 15%', 'Did not attend recent Office Hours'],
       currentGrade: 72,
       trend: -8,
     },
     {
-      name: '李四',
+      name: 'Li Si',
       email: 'li@example.com',
       riskLevel: 'medium',
-      reasons: ['提交时间集中在截止前2小时', '代码修改频率异常高'],
+      reasons: ['Submission time concentrated 2 hours before deadline', 'Abnormally high code modification frequency'],
       currentGrade: 85,
       trend: -3,
     },
   ];
 
-  // 示例试题分析数据
+  // Sample exam analysis data
   const examAnalysis = [
     {
       questionNumber: 8,
-      title: '二叉树遍历',
+      title: 'Binary Tree Traversal',
       avgTime: 40,
       points: 5,
       discrimination: 0.28,
       difficulty: 0.72,
-      issue: '时间分配不合理',
-      recommendation: '建议增加分值到10分或降低难度'
+      issue: 'Time allocation unreasonable',
+      recommendation: 'Suggest increasing points to 10 or reducing difficulty'
     },
     {
       questionNumber: 3,
-      title: '基础语法',
+      title: 'Basic Syntax',
       avgTime: 5,
       points: 10,
       discrimination: 0.12,
       difficulty: 0.95,
-      issue: '区分度过低',
-      recommendation: '题目过于简单，无法区分学生能力'
+      issue: 'Discrimination too low',
+      recommendation: 'Question too easy, cannot distinguish student abilities'
     },
   ];
 
   return (
     <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', p: 4 }}>
-      {/* Module 1: 语义化数据侦探 */}
+      {/* AI Agent Settings Dialog */}
+      <AIAgentSettings 
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
+      {/* Module 1: Semantic Data Detective */}
       <Paper
         elevation={0}
         sx={{
@@ -152,23 +218,36 @@ export default function AIAnalytics() {
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Search sx={{ fontSize: 32, color: '#4f46e5', mr: 2 }} />
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
-              语义化数据侦探
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Natural Language Query Engine - 用自然语言查询成绩数据
-            </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Search sx={{ fontSize: 32, color: '#4f46e5', mr: 2 }} />
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
+                Semantic Data Detective
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Natural Language Query Engine - Query grade data in natural language
+              </Typography>
+            </Box>
           </Box>
+          <Tooltip title="AI Agent Settings">
+            <IconButton 
+              onClick={() => setSettingsOpen(true)}
+              sx={{ 
+                bgcolor: '#f0f9ff',
+                '&:hover': { bgcolor: '#e0f2fe' }
+              }}
+            >
+              <Settings sx={{ color: '#4f46e5' }} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
-        {/* 查询输入 */}
+        {/* Query input */}
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             fullWidth
-            placeholder="输入你的问题，例如：找出成绩波动最大的学生..."
+            placeholder="Enter your question, e.g., Find students with the highest grade fluctuation..."
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleQuery()}
@@ -191,14 +270,14 @@ export default function AIAnalytics() {
               minWidth: 120
             }}
           >
-            查询
+            Query
           </Button>
         </Box>
 
-        {/* 建议查询 */}
+        {/* Suggested queries */}
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-            试试这些问题：
+            Try these questions:
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {suggestedQueries.map((query, idx) => (
@@ -215,24 +294,125 @@ export default function AIAnalytics() {
           </Box>
         </Box>
 
-        {/* 加载中 */}
+        {/* Loading */}
         {queryLoading && <LinearProgress sx={{ mb: 2 }} />}
 
-        {/* 查询结果 */}
+        {/* Query results */}
         {queryResult && (
-          <Paper sx={{ p: 3, bgcolor: '#f9fafb', borderRadius: 2 }}>
-            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
-              回答：
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {queryResult.answer}
-            </Typography>
-            {/* TODO: 展示具体数据表格或图表 */}
+          <Paper 
+            elevation={2}
+            sx={{ 
+              p: 3, 
+              bgcolor: '#f0f9ff', 
+              borderRadius: 2,
+              border: '1px solid #0ea5e9'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+              <AutoAwesome sx={{ color: '#0ea5e9', mr: 1, mt: 0.5 }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+                  AI Analysis Result:
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+                  {queryResult.answer}
+                </Typography>
+
+                {/* Render data */}
+                {queryResult.data && Array.isArray(queryResult.data) && (
+                  renderDataTable(queryResult.data)
+                )}
+
+                {/* Render comparison data */}
+                {queryResult.data && queryResult.type === 'comparison' && (
+                  <Box sx={{ mt: 2 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, bgcolor: 'white' }}>
+                          <Typography variant="h6" color="primary">
+                            {queryResult.data.groupA.name}
+                          </Typography>
+                          <Typography variant="h4">
+                            {queryResult.data.groupA.avgScore}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Average • {queryResult.data.groupA.studentCount} students
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, bgcolor: 'white' }}>
+                          <Typography variant="h6" color="secondary">
+                            {queryResult.data.groupB.name}
+                          </Typography>
+                          <Typography variant="h4">
+                            {queryResult.data.groupB.avgScore}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Average • {queryResult.data.groupB.studentCount} students
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* Render statistics data */}
+                {queryResult.data && queryResult.type === 'statistics' && (
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={4}>
+                      <Paper sx={{ p: 2, bgcolor: 'white', textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">Average</Typography>
+                        <Typography variant="h5">{queryResult.data.mean}</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Paper sx={{ p: 2, bgcolor: 'white', textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">Median</Typography>
+                        <Typography variant="h5">{queryResult.data.median}</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Paper sx={{ p: 2, bgcolor: 'white', textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">Std Dev</Typography>
+                        <Typography variant="h5">{queryResult.data.stdDev}</Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                )}
+
+                {/* AI Suggestions */}
+                {queryResult.suggestions && queryResult.suggestions.length > 0 && (
+                  <Box sx={{ mt: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Lightbulb sx={{ color: '#f59e0b', fontSize: 20, mr: 1 }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        Suggestions
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {queryResult.suggestions.map((suggestion, idx) => (
+                        <Chip
+                          key={idx}
+                          label={suggestion}
+                          size="small"
+                          sx={{
+                            bgcolor: 'white',
+                            border: '1px solid #0ea5e9',
+                            '&:hover': { bgcolor: '#e0f2fe', cursor: 'pointer' }
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </Box>
           </Paper>
         )}
       </Paper>
 
-      {/* Module 2: 知识盲点诊断 */}
+      {/* Module 2: Knowledge Gap Diagnosis */}
       <Paper
         elevation={0}
         sx={{
@@ -248,10 +428,10 @@ export default function AIAnalytics() {
           <Psychology sx={{ fontSize: 32, color: '#ec4899', mr: 2 }} />
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
-              知识盲点诊断
+              Knowledge Gap Diagnosis
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Automated Knowledge Gap Discovery - 自动识别教学薄弱环节
+              Automated Knowledge Gap Discovery - Automatically identify teaching weak points
             </Typography>
           </Box>
         </Box>
@@ -291,10 +471,10 @@ export default function AIAnalytics() {
                     />
                   </Box>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                    {gap.affectedStudents} 名学生受影响
+                    {gap.affectedStudents} students affected
                   </Typography>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                    常见错误：
+                    Common mistakes:
                   </Typography>
                   <List dense>
                     {gap.commonMistakes.map((mistake, i) => (
@@ -309,10 +489,10 @@ export default function AIAnalytics() {
                 </CardContent>
                 <CardActions>
                   <Button size="small" sx={{ textTransform: 'none' }}>
-                    查看详情
+                    View Details
                   </Button>
                   <Button size="small" sx={{ textTransform: 'none' }}>
-                    生成教学建议
+                    Generate Teaching Recommendations
                   </Button>
                 </CardActions>
               </Card>
@@ -322,7 +502,7 @@ export default function AIAnalytics() {
       </Paper>
 
       <Grid container spacing={3}>
-        {/* Module 3: 学生成功预警 */}
+        {/* Module 3: Student Success Alert */}
         <Grid item xs={12} lg={6}>
           <Paper
             elevation={0}
@@ -339,10 +519,10 @@ export default function AIAnalytics() {
               <Warning sx={{ fontSize: 32, color: '#f59e0b', mr: 2 }} />
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
-                  学生成功预警
+                  Student Success Alert
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  Predictive Student Success Plan - 风险学生早期识别
+                  Predictive Student Success Plan - Early identification of at-risk students
                 </Typography>
               </Box>
             </Box>
@@ -369,7 +549,7 @@ export default function AIAnalytics() {
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
                     <Chip
-                      label={student.riskLevel === 'high' ? '高风险' : '中风险'}
+                      label={student.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}
                       size="small"
                       sx={{
                         bgcolor: student.riskLevel === 'high' ? '#ef4444' : '#f59e0b',
@@ -379,7 +559,7 @@ export default function AIAnalytics() {
                       }}
                     />
                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                      当前: {student.currentGrade}
+                      Current: {student.currentGrade}
                       {student.trend < 0 ? (
                         <TrendingDown sx={{ color: '#ef4444', fontSize: 18, ml: 0.5 }} />
                       ) : (
@@ -393,7 +573,7 @@ export default function AIAnalytics() {
                 </Box>
 
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  风险因素：
+                  Risk factors:
                 </Typography>
                 <List dense>
                   {student.reasons.map((reason, i) => (
@@ -417,22 +597,22 @@ export default function AIAnalytics() {
                       textTransform: 'none'
                     }}
                   >
-                    生成干预邮件
+                    Generate Intervention Email
                   </Button>
                   <Button size="small" variant="outlined" sx={{ textTransform: 'none' }}>
-                    查看详情
+                    View Details
                   </Button>
                 </Box>
               </Paper>
             ))}
 
             <Alert severity="info" sx={{ mt: 2 }}>
-              共发现 {riskStudents.length} 名需要关注的学生
+              Found {riskStudents.length} students who need attention
             </Alert>
           </Paper>
         </Grid>
 
-        {/* Module 4: 试题质量分析 */}
+        {/* Module 4: Question Quality Analysis */}
         <Grid item xs={12} lg={6}>
           <Paper
             elevation={0}
@@ -449,10 +629,10 @@ export default function AIAnalytics() {
               <Assessment sx={{ fontSize: 32, color: '#06b6d4', mr: 2 }} />
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
-                  试题质量分析
+                  Question Quality Analysis
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  Item Analysis & Exam Audit - 科学评估试卷质量
+                  Item Analysis & Exam Audit - Scientifically evaluate exam quality
                 </Typography>
               </Box>
             </Box>
@@ -470,7 +650,7 @@ export default function AIAnalytics() {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    第 {item.questionNumber} 题: {item.title}
+                    Question {item.questionNumber}: {item.title}
                   </Typography>
                   <Chip
                     icon={<Help />}
@@ -487,25 +667,25 @@ export default function AIAnalytics() {
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="textSecondary">
-                      平均用时
+                      Avg Time
                     </Typography>
-                    <Typography variant="h6">{item.avgTime} 分钟</Typography>
+                    <Typography variant="h6">{item.avgTime} min</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="textSecondary">
-                      分值
+                      Points
                     </Typography>
-                    <Typography variant="h6">{item.points} 分</Typography>
+                    <Typography variant="h6">{item.points} pts</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="textSecondary">
-                      区分度
+                      Discrimination
                     </Typography>
                     <Typography variant="h6">{item.discrimination}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="textSecondary">
-                      难度系数
+                      Difficulty
                     </Typography>
                     <Typography variant="h6">{item.difficulty}</Typography>
                   </Grid>
@@ -514,7 +694,7 @@ export default function AIAnalytics() {
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#0ea5e9' }}>
-                  💡 优化建议：
+                  💡 Optimization Suggestion:
                 </Typography>
                 <Typography variant="body2">
                   {item.recommendation}
@@ -536,7 +716,7 @@ export default function AIAnalytics() {
                 }
               }}
             >
-              查看完整试卷分析报告
+              View Complete Exam Analysis Report
             </Button>
           </Paper>
         </Grid>

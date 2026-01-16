@@ -949,11 +949,11 @@ export default function Admin() {
                         size="small" 
                         stickyHeader
                         sx={{ 
-                            minWidth: 'max-content', // 允许表格超出容器
+                            minWidth: 'max-content', // Allow table to exceed container
                             '& .MuiTableCell-root': { 
                                 fontSize: '0.875rem',
-                                minWidth: '100px', // 增加最小宽度，更宽敞
-                                padding: '10px 16px', // 增加内边距
+                                minWidth: '100px', // Increase minimum width for more spacious layout
+                                padding: '10px 16px', // Increase padding
                                 whiteSpace: 'nowrap'
                             },
                             '& .MuiTableCell-head': {
@@ -974,7 +974,7 @@ export default function Admin() {
                                     zIndex: 101, 
                                     backgroundColor: '#f9f9f9',
                                     borderRight: '2px solid #999',
-                                    minWidth: '200px', // 学生名称列更宽
+                                    minWidth: '200px', // Student name column wider
                                     maxWidth: '250px'
                                 }}>
                                     <strong>Student</strong>
@@ -1058,7 +1058,7 @@ export default function Admin() {
                                         zIndex: 10,
                                         backgroundColor: 'white',
                                         borderRight: '2px solid #999',
-                                        minWidth: '200px', // 学生名称列更宽
+                                        minWidth: '200px', // Student name column wider
                                         maxWidth: '250px'
                                     }}>
                                         <Box

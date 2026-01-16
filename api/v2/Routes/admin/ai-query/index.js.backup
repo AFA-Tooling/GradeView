@@ -1,0 +1,418 @@
+import { Router } from 'express';
+import pkg from 'pg';
+const { Pool } = pkg;
+
+const router = Router({ mergeParams: true });
+
+const pool = new Pool({
+    connectionString: process.env.GRADESYNC_DATABASE_URL || process.env.DATABASE_URL
+});
+
+/**
+ * AI Query Endpoint
+ * POST /admin/ai-query
+ * Body: {
+ *   query: "natural language query",
+ *   queryType: "studentSearch" | "questionAnalysis" | "comparison" | "timeAnalysis" | "statistics" | "trend"
+ * }
+ */
+router.post('/', async (req, res) => {
+    try {
+        const { query, queryType, context } = req.body;
+        
+        if (!query || !queryType) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: query and queryType' 
+            });
+        }
+
+        console.log(`[AI Query] Type: ${queryType}, Query: "${query}"`);
+
+        let data = null;
+        let answer = '';
+        let suggestions = [];
+
+        switch (queryType) {
+            case 'studentSearch':
+                data = await handleStudentSearch(query);
+                answer = '根据当前数据分析，以下学生的成绩情况如下：';
+                suggestions = [
+                    '查看这些学生的具体作业表现',
+                    '生成个性化学习建议',
+                    '对比他们与班级平均水平的差异'
+                ];
+                break;
+
+            case 'questionAnalysis':
+                data = await handleQuestionAnalysis(query);
+                answer = '分析发现以下作业/题目的情况：';
+                suggestions = [
+                    '查看错误答案分布',
+                    '识别常见错误模式',
+                    '生成针对性复习材料'
+                ];
+                break;
+
+            case 'comparison':
+                data = await handleComparison(query);
+                answer = '对比分析结果如下：';
+                suggestions = [
+                    '深入分析差异原因',
+                    '查看各个知识点的表现差异',
+                    '生成教学改进建议'
+                ];
+                break;
+
+            case 'timeAnalysis':
+                data = await handleTimeAnalysis(query);
+                answer = '时间相关的数据分析：';
+                suggestions = [
+                    '查看提交时间分布',
+                    '分析提交时间与成绩的关系',
+                    '识别拖延风险学生'
+                ];
+                break;
+
+            case 'statistics':
+                data = await handleStatistics(query);
+                answer = '统计数据如下：';
+                suggestions = [
+                    '查看详细分布',
+                    '与历史数据对比',
+                    '生成统计报告'
+                ];
+                break;
+
+            case 'trend':
+                data = await handleTrend(query);
+                answer = '趋势分析结果：';
+                suggestions = [
+                    '预测未来趋势',
+                    '识别异常变化',
+                    '查看影响因素'
+                ];
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid queryType' });
+        }
+
+        res.json({
+            type: queryType,
+            answer,
+            data,
+            suggestions,
+            visualizationType: getVisualizationType(queryType)
+        });
+
+    } catch (error) {
+        console.error('[AI Query Error]', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: error.message 
+        });
+    }
+});
+
+/**
+ * Student Search Query Handler
+ * Returns students with score variations, trends, etc.
+ */
+async function handleStudentSearch(query) {
+    try {
+        // Query to get students with their assignment performance
+        const result = await pool.query(`
+            WITH student_stats AS (
+                SELECT 
+                    s.id,
+                    s.email,
+                    s.legal_name as name,
+                    s.sid as student_id,
+                    COUNT(sub.id) as total_submissions,
+                    AVG(sub.total_score / NULLIF(sub.max_points, 0) * 100) as avg_score,
+                    STDDEV(sub.total_score / NULLIF(sub.max_points, 0) * 100) as score_stddev,
+                    MAX(sub.total_score / NULLIF(sub.max_points, 0) * 100) as max_score,
+                    MIN(sub.total_score / NULLIF(sub.max_points, 0) * 100) as min_score
+                FROM students s
+                LEFT JOIN submissions sub ON s.id = sub.student_id
+                GROUP BY s.id, s.email, s.legal_name, s.sid
+                HAVING COUNT(sub.id) > 0
+            )
+            SELECT 
+                name,
+                student_id,
+                ROUND(avg_score::numeric, 2) as current_score,
+                ROUND(score_stddev::numeric, 2) as variance,
+                ROUND(max_score::numeric, 2) as max_score,
+                ROUND(min_score::numeric, 2) as min_score,
+                total_submissions
+            FROM student_stats
+            WHERE score_stddev IS NOT NULL
+            ORDER BY score_stddev DESC
+            LIMIT 10
+        `);
+
+        return result.rows.map(row => ({
+            name: row.name || 'Unknown',
+            studentId: row.student_id,
+            currentScore: parseFloat(row.current_score) || 0,
+            variance: parseFloat(row.variance) || 0,
+            maxScore: parseFloat(row.max_score) || 0,
+            minScore: parseFloat(row.min_score) || 0,
+            change: (parseFloat(row.max_score) - parseFloat(row.min_score)).toFixed(1),
+            trend: parseFloat(row.max_score) > parseFloat(row.min_score) ? 'up' : 'down',
+            totalSubmissions: parseInt(row.total_submissions)
+        }));
+    } catch (error) {
+        console.error('[Student Search Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Question/Assignment Analysis Handler
+ * Returns assignments with error rates, avg scores, etc.
+ */
+async function handleQuestionAnalysis(query) {
+    try {
+        const result = await pool.query(`
+            WITH assignment_stats AS (
+                SELECT 
+                    a.id,
+                    a.title,
+                    a.category,
+                    a.max_points,
+                    COUNT(sub.id) as submission_count,
+                    AVG(sub.total_score / NULLIF(a.max_points, 0) * 100) as avg_score_pct,
+                    AVG(sub.total_score) as avg_score,
+                    STDDEV(sub.total_score / NULLIF(a.max_points, 0) * 100) as score_stddev
+                FROM assignments a
+                LEFT JOIN submissions sub ON a.id = sub.assignment_id
+                WHERE a.title IS NOT NULL
+                GROUP BY a.id, a.title, a.category, a.max_points
+                HAVING COUNT(sub.id) > 0
+            )
+            SELECT 
+                'A' || id as question_id,
+                title,
+                category,
+                ROUND(max_points::numeric, 2) as total_points,
+                ROUND((100 - avg_score_pct)::numeric, 2) as error_rate,
+                ROUND(avg_score::numeric, 2) as avg_score,
+                submission_count
+            FROM assignment_stats
+            WHERE avg_score_pct < 75
+            ORDER BY error_rate DESC
+            LIMIT 10
+        `);
+
+        return result.rows.map(row => ({
+            questionId: row.question_id,
+            title: row.title,
+            category: row.category,
+            errorRate: parseFloat(row.error_rate) || 0,
+            avgScore: parseFloat(row.avg_score) || 0,
+            totalPoints: parseFloat(row.total_points) || 0,
+            submissionCount: parseInt(row.submission_count),
+            commonErrors: ['数据分析中', '需要更多信息'] // Placeholder
+        }));
+    } catch (error) {
+        console.error('[Question Analysis Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Comparison Handler
+ * Compares different groups/categories
+ */
+async function handleComparison(query) {
+    try {
+        // Compare performance across categories
+        const result = await pool.query(`
+            WITH category_stats AS (
+                SELECT 
+                    a.category,
+                    COUNT(DISTINCT sub.student_id) as student_count,
+                    AVG(sub.total_score / NULLIF(a.max_points, 0) * 100) as avg_score,
+                    STDDEV(sub.total_score / NULLIF(a.max_points, 0) * 100) as std_dev
+                FROM assignments a
+                LEFT JOIN submissions sub ON a.id = sub.assignment_id
+                WHERE a.category IS NOT NULL
+                GROUP BY a.category
+                HAVING COUNT(sub.id) > 0
+            )
+            SELECT 
+                category,
+                student_count,
+                ROUND(avg_score::numeric, 2) as avg_score,
+                ROUND(std_dev::numeric, 2) as std_dev
+            FROM category_stats
+            ORDER BY avg_score DESC
+            LIMIT 2
+        `);
+
+        if (result.rows.length >= 2) {
+            return {
+                groupA: {
+                    name: result.rows[0].category,
+                    avgScore: parseFloat(result.rows[0].avg_score),
+                    stdDev: parseFloat(result.rows[0].std_dev),
+                    studentCount: parseInt(result.rows[0].student_count)
+                },
+                groupB: {
+                    name: result.rows[1].category,
+                    avgScore: parseFloat(result.rows[1].avg_score),
+                    stdDev: parseFloat(result.rows[1].std_dev),
+                    studentCount: parseInt(result.rows[1].student_count)
+                }
+            };
+        }
+
+        return {
+            groupA: { name: '组 A', avgScore: 0, stdDev: 0, studentCount: 0 },
+            groupB: { name: '组 B', avgScore: 0, stdDev: 0, studentCount: 0 }
+        };
+    } catch (error) {
+        console.error('[Comparison Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Time Analysis Handler
+ * Analyzes submission times
+ */
+async function handleTimeAnalysis(query) {
+    try {
+        const result = await pool.query(`
+            WITH time_stats AS (
+                SELECT 
+                    DATE_TRUNC('day', submission_time) as submission_day,
+                    COUNT(*) as submission_count,
+                    AVG(total_score / NULLIF(max_points, 0) * 100) as avg_score
+                FROM submissions
+                WHERE submission_time IS NOT NULL
+                GROUP BY DATE_TRUNC('day', submission_time)
+                ORDER BY submission_day DESC
+                LIMIT 30
+            )
+            SELECT 
+                TO_CHAR(submission_day, 'YYYY-MM-DD') as date,
+                submission_count,
+                ROUND(avg_score::numeric, 2) as avg_score
+            FROM time_stats
+        `);
+
+        const totalSubmissions = result.rows.reduce((sum, row) => sum + parseInt(row.submission_count), 0);
+
+        return {
+            avgSubmissionTime: '48小时内',
+            totalSubmissions: totalSubmissions,
+            submissionDistribution: result.rows.map(row => ({
+                date: row.date,
+                count: parseInt(row.submission_count),
+                avgScore: parseFloat(row.avg_score)
+            }))
+        };
+    } catch (error) {
+        console.error('[Time Analysis Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Statistics Handler
+ * Returns statistical data
+ */
+async function handleStatistics(query) {
+    try {
+        const result = await pool.query(`
+            WITH score_stats AS (
+                SELECT 
+                    (sub.total_score / NULLIF(sub.max_points, 0) * 100) as score_pct
+                FROM submissions sub
+                WHERE sub.total_score IS NOT NULL 
+                  AND sub.max_points IS NOT NULL
+                  AND sub.max_points > 0
+            )
+            SELECT 
+                ROUND(AVG(score_pct)::numeric, 2) as mean,
+                ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY score_pct)::numeric, 2) as median,
+                ROUND(STDDEV(score_pct)::numeric, 2) as std_dev,
+                ROUND(MIN(score_pct)::numeric, 2) as min,
+                ROUND(MAX(score_pct)::numeric, 2) as max,
+                ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY score_pct)::numeric, 2) as q1,
+                ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY score_pct)::numeric, 2) as q3
+            FROM score_stats
+        `);
+
+        const row = result.rows[0];
+        return {
+            mean: parseFloat(row.mean) || 0,
+            median: parseFloat(row.median) || 0,
+            stdDev: parseFloat(row.std_dev) || 0,
+            min: parseFloat(row.min) || 0,
+            max: parseFloat(row.max) || 0,
+            quartiles: {
+                q1: parseFloat(row.q1) || 0,
+                q2: parseFloat(row.median) || 0,
+                q3: parseFloat(row.q3) || 0
+            }
+        };
+    } catch (error) {
+        console.error('[Statistics Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Trend Analysis Handler
+ * Shows score trends over time
+ */
+async function handleTrend(query) {
+    try {
+        const result = await pool.query(`
+            WITH weekly_scores AS (
+                SELECT 
+                    DATE_TRUNC('week', sub.submission_time) as week,
+                    AVG(sub.total_score / NULLIF(sub.max_points, 0) * 100) as avg_score
+                FROM submissions sub
+                WHERE sub.submission_time IS NOT NULL
+                GROUP BY DATE_TRUNC('week', sub.submission_time)
+                ORDER BY week DESC
+                LIMIT 12
+            )
+            SELECT 
+                TO_CHAR(week, 'YYYY-MM-DD') as date,
+                ROUND(avg_score::numeric, 2) as avg_score
+            FROM weekly_scores
+            ORDER BY week ASC
+        `);
+
+        return result.rows.map(row => ({
+            date: row.date,
+            avgScore: parseFloat(row.avg_score) || 0
+        }));
+    } catch (error) {
+        console.error('[Trend Error]', error);
+        throw error;
+    }
+}
+
+/**
+ * Helper function to determine visualization type
+ */
+function getVisualizationType(queryType) {
+    const typeMap = {
+        studentSearch: 'table',
+        questionAnalysis: 'table',
+        comparison: 'comparison',
+        timeAnalysis: 'timeline',
+        statistics: 'statistics',
+        trend: 'line'
+    };
+    return typeMap[queryType] || 'table';
+}
+
+export default router;

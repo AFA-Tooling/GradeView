@@ -15,3 +15,5 @@ website/build/
 # misc
 **/.DS_Store
 .vscode/
+
+*.md

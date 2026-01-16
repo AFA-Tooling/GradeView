@@ -1,0 +1,457 @@
+// src/services/aiAgent.js
+/**
+ * AI Agent Service
+ * 基础版本的AI助手，用于处理自然语言查询
+ * 可扩展接入真实AI API（如OpenAI、Claude等）
+ */
+
+class AIAgent {
+  constructor() {
+    this.apiKey = ''; // 预留API key位置
+    this.conversationHistory = [];
+    this.initialized = false;
+  }
+
+  /**
+   * 初始化AI Agent
+   * @param {string} apiKey - AI服务的API key（暂时可留空）
+   */
+  initialize(apiKey = '') {
+    this.apiKey = apiKey;
+    this.initialized = true;
+    console.log('AI Agent initialized', apiKey ? 'with API key' : 'in demo mode');
+  }
+
+  /**
+   * 识别查询类型
+   * @param {string} query - 用户输入的查询
+   * @returns {object} - 查询类型和参数
+   */
+  parseQuery(query) {
+    const patterns = {
+      studentSearch: /找出|查找|哪些学生|学生.*成绩|波动|表现/i,
+      questionAnalysis: /题目|问题|哪道题|试题|错误率/i,
+      comparison: /对比|比较|差异|vs/i,
+      timeAnalysis: /时间|何时|什么时候|完成时间|提交时间/i,
+      statistics: /平均|总分|最高|最低|统计/i,
+      trend: /趋势|变化|增长|下降/i,
+    };
+
+    for (const [type, pattern] of Object.entries(patterns)) {
+      if (pattern.test(query)) {
+        return { type, query };
+      }
+    }
+
+    return { type: 'general', query };
+  }
+
+  /**
+   * 处理查询 - 调用后端API获取真实数据
+   * @param {string} query - 用户查询
+   * @param {object} context - 上下文信息（课程、学期等）
+   * @returns {Promise<object>} - 查询结果
+   */
+  async processQuery(query, context = {}) {
+    // 添加到对话历史
+    this.conversationHistory.push({
+      role: 'user',
+      content: query,
+      timestamp: new Date().toISOString()
+    });
+
+    // 解析查询类型
+    const parsedQuery = this.parseQuery(query);
+    
+    let response;
+    
+    try {
+      // 尝试调用后端API获取真实数据
+      response = await this.queryBackend(parsedQuery, context);
+      console.log('[AI Agent] Using real database data');
+    } catch (error) {
+      console.warn('[AI Agent] Backend query failed, falling back to demo data:', error.message);
+      // 如果后端调用失败，使用模拟数据
+      await new Promise(resolve => setTimeout(resolve, 800));
+      response = this.generateResponse(parsedQuery, context);
+    }
+
+    // 添加到对话历史
+    this.conversationHistory.push({
+      role: 'assistant',
+      content: response.answer,
+      timestamp: new Date().toISOString()
+    });
+
+    return response;
+  }
+
+  /**
+   * 调用后端API进行查询
+   * @param {object} parsedQuery - 解析后的查询
+   * @param {object} context - 上下文
+   * @returns {Promise<object>} - API响应
+   */
+  async queryBackend(parsedQuery, context) {
+    const { type, query } = parsedQuery;
+    
+    // 从localStorage获取认证token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found. Please login.');
+    }
+    
+    const response = await fetch('/api/v2/admin/ai-query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token, // 添加认证头部
+      },
+      credentials: 'include', // 包含cookies用于认证
+      body: JSON.stringify({
+        query: query,
+        queryType: type,
+        context: context
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Backend API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  }
+
+  /**
+   * 生成响应（基础版本 - 使用规则和模板）
+   * @param {object} parsedQuery - 解析后的查询
+   * @param {object} context - 上下文
+   * @returns {object} - 响应对象
+   */
+  generateResponse(parsedQuery, context) {
+    const { type, query } = parsedQuery;
+
+    switch (type) {
+      case 'studentSearch':
+        return {
+          type: 'studentSearch',
+          answer: '根据当前数据分析，以下学生本学期成绩波动较大：',
+          data: this.getMockStudentData(),
+          visualizationType: 'table',
+          suggestions: [
+            '查看这些学生的具体作业表现',
+            '生成个性化学习建议',
+            '对比他们与班级平均水平的差异'
+          ]
+        };
+
+      case 'questionAnalysis':
+        return {
+          type: 'questionAnalysis',
+          answer: '分析发现以下题目存在较高错误率：',
+          data: this.getMockQuestionData(),
+          visualizationType: 'chart',
+          suggestions: [
+            '查看错误答案分布',
+            '识别常见错误模式',
+            '生成针对性复习材料'
+          ]
+        };
+
+      case 'comparison':
+        return {
+          type: 'comparison',
+          answer: '两个班级/群体的对比分析如下：',
+          data: this.getMockComparisonData(),
+          visualizationType: 'chart',
+          suggestions: [
+            '深入分析差异原因',
+            '查看各个知识点的表现差异',
+            '生成教学改进建议'
+          ]
+        };
+
+      case 'timeAnalysis':
+        return {
+          type: 'timeAnalysis',
+          answer: '时间相关的数据分析：',
+          data: this.getMockTimeData(),
+          visualizationType: 'timeline',
+          suggestions: [
+            '查看提交时间分布',
+            '分析提交时间与成绩的关系',
+            '识别拖延风险学生'
+          ]
+        };
+
+      case 'statistics':
+        return {
+          type: 'statistics',
+          answer: '统计数据如下：',
+          data: this.getMockStatisticsData(),
+          visualizationType: 'statistics',
+          suggestions: [
+            '查看详细分布',
+            '与历史数据对比',
+            '生成统计报告'
+          ]
+        };
+
+      case 'trend':
+        return {
+          type: 'trend',
+          answer: '趋势分析结果：',
+          data: this.getMockTrendData(),
+          visualizationType: 'line',
+          suggestions: [
+            '预测未来趋势',
+            '识别异常变化',
+            '查看影响因素'
+          ]
+        };
+
+      default:
+        return {
+          type: 'general',
+          answer: '我理解您的问题。基于当前数据，这是一个通用性的查询。您可以尝试更具体的问题，比如询问特定学生、题目或时间段的数据。',
+          data: null,
+          visualizationType: 'text',
+          suggestions: [
+            '找出成绩波动最大的学生',
+            '哪些题目错误率最高',
+            '本周作业完成情况如何'
+          ]
+        };
+    }
+  }
+
+  /**
+   * 模拟数据生成函数
+   */
+  getMockStudentData() {
+    return [
+      { 
+        name: '张三', 
+        studentId: 'S001',
+        currentScore: 85, 
+        previousScore: 72,
+        change: '+13',
+        trend: 'up',
+        variance: 15.2
+      },
+      { 
+        name: '李四', 
+        studentId: 'S002',
+        currentScore: 78, 
+        previousScore: 91,
+        change: '-13',
+        trend: 'down',
+        variance: 14.8
+      },
+      { 
+        name: '王五', 
+        studentId: 'S003',
+        currentScore: 68, 
+        previousScore: 82,
+        change: '-14',
+        trend: 'down',
+        variance: 13.5
+      },
+    ];
+  }
+
+  getMockQuestionData() {
+    return [
+      { 
+        questionId: 'Q8',
+        title: '递归函数实现',
+        errorRate: 65,
+        avgScore: 3.5,
+        totalPoints: 10,
+        commonErrors: ['基础条件错误', '递归逻辑错误']
+      },
+      { 
+        questionId: 'Q12',
+        title: '动态规划',
+        errorRate: 58,
+        avgScore: 4.2,
+        totalPoints: 10,
+        commonErrors: ['状态转移方程错误', '边界条件处理不当']
+      },
+    ];
+  }
+
+  getMockComparisonData() {
+    return {
+      groupA: {
+        name: '班级 A',
+        avgScore: 82.5,
+        stdDev: 12.3,
+        studentCount: 35
+      },
+      groupB: {
+        name: '班级 B',
+        avgScore: 78.2,
+        stdDev: 15.7,
+        studentCount: 32
+      },
+      topicBreakdown: [
+        { topic: '递归', groupA: 75, groupB: 68 },
+        { topic: '排序算法', groupA: 88, groupB: 85 },
+        { topic: '数据结构', groupA: 82, groupB: 79 },
+      ]
+    };
+  }
+
+  getMockTimeData() {
+    return {
+      avgSubmissionTime: '23.5 小时（从发布开始）',
+      earlySubmissions: 12,  // 48小时内
+      lateSubmissions: 8,    // 截止前12小时内
+      submissionDistribution: [
+        { timeRange: '0-24h', count: 5 },
+        { timeRange: '24-48h', count: 7 },
+        { timeRange: '48-72h', count: 15 },
+        { timeRange: '72h+', count: 8 }
+      ]
+    };
+  }
+
+  getMockStatisticsData() {
+    return {
+      mean: 82.4,
+      median: 84,
+      mode: 85,
+      stdDev: 12.8,
+      min: 45,
+      max: 98,
+      quartiles: {
+        q1: 75,
+        q2: 84,
+        q3: 91
+      }
+    };
+  }
+
+  getMockTrendData() {
+    return [
+      { date: '2026-01-01', avgScore: 78 },
+      { date: '2026-01-05', avgScore: 81 },
+      { date: '2026-01-10', avgScore: 83 },
+      { date: '2026-01-15', avgScore: 82 },
+    ];
+  }
+
+  /**
+   * 清除对话历史
+   */
+  clearHistory() {
+    this.conversationHistory = [];
+  }
+
+  /**
+   * 获取对话历史
+   */
+  getHistory() {
+    return this.conversationHistory;
+  }
+
+  /**
+   * 如果有真实API key，调用真实AI服务
+   * 从环境变量或前端配置中获取API key
+   * @param {string} query - 查询
+   * @returns {Promise<object>} - AI响应
+   */
+  async callRealAI(query) {
+    // 从环境变量获取API key（优先）或使用实例的apiKey
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY || this.apiKey;
+    
+    if (!apiKey) {
+      throw new Error('API key is required for real AI service');
+    }
+
+    try {
+      // OpenAI GPT-4 API调用
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a helpful education data analyst. Analyze student grade data and provide insights. Keep responses concise and actionable.'
+            },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        answer: data.choices[0].message.content,
+        model: data.model,
+        usage: data.usage
+      };
+    } catch (error) {
+      console.error('[AI Agent] Real AI API call failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 增强版查询 - 结合真实AI和数据库
+   * @param {string} query - 用户查询
+   * @param {object} context - 上下文
+   * @returns {Promise<object>} - 增强后的响应
+   */
+  async enhancedQuery(query, context = {}) {
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY || this.apiKey;
+    
+    if (!apiKey) {
+      // 如果没有API key，使用标准流程
+      return this.processQuery(query, context);
+    }
+
+    try {
+      // 1. 解析查询类型
+      const parsedQuery = this.parseQuery(query);
+      
+      // 2. 获取数据库数据
+      const dbData = await this.queryBackend(parsedQuery, context);
+      
+      // 3. 使用AI增强解释
+      const aiInsight = await this.callRealAI(
+        `Based on this student grade data: ${JSON.stringify(dbData.data)}, ` +
+        `provide a brief analysis and actionable insights for: "${query}"`
+      );
+      
+      // 4. 合并结果
+      return {
+        ...dbData,
+        answer: aiInsight.answer,
+        enhancedWithAI: true
+      };
+    } catch (error) {
+      console.warn('[AI Agent] Enhanced query failed:', error);
+      // 降级到标准查询
+      return this.processQuery(query, context);
+    }
+  }
+}
+
+// 创建单例实例
+const aiAgent = new AIAgent();
+
+export default aiAgent;

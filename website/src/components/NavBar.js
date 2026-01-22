@@ -23,6 +23,7 @@ import {
     AccountTree,
     Warning,
     Logout,
+    Settings as SettingsIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import apiv2 from '../utils/apiv2';
@@ -202,6 +203,15 @@ export default function ButtonAppBar() {
                                 onClose={handleClose}
                             >
                                 {mobileView && renderMenuItems()}
+                                {isAdmin && (
+                                    <NavMenuItem
+                                        icon={<SettingsIcon />}
+                                        text={'Settings'}
+                                        onClick={() => {
+                                            window.location.href = '/settings';
+                                        }}
+                                    />
+                                )}
                                 <NavMenuItem
                                     icon={<Logout />}
                                     text={'Logout'}

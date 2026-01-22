@@ -6,24 +6,29 @@
  * @param {string} email - Student email
  * @param {string} name - Student name
  * @param {string} sortMode - 'assignment' or 'time'
+ * @param {Object} classAverages - Class average percentages by category
  * @returns {Object} Processed student data
  */
-export function processStudentData(data, email, name, sortMode = 'assignment') {
+export function processStudentData(data, email, name, sortMode = 'assignment', classAverages = {}) {
   if (!data || Object.keys(data).length === 0) return null;
 
   // Handle time-sorted data format
   if (sortMode === 'time' && data.sortBy === 'time' && Array.isArray(data.submissions)) {
-    return processTimeSortedData(data.submissions, email, name);
+    return processTimeSortedData(data.submissions, email, name, classAverages);
   }
 
   // Handle assignment-sorted data format (original)
-  return processAssignmentSortedData(data, email, name);
+  return processAssignmentSortedData(data, email, name, classAverages);
 }
 
 /**
  * Process time-sorted submission data
+ * @param {Array} submissions - Array of submissions
+ * @param {string} email - Student email
+ * @param {string} name - Student name
+ * @param {Object} classAverages - Class average percentages by category
  */
-function processTimeSortedData(submissions, email, name) {
+function processTimeSortedData(submissions, email, name, classAverages = {}) {
   const categoriesData = {};
   const assignmentsList = [];
   let totalScore = 0;
@@ -37,6 +42,11 @@ function processTimeSortedData(submissions, email, name) {
     const percentage = submission.percentage || 0;
     const submissionTime = submission.submissionTime;
     const lateness = submission.lateness;
+
+    // Skip Uncategorized assignments
+    if (category === 'Uncategorized' || category === 'uncategorized') {
+      return;
+    }
 
     if (maxPoints > 0) {
       // Add to assignments list with time info
@@ -92,7 +102,7 @@ function processTimeSortedData(submissions, email, name) {
     percentage: parseFloat(data.percentage.toFixed(2)),
     score: parseFloat(data.total.toFixed(2)),
     maxPoints: parseFloat(data.maxPoints.toFixed(2)),
-    average: overallAvg,
+    average: classAverages[category] || 0,
     fullMark: 100,
   }));
 
@@ -119,14 +129,23 @@ function processTimeSortedData(submissions, email, name) {
 
 /**
  * Process assignment-sorted data (original logic)
+ * @param {Object} data - Grades data grouped by category
+ * @param {string} email - Student email
+ * @param {string} name - Student name
+ * @param {Object} classAverages - Class average percentages by category
  */
-function processAssignmentSortedData(data, email, name) {
+function processAssignmentSortedData(data, email, name, classAverages = {}) {
   const categoriesData = {};
   const assignmentsList = [];
   let totalScore = 0;
   let totalMaxPoints = 0;
 
   Object.entries(data).forEach(([category, assignments]) => {
+    // Skip Uncategorized assignments
+    if (category === 'Uncategorized' || category === 'uncategorized') {
+      return;
+    }
+
     const categoryScores = [];
     let categoryTotal = 0;
     let categoryMax = 0;
@@ -187,7 +206,7 @@ function processAssignmentSortedData(data, email, name) {
     percentage: parseFloat(data.percentage.toFixed(2)),
     score: parseFloat(data.total.toFixed(2)),
     maxPoints: parseFloat(data.maxPoints.toFixed(2)),
-    average: overallAvg,
+    average: classAverages[category] || 0,
     fullMark: 100,
   }));
 

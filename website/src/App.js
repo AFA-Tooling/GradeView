@@ -19,6 +19,7 @@ import ConceptMap from './views/conceptMap';
 import StudentSelectionWrapper from "./components/StudentSelectionWrapper";
 import Admin from './views/admin';
 import Alerts from './views/alerts';
+import Settings from './views/settings';
 
 const theme = createTheme({
 	palette: {
@@ -56,6 +57,7 @@ export default function App() {
 									<Route exact path='/profile' element={<StudentProfile />} />
 									<Route exact path='/admin' element={<Admin />} />
 									<Route exact path='/alerts' element={<Alerts />} />
+									<Route exact path='/settings' element={<Settings />} />
 								</Route>
 								<Route exact path='/serverError' element={<HTTPError errorCode={500} />} />
 								<Route exact path='/clientError' element={<HTTPError errorCode={400} />} />

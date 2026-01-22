@@ -5,6 +5,7 @@ import ProjectionsRouter from './projections/index.js';
 import ProgressQueryStringRouter from './progressquerystring/index.js';
 import MasteryMappingRouter from './masterymapping/index.js';
 import ConceptStructureRouter from './concept-structure/index.js';
+import CategoryStatsRouter from './category-stats/index.js';
 import { validateAdminOrStudentMiddleware } from '../../../lib/authlib.mjs';
 import { validateAdminMiddleware } from '../../../lib/authlib.mjs';
 import { getStudents } from '../../../lib/redisHelper.mjs';
@@ -19,6 +20,7 @@ router.use(
     }),
 );
 
+router.use('/category-stats', CategoryStatsRouter);
 router.use('/:id/grades', GradesRouter);
 router.use('/:email/projections', ProjectionsRouter);
 router.use('/:id/progressquerystring', ProgressQueryStringRouter);

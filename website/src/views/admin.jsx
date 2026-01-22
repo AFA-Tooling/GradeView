@@ -112,6 +112,7 @@ export default function Admin() {
       .then(res => {
         const categoriesData = res.data; // { "Projects": { "Project 1": 100, ... }, "Labs": { ... }, ... }
         const items = Object.entries(categoriesData)
+          .filter(([section]) => section !== 'Uncategorized' && section !== 'uncategorized') // Filter out Uncategorized
           .flatMap(([section, assignmentsObj]) =>
             Object.entries(assignmentsObj).map(([name, maxPoints]) => ({ 
               section, 
@@ -121,7 +122,7 @@ export default function Admin() {
           );
         setAssignments(items);
         setFiltered(items);
-        console.log(`[INFO] Loaded ${items.length} assignments from database`);
+        console.log(`[INFO] Loaded ${items.length} assignments from database (excluding Uncategorized)`);
         
         // Initialize with NO columns visible for better initial performance
         // User can click "Select All" or select specific sections

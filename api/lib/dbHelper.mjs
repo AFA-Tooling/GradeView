@@ -348,6 +348,43 @@ export async function getAllStudentScores() {
 }
 
 /**
+ * Gets class average percentage for each category
+ * @returns {Promise<Object>} Object with category names as keys and average percentages as values
+ */
+export async function getCategoryAverages() {
+    const pool = getPool();
+    
+    try {
+        const query = `
+            SELECT 
+                a.category,
+                AVG((s.total_score / NULLIF(a.max_points, 0)) * 100) as avg_percentage
+            FROM submissions s
+            JOIN assignments a ON s.assignment_id = a.id
+            WHERE a.category IS NOT NULL 
+              AND a.category != 'Uncategorized'
+              AND a.category != 'uncategorized'
+              AND s.total_score IS NOT NULL
+              AND a.max_points > 0
+            GROUP BY a.category
+        `;
+        
+        const result = await pool.query(query);
+        
+        const categoryAverages = {};
+        result.rows.forEach(row => {
+            const avgPercentage = parseFloat(row.avg_percentage);
+            categoryAverages[row.category] = isNaN(avgPercentage) ? 0 : parseFloat(avgPercentage.toFixed(2));
+        });
+        
+        return categoryAverages;
+    } catch (err) {
+        console.error('Error fetching category averages:', err);
+        throw err;
+    }
+}
+
+/**
  * Closes the database connection pool
  */
 export async function closePool() {

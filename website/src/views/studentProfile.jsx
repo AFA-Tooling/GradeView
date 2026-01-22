@@ -99,7 +99,7 @@ export default function StudentProfile() {
     return localStorage.getItem('name') || fetchEmail;
   }, [fetchEmail, isAdmin, students]);
 
-  // Load student data
+  // Load student data and class averages
   useEffect(() => {
     if (!fetchEmail) {
       setStudentData(null);
@@ -108,10 +108,18 @@ export default function StudentProfile() {
 
     setLoading(true);
     setError(null);
-    apiv2.get(`/students/${encodeURIComponent(fetchEmail)}/grades`)
-      .then(res => {
-        const data = res.data;
-        setStudentData(processStudentData(data, fetchEmail, studentName));
+    
+    // Fetch both student grades and class category averages
+    Promise.all([
+      apiv2.get(`/students/${encodeURIComponent(fetchEmail)}/grades?format=db`),
+      apiv2.get('/students/category-stats')
+    ])
+      .then(([gradesRes, statsRes]) => {
+        const data = gradesRes.data;
+        const classAverages = statsRes.data;
+        
+        console.log('[DEBUG] Class averages:', classAverages);
+        setStudentData(processStudentData(data, fetchEmail, studentName, undefined, classAverages));
         setLoading(false);
       })
       .catch(err => {

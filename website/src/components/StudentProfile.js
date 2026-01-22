@@ -34,10 +34,15 @@ export default function StudentProfile({ open, onClose, studentEmail, studentNam
     setLoading(true);
     setError(null);
 
-    apiv2.get(`/students/${encodeURIComponent(studentEmail)}/grades?format=db`)
-      .then(res => {
-        const data = res.data;
-        setStudentData(processStudentData(data, studentEmail, studentName));
+    // Fetch both student grades and class category averages
+    Promise.all([
+      apiv2.get(`/students/${encodeURIComponent(studentEmail)}/grades?format=db`),
+      apiv2.get('/students/category-stats')
+    ])
+      .then(([gradesRes, statsRes]) => {
+        const data = gradesRes.data;
+        const classAverages = statsRes.data;
+        setStudentData(processStudentData(data, studentEmail, studentName, undefined, classAverages));
         setLoading(false);
       })
       .catch(err => {

@@ -90,7 +90,6 @@ export async function getStudentSubmissionsByTime(email, courseId = null) {
     }
     
     query += `
-        AND s.submission_time IS NOT NULL
         ORDER BY s.submission_time DESC
     `;
     

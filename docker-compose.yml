@@ -76,6 +76,22 @@ services:
       - db
     depends_on:
       - redis
+  gradesync:
+    container_name: gradeview-gradesync
+    build: ./gradesync
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${GRADESYNC_DATABASE_URL}
+      - SERVICE_ACCOUNT_CREDENTIALS=${GRADESYNC_SERVICE_ACCOUNT_CREDENTIALS}
+    networks:
+      - frontend
+      - db
+    ports:
+      - "8001:8000"
+    command: uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
 networks:
   frontend:
     name: frontend

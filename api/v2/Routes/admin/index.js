@@ -7,6 +7,7 @@ import StatsRouter from './stats/index.js';
 import DistributionRouter from './distribution/index.js';
 import StudentScoresRouter from './studentScores/index.js';
 import AIQueryRouter from './ai-query/index.js';
+import SyncRouter from './sync/index.js';
 import RateLimit from 'express-rate-limit';
 
 const router = Router({ mergeParams: true });
@@ -30,6 +31,7 @@ router.use('/stats', StatsRouter);
 router.use('/distribution', DistributionRouter);
 router.use('/studentScores', StudentScoresRouter);
 router.use('/ai-query', AIQueryRouter); // AI Agent query endpoint
+router.use('/sync', SyncRouter); // GradeSync integration
 
 // Default admin route
 router.get('/', (_, res) => {

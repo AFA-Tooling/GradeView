@@ -26,6 +26,7 @@ import Grid from '@mui/material/Grid';
 import PageHeader from '../components/PageHeader';
 import StudentProfile from '../components/StudentProfile';
 import AIAnalytics from './aiAnalytics';
+import GradeSyncControl from './GradeSyncControl';
 import apiv2 from '../utils/apiv2';
 import {
   Chart as ChartJS,

@@ -51,27 +51,32 @@ export default function ButtonAppBar() {
     const [tabs, updateTabs] = useState(tabList.slice(1));
     const [anchorEl, setAnchorEl] = useState(null);
 
+    const adminTabs = [
+        { name: 'Grade Sync', href: '/gradesync', icon: <StorageOutlined /> },
+        { name: 'Admin', href: '/admin', icon: <AccountTree /> },
+        { name: 'Alerts', href: '/alerts', icon: <Warning /> },
+    ];
+
     useEffect(() => {
         let mounted = true;
         if (loggedIn) {
-            updateTabs(() => tabList);
+            updateTabs(tabList);
             updateProfilePicture(localStorage.getItem('profilepicture'));
+
+            // Check for admin status
+            apiv2.get('/isadmin').then((res) => {
+                if (mounted && res.data.isAdmin) {
+                    setAdminStatus(true);
+                }
+            }).catch(err => console.error("Could not verify admin status", err));
         }
         return () => (mounted = false);
     }, [loggedIn]);
 
     function renderMenuItems() {
-        let menuItems = tabs;
+        let menuItems = [...tabs];
         if (isAdmin) {
-            menuItems = [...tabs, {
-                name: 'Admin',
-                href: '/admin',
-                icon: <AccountTree />,
-            }, {
-                name: 'Alerts',
-                href: '/alerts',
-                icon: <Warning />,
-            }];
+            menuItems.push(...adminTabs);
         }
         return menuItems.map((tab) => (
             <NavMenuItem

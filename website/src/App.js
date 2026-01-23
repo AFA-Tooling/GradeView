@@ -20,6 +20,7 @@ import StudentSelectionWrapper from "./components/StudentSelectionWrapper";
 import Admin from './views/admin';
 import Alerts from './views/alerts';
 import Settings from './views/settings';
+import GradeSyncControl from './views/GradeSyncControl';
 
 const theme = createTheme({
 	palette: {
@@ -56,6 +57,7 @@ export default function App() {
 									<Route exact path='/' element={<Dashboard />} />
 									<Route exact path='/profile' element={<StudentProfile />} />
 									<Route exact path='/admin' element={<Admin />} />
+									<Route exact path='/gradesync' element={<GradeSyncControl />} />
 									<Route exact path='/alerts' element={<Alerts />} />
 									<Route exact path='/settings' element={<Settings />} />
 								</Route>

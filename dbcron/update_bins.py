@@ -5,7 +5,7 @@ import json
 import os
 import redis
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
 
 PORT = int(os.getenv("SERVER_PORT"))
 SCOPES = json.loads(os.getenv("SPREADSHEET_SCOPES"))

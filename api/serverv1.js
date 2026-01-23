@@ -9,6 +9,8 @@ import { OAuth2Client } from 'google-auth-library';
 import esMain from 'es-main';
 import config from 'config';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import ProgressReportData from './assets/progressReport/CS10.json' assert {type: 'json'};
 
@@ -16,7 +18,8 @@ class AuthenticationError extends Error { }
 class UnauthorizedAccessError extends Error { }
 class BadSheetDataError extends Error { }
 
-dotenv.config(); // Load environment variables from .env file
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') }); // Load environment variables from .env file
 const PORT = process.env.PORT || 8000;
 const SPREADSHEETID = config.get('spreadsheet.id'); // In spreadsheet URL
 const SCOPES = config.get('spreadsheet.scopes'); // Keep the same for readOnly

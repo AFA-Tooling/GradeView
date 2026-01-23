@@ -4,7 +4,7 @@ from update_bins import update_bins
 import redis
 import os
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
 if __name__ == "__main__":
     flush_redis_db()
     update_redis()

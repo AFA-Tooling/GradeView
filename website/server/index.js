@@ -5,7 +5,7 @@ const path = require('path');
 
 const { proxy, limit } = require('./middleware');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 

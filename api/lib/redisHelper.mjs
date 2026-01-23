@@ -1,11 +1,14 @@
 import config from 'config';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import MisformedKeyError from './errors/redis/MisformedKeyError.js';
 import KeyNotFoundError from './errors/redis/KeyNotFound.js';
 import StudentNotEnrolledError from './errors/redis/StudentNotEnrolled.js';
 import { createClient } from 'redis';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 /**
  * Gets an authenticated Redis client.

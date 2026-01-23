@@ -2,7 +2,8 @@ const RateLimit = require('express-rate-limit');
 const createProxyMiddleware =
     require('http-proxy-middleware').createProxyMiddleware;
 const dotenv = require('dotenv');
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // API proxy middleware
 exports.proxy = createProxyMiddleware({

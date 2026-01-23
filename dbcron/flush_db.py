@@ -2,7 +2,7 @@ import redis
 import json
 import os
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
 PORT = int(os.getenv("SERVER_PORT"))
 HOST = os.getenv("SERVER_HOST")
 DB = int(os.getenv("SERVER_DBINDEX"))

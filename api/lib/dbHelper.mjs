@@ -1,8 +1,11 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Relative to api/lib/ is ../../
 
 let pool = null;
 
@@ -12,15 +15,37 @@ let pool = null;
  */
 function getPool() {
     if (!pool) {
-        const databaseUrl = process.env.GRADESYNC_DATABASE_URL || process.env.DATABASE_URL;
-        
-        if (!databaseUrl) {
-            throw new Error('GRADESYNC_DATABASE_URL or DATABASE_URL environment variable not set');
+        const {
+            POSTGRES_HOST,
+            POSTGRES_PORT,
+            POSTGRES_DB,
+            POSTGRES_USER,
+            POSTGRES_PASSWORD,
+            GRADESYNC_DATABASE_URL,
+            DATABASE_URL
+        } = process.env;
+
+        let poolConfig;
+
+        if (POSTGRES_HOST && POSTGRES_USER && POSTGRES_DB) {
+            poolConfig = {
+                host: POSTGRES_HOST,
+                port: parseInt(POSTGRES_PORT || '5432', 10),
+                database: POSTGRES_DB,
+                user: POSTGRES_USER,
+                password: POSTGRES_PASSWORD,
+            };
+        } else {
+            const databaseUrl = GRADESYNC_DATABASE_URL || DATABASE_URL;
+            if (!databaseUrl) {
+                throw new Error('Database configuration not found. Please set POSTGRES_HOST/USER/PASSWORD/DB or GRADESYNC_DATABASE_URL environment variables.');
+            }
+            poolConfig = {
+                connectionString: databaseUrl,
+            };
         }
         
-        pool = new Pool({
-            connectionString: databaseUrl,
-        });
+        pool = new Pool(poolConfig);
         
         pool.on('error', (err) => {
             console.error('PostgreSQL pool error:', err);

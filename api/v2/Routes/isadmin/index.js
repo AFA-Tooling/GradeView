@@ -13,6 +13,10 @@ router.get('/', async (req, res) => {
         }
         const authEmail = await getEmailFromAuth(authHeader);
         const adminStatus = await isAdmin(authEmail);
+        
+        // --- ADDING DEBUG LOG ---
+        console.log(`[AUTH_DEBUG] Checking admin status for email: ${authEmail}. Is admin? ${adminStatus}`);
+        
         return res.status(200).json({ isAdmin: adminStatus });
     } catch (err) {
         switch (err.name) {

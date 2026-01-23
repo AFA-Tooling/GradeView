@@ -54,25 +54,42 @@ export default function ButtonAppBar() {
     useEffect(() => {
         let mounted = true;
         if (loggedIn) {
-            updateTabs(() => tabList);
+            updateTabs(tabList);
             updateProfilePicture(localStorage.getItem('profilepicture'));
+
+            // Check for admin status when user is logged in
+            apiv2.get(`/isadmin?_=${new Date().getTime()}`)
+                .then((res) => {
+                    if (mounted) {
+                        setAdminStatus(res.data.isAdmin === true);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Failed to verify admin status.", err);
+                    if (mounted) {
+                        setAdminStatus(false);
+                    }
+                });
+        } else {
+            // Ensure user is not admin if not logged in
+            setAdminStatus(false);
         }
-        return () => (mounted = false);
+        return () => { mounted = false; };
     }, [loggedIn]);
 
     function renderMenuItems() {
-        let menuItems = tabs;
+        // Start with base tabs for all logged-in users
+        const menuItems = [...tabs];
+        
+        // If admin, add admin-specific tabs
         if (isAdmin) {
-            menuItems = [...tabs, {
-                name: 'Admin',
-                href: '/admin',
-                icon: <AccountTree />,
-            }, {
-                name: 'Alerts',
-                href: '/alerts',
-                icon: <Warning />,
-            }];
+            menuItems.push(
+                { name: 'Grade Sync', href: '/gradesync', icon: <StorageOutlined /> },
+                { name: 'Admin', href: '/admin', icon: <AccountTree /> },
+                { name: 'Alerts', href: '/alerts', icon: <Warning /> }
+            );
         }
+
         return menuItems.map((tab) => (
             <NavMenuItem
                 key={tab.name}
@@ -169,6 +186,7 @@ export default function ButtonAppBar() {
                                 )}
                                 {isAdmin && (
                                     <>
+                                    <NavBarItem href='/gradesync'>Grade Sync</NavBarItem>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>
                                     <NavBarItem href='/alerts'>Alerts</NavBarItem>
                                     </>

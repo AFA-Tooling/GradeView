@@ -794,7 +794,7 @@ export default function Admin() {
                         const visibleCount = sectionAssignments.filter(a => visibleAssignments[a.name]).length;
                         const total = sectionAssignments.length;
                         const allVisible = visibleCount === total && total > 0;
-                        const someVisible = visibleCount > 0 && visibleCount < total;
+                        
                         
                         return (
                             <Box key={section}>

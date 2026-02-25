@@ -21,6 +21,7 @@ import {
     StorageOutlined,
     AccountCircleOutlined,
     AccountTree,
+    Warning,
     Logout,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -42,18 +43,8 @@ export default function ButtonAppBar() {
     const tabList = [
         {
             name: 'Profile',
-            href: '/',
+            href: '/profile',
             icon: <AccountCircleOutlined />,
-        },
-        {
-            name: 'Buckets',
-            href: '/buckets',
-            icon: <StorageOutlined />,
-        },
-        {
-            name: 'Concept Map',
-            href: '/conceptmap',
-            icon: <AccountTree />,
         },
     ];
     const [tabs, updateTabs] = useState(tabList.slice(1));
@@ -69,8 +60,21 @@ export default function ButtonAppBar() {
     }, [loggedIn]);
 
     function renderMenuItems() {
-        return tabs.map((tab) => (
+        let menuItems = tabs;
+        if (isAdmin) {
+            menuItems = [...tabs, {
+                name: 'Admin',
+                href: '/admin',
+                icon: <AccountTree />,
+            }, {
+                name: 'Alerts',
+                href: '/alerts',
+                icon: <Warning />,
+            }];
+        }
+        return menuItems.map((tab) => (
             <NavMenuItem
+                key={tab.name}
                 icon={tab.icon}
                 text={tab.name}
                 onClick={() => {
@@ -121,14 +125,20 @@ export default function ButtonAppBar() {
     useEffect(() => {
         let mounted = true;
         if (loggedIn) {
-            // Update user admin status
-            apiv2.get('/isadmin').then((res) => {
-                if (mounted) {
-                    setAdminStatus(res.data.isAdmin);
-                }
-                return () => (mounted = false);
-            });
+            apiv2.get('/isadmin')
+                .then((res) => {
+                    if (mounted) {
+                        setAdminStatus(res.data.isAdmin);
+                    }
+                })
+                .catch((err) => {
+                    if (mounted) {
+                        console.error('Failed to check admin status:', err);
+                        setAdminStatus(false);
+                    }
+                });
         }
+        return () => (mounted = false);
     }, [loggedIn]);
 
     return (
@@ -154,50 +164,19 @@ export default function ButtonAppBar() {
                         {!mobileView && (
                             <>
                                 {loggedIn && (
-                                    <NavBarItem href='/'>My Grades</NavBarItem>
+                                    <NavBarItem href='/profile'>Profile</NavBarItem>
                                 )}
-                                <NavBarItem href='/buckets'>Buckets</NavBarItem>
-                                <NavBarItem href='/conceptmap'>
-                                    Concept Map
-                                </NavBarItem>
                                 {isAdmin && (
+                                    <>
                                     <NavBarItem href='/admin'>Admin</NavBarItem>
+                                    <NavBarItem href='/alerts'>Alerts</NavBarItem>
+                                    </>
                                 )}
                             </>
                         )}
                     </Box>
                     {loggedIn ? (
                         <>
-                            {isAdmin && (
-                                <Box>
-                                    <FormControl
-                                        size='small'
-                                        sx={{ m: 1, minWidth: 100 }}
-                                        variant={'filled'}
-                                    >
-                                        <InputLabel id='student-dropdown-label'>
-                                            Student
-                                        </InputLabel>
-                                        <Select
-                                            labelId='student-dropdown-label'
-                                            id='student-dropdown'
-                                            label='student'
-                                            onChange={loadStudentData}
-                                            style={{ backgroundColor: 'white' }}
-                                            defaultValue={selectedStudent}
-                                        >
-                                            {students.map((student) => (
-                                                <MenuItem
-                                                    key={student[1]}
-                                                    value={student[1]}
-                                                >
-                                                    {student[0]}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Box>
-                            )}
                             <IconButton 
                                 aria-label="user profile"
                                 onClick={handleMenu}

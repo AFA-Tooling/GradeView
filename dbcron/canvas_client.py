@@ -22,6 +22,16 @@ _LOCAL_HOSTS = ("localhost", "127.0.0.1", "host.docker.internal")
 _RETRY_STATUS = (429, 500, 502, 503, 504)
 
 
+def _rate_limit_low(header_value, threshold=50):
+    """True when X-Rate-Limit-Remaining is below the threshold. A missing or malformed header counts as not low."""
+    if header_value is None:
+        return False
+    try:
+        return float(header_value) < threshold
+    except ValueError:
+        return False  # malformed header: do not slow down, and do not fail the request over it
+
+
 class CanvasError(Exception):
     """Any Canvas failure; messages never include tokens or response bodies."""
 
@@ -85,11 +95,8 @@ class CanvasClient:
                     body = json.loads(raw.decode("utf-8"))
                 except ValueError:
                     raise CanvasError(f"Canvas returned a non-JSON response for {where}") from None
-                try:
-                    if remaining is not None and float(remaining) < 50:
-                        self._sleep(1)
-                except ValueError:
-                    pass
+                if _rate_limit_low(remaining):
+                    self._sleep(1)
                 return body, link
             except urllib.error.HTTPError as err:
                 retryable = err.code in _RETRY_STATUS or (err.code == 403 and b"Rate Limit Exceeded" in (err.read() or b""))
@@ -130,15 +137,14 @@ def fetch_grading_standard(client, course):
         return None, "none"
     if gsid == 0:
         return None, "canvas_default"
-    try:
-        return client.get(f"/courses/{course['id']}/grading_standards/{gsid}"), "course"
-    except CanvasError:
-        pass
+    candidates = [(f"/courses/{course['id']}/grading_standards/{gsid}", "course")]
     if course.get("account_id"):
+        candidates.append((f"/accounts/{course['account_id']}/grading_standards/{gsid}", "account"))
+    for path, source in candidates:
         try:
-            return client.get(f"/accounts/{course['account_id']}/grading_standards/{gsid}"), "account"
+            return client.get(path), source
         except CanvasError:
-            pass
+            continue  # the scheme is not owned at this level; try the next owner (course, then account)
     return None, "unavailable"
 
 

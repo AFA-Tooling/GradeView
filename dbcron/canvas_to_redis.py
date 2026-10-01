@@ -109,8 +109,9 @@ def record_failure(message):
             "last_success_at": prev.get("synced_at") if ok else prev.get("last_success_at"),
             "last_success_students": prev.get("students") if ok else prev.get("last_success_students"),
         }))
-    except Exception:  # noqa: BLE001 - recording the failure must never mask it
-        pass
+    except Exception:  # noqa: BLE001
+        # Recording the failure must never hide the original failure, so a Redis error here is ignored.
+        return
 
 
 def _describe(err):

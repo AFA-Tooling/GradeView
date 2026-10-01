@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from canvas_client import CanvasClient, CanvasError  # noqa: E402
+from canvas_client import CanvasClient, CanvasError, _rate_limit_low, fetch_grading_standard  # noqa: E402
 from canvas_to_redis import load_fixtures, write_payload  # noqa: E402
 from canvas_transform import TransformError, build_payload  # noqa: E402
 
@@ -357,3 +357,23 @@ def test_client_reports_non_json_as_canvas_error():
     c._opener = Opener()
     with pytest.raises(CanvasError):
         c.get("/courses/1")
+
+
+def test_rate_limit_header_parsing():
+    assert _rate_limit_low("10") is True
+    assert _rate_limit_low("700") is False
+    assert _rate_limit_low(None) is False
+    assert _rate_limit_low("not-a-number") is False
+
+
+def test_grading_standard_falls_back_from_course_to_account():
+    class Client:
+        def get(self, path):
+            if path.startswith("/courses/"):
+                raise CanvasError("HTTP 404")
+            return {"id": 7, "grading_scheme": [{"name": "A", "value": 0.9}]}
+
+    standard, source = fetch_grading_standard(Client(), {"id": 1, "account_id": 3, "grading_standard_id": 7})
+    assert source == "account" and standard["id"] == 7
+    assert fetch_grading_standard(Client(), {"id": 1, "grading_standard_id": 0}) == (None, "canvas_default")
+    assert fetch_grading_standard(Client(), {"id": 1, "grading_standard_id": None}) == (None, "none")

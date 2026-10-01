@@ -1,0 +1,61 @@
+{
+ "id": 1,
+ "title": "CS10 mock scheme (from replica Constants bins, 400 pts)",
+ "grading_scheme": [
+  {
+   "name": "A+",
+   "value": 0.975,
+   "calculated_value": 97.5
+  },
+  {
+   "name": "A",
+   "value": 0.925,
+   "calculated_value": 92.5
+  },
+  {
+   "name": "A-",
+   "value": 0.9,
+   "calculated_value": 90.0
+  },
+  {
+   "name": "B+",
+   "value": 0.875,
+   "calculated_value": 87.5
+  },
+  {
+   "name": "B",
+   "value": 0.825,
+   "calculated_value": 82.5
+  },
+  {
+   "name": "B-",
+   "value": 0.8,
+   "calculated_value": 80.0
+  },
+  {
+   "name": "C+",
+   "value": 0.775,
+   "calculated_value": 77.5
+  },
+  {
+   "name": "C",
+   "value": 0.75,
+   "calculated_value": 75.0
+  },
+  {
+   "name": "C-",
+   "value": 0.725,
+   "calculated_value": 72.5
+  },
+  {
+   "name": "D",
+   "value": 0.625,
+   "calculated_value": 62.5
+  },
+  {
+   "name": "F",
+   "value": 0.0,
+   "calculated_value": 0.0
+  }
+ ]
+}

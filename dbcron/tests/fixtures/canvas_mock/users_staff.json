@@ -1,0 +1,23 @@
+[
+ {
+  "id": 3,
+  "name": "Tara Assistant",
+  "sortable_name": "Assistant, Tara",
+  "email": "mock.ta1@example.com",
+  "login_id": "mock.ta1@example.com"
+ },
+ {
+  "id": 4,
+  "name": "Theo Sectionlimit",
+  "sortable_name": "Sectionlimit, Theo",
+  "email": "mock.ta2@example.com",
+  "login_id": "mock.ta2@example.com"
+ },
+ {
+  "id": 2,
+  "name": "Terry Teacher",
+  "sortable_name": "Teacher, Terry",
+  "email": "mock.teacher@example.com",
+  "login_id": "mock.teacher@example.com"
+ }
+]

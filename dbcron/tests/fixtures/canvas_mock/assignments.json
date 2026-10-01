@@ -1,0 +1,797 @@
+[
+ {
+  "id": 1,
+  "name": "Abstraction",
+  "assignment_group_id": 1,
+  "position": 1,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-01T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 2,
+  "name": "Number Representation",
+  "assignment_group_id": 1,
+  "position": 2,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-01T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 3,
+  "name": "Iteration",
+  "assignment_group_id": 1,
+  "position": 3,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-02T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 4,
+  "name": "Domain and Range",
+  "assignment_group_id": 1,
+  "position": 4,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-02T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 5,
+  "name": "Booleans",
+  "assignment_group_id": 1,
+  "position": 5,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-03T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 6,
+  "name": "Functions",
+  "assignment_group_id": 1,
+  "position": 6,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-03T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 7,
+  "name": "HOFs I",
+  "assignment_group_id": 1,
+  "position": 7,
+  "points_possible": 5.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-04T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 8,
+  "name": "Algorithms",
+  "assignment_group_id": 2,
+  "position": 1,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-05T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 9,
+  "name": "Computers and Education",
+  "assignment_group_id": 2,
+  "position": 2,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-05T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 10,
+  "name": "Testing + 2048 + Mutable/Immutable",
+  "assignment_group_id": 2,
+  "position": 3,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-06T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 11,
+  "name": "Saving the World with Computing",
+  "assignment_group_id": 2,
+  "position": 4,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-06T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 12,
+  "name": "Debugging",
+  "assignment_group_id": 2,
+  "position": 5,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-07T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 13,
+  "name": "Scope",
+  "assignment_group_id": 2,
+  "position": 6,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-08T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 14,
+  "name": "Iteration and Randomness",
+  "assignment_group_id": 2,
+  "position": 7,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-08T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 15,
+  "name": "Recursion Tracing",
+  "assignment_group_id": 2,
+  "position": 8,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-09T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 16,
+  "name": "Algorithmic Complexity",
+  "assignment_group_id": 2,
+  "position": 9,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-09T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 17,
+  "name": "HOFs II",
+  "assignment_group_id": 2,
+  "position": 10,
+  "points_possible": 12.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-10T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 18,
+  "name": "Fractal",
+  "assignment_group_id": 2,
+  "position": 11,
+  "points_possible": 10.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-11T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 19,
+  "name": "Python Advanced",
+  "assignment_group_id": 3,
+  "position": 1,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-11T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 20,
+  "name": "Programming Paradigms",
+  "assignment_group_id": 3,
+  "position": 2,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-12T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 21,
+  "name": "HCI",
+  "assignment_group_id": 3,
+  "position": 3,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-12T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 22,
+  "name": "Generative AI",
+  "assignment_group_id": 3,
+  "position": 4,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-13T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 23,
+  "name": "Ethics in AI",
+  "assignment_group_id": 3,
+  "position": 5,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-14T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 24,
+  "name": "Generic Base Conversion",
+  "assignment_group_id": 3,
+  "position": 6,
+  "points_possible": 4.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-14T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 25,
+  "name": "Concurrency",
+  "assignment_group_id": 3,
+  "position": 7,
+  "points_possible": 6.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-15T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 26,
+  "name": "HOFs III",
+  "assignment_group_id": 3,
+  "position": 8,
+  "points_possible": 20.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-15T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 27,
+  "name": "Coding Snap! Recursive Reporter and HOF",
+  "assignment_group_id": 3,
+  "position": 9,
+  "points_possible": 20.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-16T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 28,
+  "name": "Coding Python Data Structures",
+  "assignment_group_id": 3,
+  "position": 10,
+  "points_possible": 15.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-16T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 29,
+  "name": "Project 1: Wordle\u2122-lite",
+  "assignment_group_id": 4,
+  "position": 1,
+  "points_possible": 10.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-17T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 30,
+  "name": "Project 2: Spelling Bee",
+  "assignment_group_id": 4,
+  "position": 2,
+  "points_possible": 25.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-18T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 31,
+  "name": "Project 3: 2048",
+  "assignment_group_id": 4,
+  "position": 3,
+  "points_possible": 35.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-18T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 32,
+  "name": "Project 4: Explore",
+  "assignment_group_id": 4,
+  "position": 4,
+  "points_possible": 15.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-19T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 33,
+  "name": "Project 5: Final Project",
+  "assignment_group_id": 4,
+  "position": 5,
+  "points_possible": 60.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-19T06:59:00Z",
+  "post_manually": true,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 34,
+  "name": "Lab 2: Build Your Own Blocks",
+  "assignment_group_id": 5,
+  "position": 1,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-20T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 35,
+  "name": "Lab 3: Conditionals, Reporters & Abstraction",
+  "assignment_group_id": 5,
+  "position": 2,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-21T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 36,
+  "name": "Lab 4: Lists + Loops",
+  "assignment_group_id": 5,
+  "position": 3,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-21T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 37,
+  "name": "Lab 5: Lists + HOFs",
+  "assignment_group_id": 5,
+  "position": 4,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-22T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 38,
+  "name": "Lab 6: Algorithms",
+  "assignment_group_id": 5,
+  "position": 5,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-22T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 39,
+  "name": "Lab 7: Algorithmic Complexity",
+  "assignment_group_id": 5,
+  "position": 6,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-23T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 40,
+  "name": "Lab 8: Boards",
+  "assignment_group_id": 5,
+  "position": 7,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-24T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 41,
+  "name": "Lab 9: Trees and Fractals",
+  "assignment_group_id": 5,
+  "position": 8,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-24T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 42,
+  "name": "Lab 10: Recursive Reporters",
+  "assignment_group_id": 5,
+  "position": 9,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-25T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 43,
+  "name": "Lab 11: Testing + 2048",
+  "assignment_group_id": 5,
+  "position": 10,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-25T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 44,
+  "name": "Lab 12: HOFs and Functions as Data",
+  "assignment_group_id": 5,
+  "position": 11,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-26T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 45,
+  "name": "Lab 14: Welcome to Python",
+  "assignment_group_id": 5,
+  "position": 12,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-27T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 46,
+  "name": "Lab 15: Data Structures in Python",
+  "assignment_group_id": 5,
+  "position": 13,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-27T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 47,
+  "name": "Lab 16: Concurrency & Parallelism",
+  "assignment_group_id": 5,
+  "position": 14,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-28T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 48,
+  "name": "Lab 17: Text Processing in Python",
+  "assignment_group_id": 5,
+  "position": 15,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-28T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 49,
+  "name": "Lab 18: Data Science",
+  "assignment_group_id": 5,
+  "position": 16,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-29T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 53,
+  "name": "Lab 19: Future Lab (unpublished)",
+  "assignment_group_id": 5,
+  "position": 17,
+  "points_possible": 2.0,
+  "published": false,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-12-02T07:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 50,
+  "name": "Algorithms",
+  "assignment_group_id": 6,
+  "position": 1,
+  "points_possible": 2.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-16T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 51,
+  "name": "Weekly Summary Reflection",
+  "assignment_group_id": 6,
+  "position": 2,
+  "points_possible": 1.0,
+  "published": true,
+  "omit_from_final_grade": false,
+  "grading_type": "points",
+  "due_at": "2026-09-21T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ },
+ {
+  "id": 52,
+  "name": "Practice Quiz (not counted)",
+  "assignment_group_id": 6,
+  "position": 3,
+  "points_possible": 5.0,
+  "published": true,
+  "omit_from_final_grade": true,
+  "grading_type": "points",
+  "due_at": "2026-09-11T06:59:00Z",
+  "post_manually": false,
+  "submission_types": [
+   "none"
+  ]
+ }
+]

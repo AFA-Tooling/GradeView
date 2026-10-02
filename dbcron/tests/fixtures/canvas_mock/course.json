@@ -1,0 +1,7 @@
+{
+ "id": 1,
+ "name": "GradeView Mock",
+ "course_code": "GVMOCK",
+ "apply_assignment_group_weights": false,
+ "grading_standard_id": 1
+}

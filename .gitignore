@@ -15,3 +15,10 @@ website/build/
 # misc
 **/.DS_Store
 .vscode/
+
+# Canvas importer payload dumps contain student data (fixtures under dbcron/tests/ are fake and tracked)
+/dbcron/*.json
+/dbcron/dumps/
+
+# Local dev logs from scripts/dev_mock_up.sh
+/.dev-logs/

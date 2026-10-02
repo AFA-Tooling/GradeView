@@ -13,6 +13,17 @@ dev-up:
 dev-down:
 	@docker compose -f docker-compose.dev.yml down
 
+# Run GradeView locally with FAKE data (no secrets needed). Needs DEV_ADMIN_EMAIL and
+# REDIS_DB_SECRET in .env (copy .env.example). See docs/LOCAL_DEV_MOCK.md.
+mock-up:
+	@DEV_ADMIN_EMAIL="$(DEV_ADMIN_EMAIL)" REDIS_DB_SECRET="$(REDIS_DB_SECRET)" REDIS_PORT="$(REDIS_PORT)" scripts/mock.sh up
+
+mock-down:
+	@scripts/mock.sh down
+
+mock-reset:
+	@scripts/mock.sh reset
+
 dev-local:
 	@bash -c '\
 	echo "Starting services locally..."; \

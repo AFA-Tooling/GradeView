@@ -1,0 +1,18 @@
+[
+ {
+  "id": 2,
+  "user_id": 3,
+  "type": "TaEnrollment",
+  "course_section_id": 3,
+  "limit_privileges_to_course_section": false,
+  "enrollment_state": "active"
+ },
+ {
+  "id": 3,
+  "user_id": 4,
+  "type": "TaEnrollment",
+  "course_section_id": 2,
+  "limit_privileges_to_course_section": true,
+  "enrollment_state": "active"
+ }
+]

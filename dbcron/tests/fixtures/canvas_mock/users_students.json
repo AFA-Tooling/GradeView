@@ -1,0 +1,114 @@
+[
+ {
+  "id": 20,
+  "name": "Omar Draftley",
+  "sortable_name": "Draftley, Omar",
+  "email": "mock.student15@example.com",
+  "login_id": "mock.student15@example.com"
+ },
+ {
+  "id": 10,
+  "name": "Eli Dummett",
+  "sortable_name": "Dummett, Eli",
+  "email": "mock.student05@example.com",
+  "login_id": "mock.student05@example.com"
+ },
+ {
+  "id": 16,
+  "name": "Kai Example",
+  "sortable_name": "Example, Kai",
+  "email": "mock.student11@example.com",
+  "login_id": "mock.student11@example.com"
+ },
+ {
+  "id": 9,
+  "name": "Dev Fakeham",
+  "sortable_name": "Fakeham, Dev",
+  "email": "mock.student04@example.com",
+  "login_id": "mock.student04@example.com"
+ },
+ {
+  "id": 13,
+  "name": "Hana Fixture",
+  "sortable_name": "Fixture, Hana",
+  "email": "mock.student08@example.com",
+  "login_id": "mock.student08@example.com"
+ },
+ {
+  "id": 6,
+  "name": "Ada Mockley",
+  "sortable_name": "Mockley, Ada",
+  "email": "mock.student01@example.com",
+  "login_id": "mock.student01@example.com"
+ },
+ {
+  "id": 14,
+  "name": "Ivo Mocksworth",
+  "sortable_name": "Mocksworth, Ivo",
+  "email": "mock.student09@example.com",
+  "login_id": "mock.student09@example.com"
+ },
+ {
+  "id": 21,
+  "name": "Pia Pilotte",
+  "sortable_name": "Pilotte, Pia",
+  "email": "mock.student16@example.com",
+  "login_id": "mock.student16@example.com"
+ },
+ {
+  "id": 11,
+  "name": "Fay Placeholder",
+  "sortable_name": "Placeholder, Fay",
+  "email": "mock.student06@example.com",
+  "login_id": "mock.student06@example.com"
+ },
+ {
+  "id": 17,
+  "name": "Lia Prototype",
+  "sortable_name": "Prototype, Lia",
+  "email": "mock.student12@example.com",
+  "login_id": "mock.student12@example.com"
+ },
+ {
+  "id": 8,
+  "name": "Cleo Sampleton",
+  "sortable_name": "Sampleton, Cleo",
+  "email": "mock.student03@example.com",
+  "login_id": "mock.student03@example.com"
+ },
+ {
+  "id": 18,
+  "name": "Milo Sandbox",
+  "sortable_name": "Sandbox, Milo",
+  "email": "mock.student13@example.com",
+  "login_id": "mock.student13@example.com"
+ },
+ {
+  "id": 15,
+  "name": "Jun Seedling",
+  "sortable_name": "Seedling, Jun",
+  "email": "mock.student10@example.com",
+  "login_id": "mock.student10@example.com"
+ },
+ {
+  "id": 12,
+  "name": "Gus Stubbs",
+  "sortable_name": "Stubbs, Gus",
+  "email": "Mock.Student07@Example.com",
+  "login_id": "mock.student07@example.com"
+ },
+ {
+  "id": 7,
+  "name": "Ben Testwell",
+  "sortable_name": "Testwell, Ben",
+  "email": "mock.student02@example.com",
+  "login_id": "mock.student02@example.com"
+ },
+ {
+  "id": 19,
+  "name": "Nia Trialson",
+  "sortable_name": "Trialson, Nia",
+  "email": "mock.student14@example.com",
+  "login_id": "mock.student14@example.com"
+ }
+]

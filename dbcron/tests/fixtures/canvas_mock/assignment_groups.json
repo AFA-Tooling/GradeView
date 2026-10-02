@@ -1,0 +1,46 @@
+[
+ {
+  "id": 1,
+  "name": "Quest (pre-clobber)",
+  "position": 1,
+  "group_weight": 0.0,
+  "rules": {}
+ },
+ {
+  "id": 2,
+  "name": "Midterm (pre-clobber)",
+  "position": 2,
+  "group_weight": 0.0,
+  "rules": {}
+ },
+ {
+  "id": 3,
+  "name": "Postterm",
+  "position": 3,
+  "group_weight": 0.0,
+  "rules": {}
+ },
+ {
+  "id": 4,
+  "name": "Projects",
+  "position": 4,
+  "group_weight": 0.0,
+  "rules": {}
+ },
+ {
+  "id": 5,
+  "name": "Labs (before dropping lowest two)",
+  "position": 5,
+  "group_weight": 0.0,
+  "rules": {
+   "drop_lowest": 2
+  }
+ },
+ {
+  "id": 6,
+  "name": "Edge Cases (mock only)",
+  "position": 6,
+  "group_weight": 0.0,
+  "rules": {}
+ }
+]

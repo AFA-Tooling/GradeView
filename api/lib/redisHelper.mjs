@@ -32,18 +32,47 @@ export function getClient(databaseIndex = 0) {
  */
 export async function getEntry(key, databaseIndex = 0) {
     const client = getClient(databaseIndex);
-    await client.connect();
-
     try {
-        const res = await client.get(key);
-        if (res === null) {
-            const err = new KeyNotFoundError("failed to get entry", key, databaseIndex);
-            console.error(err.message);
-            throw err;
-        }
-        return JSON.parse(res);
+        await client.connect();
+        return parseEntry(await client.get(key), key, databaseIndex);
     } finally {
+        await closeClient(client);
+    }
+}
+
+/**
+ * Parses a raw Redis value that was read for `key`.
+ * @param {string|null} raw the raw value returned by Redis.
+ * @param {string} key the key the value was read from.
+ * @param {number} databaseIndex the index the entry is stored in.
+ * @returns {object} the parsed entry.
+ * @throws {KeyNotFoundError} if the key is not in the database.
+ */
+function parseEntry(raw, key, databaseIndex) {
+    if (raw === null) {
+        const err = new KeyNotFoundError("failed to get entry", key, databaseIndex);
+        console.error(err.message);
+        throw err;
+    }
+    return JSON.parse(raw);
+}
+
+/**
+ * Closes a client without masking an error that is already propagating.
+ * @param {RedisClient} client the client to close.
+ */
+async function closeClient(client) {
+    if (!client.isOpen) {
+        return;
+    }
+    try {
         await client.quit();
+    } catch {
+        try {
+            await client.disconnect();
+        } catch {
+            // Already closed.
+        }
     }
 }
 
@@ -74,12 +103,11 @@ export async function getStudent(email) {
         const student = await getEntry(email);
         return student;
     } catch (err) {
-        switch (typeof err) {
-            case 'KeyNotFoundError':
-                throw new StudentNotEnrolledError("Student is not in the database.", email, err);
-            default:
-                throw err;
+        // `typeof err` is always 'object', so dispatch on the error's name instead.
+        if (err?.name === 'KeyNotFoundError') {
+            throw new StudentNotEnrolledError("Student is not in the database.", email, err);
         }
+        throw err;
     }
 }
 
@@ -156,19 +184,20 @@ export async function getMaxScores() {
  * @returns {Promise<Array<Array<string>>>} List of [legalName, email]
  */
 export async function getStudents() {
-    const client = await getClient();
-    await client.connect();
-
-    var keys = await client.keys('*@*');
-    const students = [];
-
-    for (const key of keys) {
-        const studentData = await getEntry(key)
-        students.push([studentData['Legal Name'], key]); 
+    const client = getClient();
+    try {
+        await client.connect();
+        const keys = await client.keys('*@*');
+        const students = [];
+        // Read every student over this one connection instead of opening one per key.
+        for (const key of keys) {
+            const studentData = parseEntry(await client.get(key), key, 0);
+            students.push([studentData['Legal Name'], key]);
+        }
+        return students;
+    } finally {
+        await closeClient(client);
     }
-
-    await client.quit();
-    return students;
 }
 
 

@@ -2,7 +2,9 @@
 
 Production runs on **gradeview.eecs.berkeley.edu** with `docker-compose.yml`, over HTTPS only.
 For local work use `make mock-up` ([LOCAL_DEV_MOCK.md](LOCAL_DEV_MOCK.md)) or `make dev-up`
-(`docker-compose.dev.yml`, HTTP only); never run the dev compose file on the server.
+(`docker-compose.dev.yml`, HTTP only); never run the dev compose file on the server. A bare `make`
+only lists the targets; `make docker` is the production stack and stops early on a machine without the
+certificate (see section 5).
 
 ```
 internet ──► :80  nginx (gradeview-reverse-proxy) ── only /.well-known/acme-challenge/, everything else 301 → https
@@ -15,7 +17,7 @@ internet ──► :443 nginx ──► /          gradeview-web:3000          (
 Only nginx publishes host ports (80 and 443). Redis, the API, the web server and the progress report
 are reachable only on the internal Docker networks (`frontend`, `db`, `concept_map_integration`).
 
-## 1. Server and DNS
+## 1. Server, DNS and code
 
 - The DNS record for `gradeview.eecs.berkeley.edu` is managed by **EECS IT**. We keep the same name; if the
   server (or its public IP) changes, ask EECS IT to point the record at the new server **before** requesting a
@@ -23,6 +25,20 @@ are reachable only on the internal Docker networks (`frontend`, `db`, `concept_m
 - On the server install: Docker Engine with the Compose plugin (`docker compose version`), `git`, `make`,
   Node.js 22 LTS and npm (`make docker` builds the React site on the host), and `certbot`
   (`sudo apt install certbot`, or the snap).
+- Start Docker at boot, so the containers come back after a reboot (they all have
+  `restart: unless-stopped`): `sudo systemctl enable --now docker`.
+- The deploy user runs `docker compose` and `make docker`. Either add it to the `docker` group
+  (`sudo usermod -aG docker <deploy-user>`, then log out and back in) or run those commands with `sudo`.
+  Membership in the `docker` group is equivalent to root on that machine, so only give it to admins.
+- Get the code (deploy from `main`):
+
+  ```bash
+  git clone https://github.com/AFA-Tooling/GradeView.git ~/GradeView
+  cd ~/GradeView
+  git switch main
+  ```
+
+  All later commands run in `~/GradeView`.
 
 ## 2. Firewall
 
@@ -48,20 +64,35 @@ sudo ufw enable
 
 ## 3. Configuration files
 
-All three files are git-ignored. Make them readable only by the deploy user: `chmod 600 .env api/.env dbcron/.env`.
+All three files are git-ignored and hold secrets. Create them as described below; the last step
+([Permissions](#permissions)) makes them readable only by the deploy user.
 
 ### Root `.env` (read by `docker compose` and the Makefile)
 
-Start from the example: `cp .env.example .env`.
+Start from the example and **replace the example Redis password** right away. The example value
+(`change-me-local-only`) is public, and `make docker` refuses to start with it. These commands write a random
+value without printing it (GNU `sed`, as on the server):
+
+```bash
+cp .env.example .env
+sed -i "s/^REDIS_DB_SECRET=.*/REDIS_DB_SECRET=$(openssl rand -hex 32)/" .env
+# dbcron needs the same value: create dbcron/.env first (next section), then copy the line over
+sed -i '/^REDIS_DB_SECRET=/d' dbcron/.env && grep '^REDIS_DB_SECRET=' .env >> dbcron/.env
+```
+
+If you ever change `REDIS_DB_SECRET`, change it in both files and run `make docker` again.
 
 | Variable | Required | Notes |
 |---|---|---|
 | `REDIS_DB_SECRET` | **required** | Redis password. Compose refuses to start without it, starts Redis with it and passes it to the API. Use letters and digits only, because the API puts it in a `redis://` URL: `openssl rand -hex 32`. |
 | `NGINX_SERVER_NAME` | optional | Defaults to `gradeview.eecs.berkeley.edu`. Must match the certificate directory `/etc/letsencrypt/live/<name>/`. |
 | `PROGRESS_REPORT_PORT` | optional | Defaults to `8080`. nginx proxies `/progress` to port 8080, so keep 8080. |
-| `API_PORT`, `REACT_APP_PORT`, `REACT_APP_PROXY_SERVER` | optional | Defaults: 8000, 3000, `http://api:8000`. |
+| `API_PORT`, `REACT_APP_PORT` | optional | The API and the web server fall back to 8000 and 3000 when these are unset. nginx expects 8000 and 3000, so keep them. |
+| `REACT_APP_PROXY_SERVER` | optional | Where the web container's own `/api` proxy sends requests. Compose sets `http://api:8000` when it is unset. nginx sends `/api` straight to the API, so this proxy is normally not used. |
 
-`DEV_ADMIN_EMAIL` and `REVERSE_PROXY_LISTEN` are only used by `make mock-up` / `docker-compose.dev.yml`.
+`DEV_ADMIN_EMAIL` and `DEV_PROXY_BIND` are only used by `make mock-up` / `docker-compose.dev.yml`.
+`DEV_PROXY_BIND` replaces the old `REVERSE_PROXY_LISTEN`, which is no longer read; delete a leftover
+`REVERSE_PROXY_LISTEN=0.0.0.0:80` line from an old `.env`.
 
 ### `dbcron/.env` (required)
 
@@ -82,9 +113,20 @@ value must be here:
 
 ### `api/.env` (optional in Docker)
 
-Also arrives through the `./api` volume. In Docker the API gets `REDIS_DB_SECRET` from compose (dotenv does not
-override variables that are already set), so this file only matters for running the API on the host
-(`make dev-local`) or for other variables the API reads.
+Also arrives through the `./api` volume. In Docker the API gets `REDIS_DB_SECRET` from compose, and
+`make dev-local` passes the root `.env` value to the API it runs on the host (dotenv does not override variables
+that are already set), so a `REDIS_DB_SECRET` in this file is ignored in both cases. The file only matters for
+other variables the API reads.
+
+### Permissions
+
+Once the files exist, make them readable only by the deploy user (`api/.env` is optional, so it is only
+changed if it exists):
+
+```bash
+chmod 600 .env dbcron/.env
+[ ! -f api/.env ] || chmod 600 api/.env
+```
 
 ## 4. First certificate (one-time bootstrap)
 
@@ -92,7 +134,7 @@ nginx's HTTPS server cannot start without a certificate, and the webroot challen
 the loop by issuing the first certificate with certbot's own temporary web server while port 80 is still free:
 
 ```bash
-cd ~/GradeView                      # the checkout on the server
+cd ~/GradeView                      # the checkout from section 1
 docker compose down                 # if anything is running: port 80 must be free
 sudo mkdir -p /var/www/certbot
 sudo certbot certonly --standalone \
@@ -107,9 +149,20 @@ already has a valid certificate for this name (same server, same domain), skip t
 ## 5. Start (and update) the stack
 
 ```bash
-make docker      # npm install + build of website/ on the host, docker compose build, docker compose up -dV
+cd ~/GradeView
+git pull --ff-only   # on updates: get the new code first (deploy from main)
+make docker          # checks, npm install + build of website/ on the host, docker compose build, up -dV
 docker compose ps
 ```
+
+`make docker` first runs `make prod-check`, which stops before building anything if
+`/etc/letsencrypt/live/<NGINX_SERVER_NAME>/fullchain.pem` or `privkey.pem` is missing (do section 4 first) or if
+`REDIS_DB_SECRET` is still the example value (section 3). certbot makes `live/` readable by root only, so when
+the deploy user cannot look inside it, the check runs in a short-lived container (this needs Docker access).
+
+Every service has `restart: unless-stopped`: after a reboot or a Docker restart the whole stack comes back by
+itself (Docker must be enabled at boot, section 1). After `docker compose down` or `docker compose stop`
+nothing runs until the next `make docker`, and the certificate renewal hook below needs the proxy running.
 
 `up -dV` renews anonymous volumes, so Redis starts empty and dbcron reloads it on start (Redis only holds data
 copied from the Sheet/Canvas). This also matters when moving from the old `redis:latest` (8.x) to the pinned
@@ -166,9 +219,24 @@ curl -sI https://gradeview.eecs.berkeley.edu/ | grep -iE '^HTTP|^server|^strict-
 curl -s https://gradeview.eecs.berkeley.edu/api/health                  # {"ok":true}
 curl -s -o /dev/null -w '%{http_code}\n' https://gradeview.eecs.berkeley.edu/progress   # 200
 
-# TLS 1.0/1.1 must be refused ("tlsv1 alert protocol version"); 1.2 and 1.3 must work
-openssl s_client -connect gradeview.eecs.berkeley.edu:443 -servername gradeview.eecs.berkeley.edu \
-  -tls1_1 -cipher 'DEFAULT:@SECLEVEL=0' </dev/null
+# TLS versions. Needs OpenSSL 3.x. On macOS /usr/bin/openssl is LibreSSL, which stops with
+# "error setting cipher list" before it even connects; that is NOT a pass. Use Homebrew's OpenSSL
+# (brew install openssl, then OPENSSL="$(brew --prefix openssl)/bin/openssl") or run this on Linux.
+OPENSSL=${OPENSSL:-openssl}
+# TLS 1.2 and 1.3 must work:
+$OPENSSL s_client -connect gradeview.eecs.berkeley.edu:443 -servername gradeview.eecs.berkeley.edu \
+  -tls1_2 </dev/null 2>&1 | grep -E '^New,|Verify return code'
+#   New, TLSv1.2, Cipher is ECDHE-RSA-AES256-GCM-SHA384      (or another ECDHE GCM/CHACHA20 cipher)
+#   Verify return code: 0 (ok)
+$OPENSSL s_client -connect gradeview.eecs.berkeley.edu:443 -servername gradeview.eecs.berkeley.edu \
+  -tls1_3 </dev/null 2>&1 | grep -E '^New,|Verify return code'
+#   New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+#   Verify return code: 0 (ok)
+# TLS 1.1 (and TLS 1.0, with -tls1) must be refused by the server. The output must contain
+# "tlsv1 alert protocol version" (SSL alert number 70); any other error proves nothing:
+$OPENSSL s_client -connect gradeview.eecs.berkeley.edu:443 -servername gradeview.eecs.berkeley.edu \
+  -tls1_1 -cipher 'DEFAULT:@SECLEVEL=0' </dev/null 2>&1 | grep -o 'tlsv1 alert protocol version'
+#   tlsv1 alert protocol version
 
 # Nothing except 80/443 (and SSH from the allowed networks) may answer: every line must fail or time out
 nc -vz -w 3 gradeview.eecs.berkeley.edu 6379

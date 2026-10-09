@@ -7,7 +7,8 @@ This application was created using Node, Express, and React by Connor Bernard at
 ## SPREADSHEET SETUP
 
 - The first column should be the student's name
-- The second column should be the student's email
+- The second column should be the student's email. Emails are stored trimmed and lowercased (students sign in
+  with any capitalization). Two rows with the same email, ignoring case and spaces, get no grades at all.
 - The first row should be the titles of the homework assignments for that column
 - The second row should be the type of assignment
 - The third row should be the maximum amount of points the assignment is out of
@@ -42,20 +43,33 @@ __NOTE: If your API server's origin is different from your live website's origin
 
 ### LOCALLY WITH DOCKER
 
-1. In the root directory run `make dev-up`
+On a laptop, use one of these from the root directory (copy `.env.example` to `.env` first):
 
-OR
+- `make mock-up`: Redis in Docker with **fake** students and grades, and the API and website on your machine.
+  No project secrets needed. See [docs/LOCAL_DEV_MOCK.md](docs/LOCAL_DEV_MOCK.md).
+- `make dev-up`: the whole stack in Docker over plain HTTP (`docker-compose.dev.yml`, ports bound to
+  127.0.0.1); `make dev-down` stops it. Build the website first with `make init` (the web container
+  serves `website/server/build` and answers 404 without it; `make dev-up` stops with a message until it
+  exists). It needs `REDIS_DB_SECRET` in `.env`, and Redis only gets data if `dbcron/.env` has the grade
+  sheet settings and a Google service account (`SERVICE_ACCOUNT_CREDENTIALS`, see
+  [docs/DEPLOY.md](docs/DEPLOY.md) section 3), so for fake data use `make mock-up`. It also publishes
+  127.0.0.1:80, :6379 and :8080, so those ports must be free.
 
-1. Navigate to the root directory
-2. Build a dockerfile with `docker-compose build`
-3. Run the dockerfile with `docker-compose start` (or `docker-compose up` to see console output in console)
+Do not run a plain `docker compose build` / `docker compose up` (or `make docker`) on a laptop:
+`docker-compose.yml` is the **production** stack. It serves HTTPS only and needs the server's
+Let's Encrypt certificate and a real `REDIS_DB_SECRET`.
+
+### IN PRODUCTION
+
+Follow [docs/DEPLOY.md](docs/DEPLOY.md) (server, firewall, configuration files, certificates, `make docker`
+and updates).
 
 ### LOCALLY WITH NODE
 
-1. __[First use only]:__ In the root directory run `make init`
-2. In the root directory run `make npm` to start the service
-
-Note: Running these will start both an api server as well as a website
+- `make mock-up` (above) runs the API and the website with Node on your machine, with fake data.
+- `make dev-local` runs Redis and dbcron in Docker and the API and the website on your machine
+  (it needs the same `dbcron/.env` as `make dev-up`).
+- `make init` installs every package (without rewriting the tracked lockfiles) and builds the website.
 
 ## Database
 
@@ -78,7 +92,7 @@ This returns a JSON in the following format:
     {\“Abstraction\“: \“2\“, \“Number Representation\“: \“4\“, \“Iteration\“: \“6\“, \“Domain and Range\“: \“6“, \“Booleans\“: \“6\“, \“Functions\“: \“4\“, \“HOFs I\“: \“12\“}
 }”
 ```
-4. To access a students data, use their email. For example:\
+4. To access a students data, use their email in lowercase. For example:\
 `GET dahluwalia@berkeley.edu`\
 This returns a JSON in the following format:
 ```    

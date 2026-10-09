@@ -5,8 +5,10 @@ import ProjectionsRouter from './projections/index.js';
 import ProgressQueryStringRouter from './progressquerystring/index.js';
 import MasteryMappingRouter from './masterymapping/index.js';
 import ConceptStructureRouter from './concept-structure/index.js';
-import { validateAdminOrStudentMiddleware } from '../../../lib/authlib.mjs';
-import { validateAdminMiddleware } from '../../../lib/authlib.mjs';
+import {
+    validateAdminMiddleware,
+    validateAdminOrStudentMiddleware,
+} from '../../../lib/authlib.mjs';
 import { getStudents } from '../../../lib/redisHelper.mjs';
 
 const router = Router({ mergeParams: true });
@@ -18,18 +20,6 @@ router.use(
         max: 100, // 100 requests
     }),
 );
-
-router.use('/:id/grades', GradesRouter);
-router.use('/:email/projections', ProjectionsRouter);
-router.use('/:id/progressquerystring', ProgressQueryStringRouter);
-router.use('/:email/masterymapping', MasteryMappingRouter);
-router.use('/:email/concept-structure', ConceptStructureRouter);
-
-// TODO: sanitize email input.
-// Ensure the requester has access to the requested student's data.
-// Temporarily disabled to debug routing issue
-
-router.use('/:email', validateAdminOrStudentMiddleware);
 
 router.get('/', validateAdminMiddleware, async (_, res) => {
     try {
@@ -47,5 +37,17 @@ router.get('/', validateAdminMiddleware, async (_, res) => {
         }
     }
 });
+
+// Per-student data routes. They all live on this sub-router, which is only reachable through
+// validateAdminOrStudentMiddleware: admins may read any student, students only their own
+// :email. Add new per-student routes here, never directly on `router`.
+const studentRouter = Router({ mergeParams: true });
+studentRouter.use('/grades', GradesRouter);
+studentRouter.use('/projections', ProjectionsRouter);
+studentRouter.use('/progressquerystring', ProgressQueryStringRouter);
+studentRouter.use('/masterymapping', MasteryMappingRouter);
+studentRouter.use('/concept-structure', ConceptStructureRouter);
+
+router.use('/:email', validateAdminOrStudentMiddleware, studentRouter);
 
 export default router;

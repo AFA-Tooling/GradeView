@@ -1,0 +1,4 @@
+# Test tools for dbcron (not installed in the image). In a venv, from dbcron/:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   python -m pytest tests -q
+pytest>=8

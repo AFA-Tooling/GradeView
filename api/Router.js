@@ -1,14 +1,12 @@
 import { Router } from 'express';
 
 import V2Router from './v2/index.js';
+import apiErrorHandler from './lib/errorHandler.mjs';
 
 const router = Router();
 router.use('/v2', V2Router);
 
-// Error handling middleware
-router.use((err, _, res, next) => {
-    res.status(err.status ?? 500).send(err.message);
-    next(err);
-});
+// Error handling middleware: sends a safe `{ message }` body and does not call next() afterwards.
+router.use(apiErrorHandler);
 
 export default router;

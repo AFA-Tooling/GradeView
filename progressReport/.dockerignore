@@ -1,7 +1,43 @@
-venv/
-__pycache__/
+# Build context for the progress report image: an ALLOWLIST. Only the Flask app,
+# its uwsgi config, requirements, meta/ and templates/ are sent; a new file or
+# directory the app needs must be added below.
+*
+!*.py
+!uwsgi.ini
+!requirements.txt
+!Source.gv
+!meta/
+!templates/
+# Generated at runtime by parser.py (keep the directory itself)
+!data/.gitkeep
 
-.dockerignore
-.gitignore
-.gitattributes
-README.md
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
+
+# Never needed in the image
+**/.DS_Store
+**/__pycache__/
+**/*.pyc

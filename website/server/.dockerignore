@@ -1,3 +1,40 @@
-Dockerfile
-.dockerignore
-node_modules
+# Build context for the web image (Express server for the React build): an
+# ALLOWLIST. Only the npm manifests, the server's .js files and build/ are sent.
+# build/ is the React output (make docker / `npm run build` in website/ moves it
+# to website/server/build); it must exist before `docker compose build`.
+*
+!package.json
+!package-lock.json
+!*.js
+!build/
+
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
+
+# Never needed in the image
+**/node_modules
+**/.DS_Store
+**/*.log

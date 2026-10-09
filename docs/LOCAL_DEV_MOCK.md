@@ -27,7 +27,7 @@ Where the grades in Redis come from:
 | | Source → Redis |
 |---|---|
 | **Original setup (what `main` uses)** | Gradescope / PrairieLearn (where work is graded) → GradeSync (a separate repo) → Google Sheets. Separately, a "HAID" tab in a Google Sheet (kept up outside the code; nothing connects GradeSync to it) → `dbcron/update_db.py` → Redis |
-| **New ([PR #57](https://github.com/AFA-Tooling/GradeView/pull/57), not merged yet)** | bCourses (Berkeley's Canvas) → `dbcron/canvas_to_redis.py` ("the importer") → Redis |
+| **New: the Canvas importer ([PR #57](https://github.com/AFA-Tooling/GradeView/pull/57), in `main`, not scheduled yet)** | bCourses (Berkeley's Canvas) → `dbcron/canvas_to_redis.py` ("the importer") → Redis |
 | **This local setup** | fake Canvas data saved in `dbcron/tests/fixtures/canvas_mock/` → `canvas_to_redis.py` → Redis |
 
 You only need the last row to work on the website and API.
@@ -39,7 +39,8 @@ and grades. That is not built yet, so for now you sign in with Google and the ap
 ## What you need
 
 - **Docker Desktop**, installed and open (check: `docker info` prints details, not an error). You do not need a Docker account.
-- **Node.js 20.10 or newer** (`node -v` should print `v20.10` or higher; get the LTS version from nodejs.org)
+- **Node.js 22** (`node -v` should print `v22.…`). With [nvm](https://github.com/nvm-sh/nvm), run `nvm install` and then
+  `nvm use` in the `GradeView` folder (both read `.nvmrc`); otherwise get the 22 LTS from nodejs.org.
 - **Python 3.8 or newer** (`python3 --version`)
 - **Git**, and your **berkeley.edu Google account** (only used to sign in to your local copy)
 - macOS or Linux. On Windows, use WSL2 (not tested yet). On Ubuntu/WSL2, also run `sudo apt install python3-venv lsof curl`.
@@ -49,14 +50,14 @@ and grades. That is not built yet, so for now you sign in with Google and the ap
 ```bash
 git clone https://github.com/AFA-Tooling/GradeView.git
 cd GradeView
-git switch GV-13/canvas-importer-prototype   # the branch with this setup (until PR #57 is merged into main)
 cp .env.example .env                         # then open .env and set DEV_ADMIN_EMAIL to YOUR berkeley.edu email
 make mock-up
 ```
 
 `make mock-up` prints steps `1/4` to `4/4`. The first run takes a few minutes because it downloads packages.
 If a line starts with `ERROR:`, it stopped at that step. Fix what it says (see Troubleshooting) and run
-`make mock-up` again. Rerunning is safe.
+`make mock-up` again. Rerunning is safe. Run it again after every `git pull` or `git switch` too: it reinstalls the
+packages whenever `package.json` or `package-lock.json` changed, and restarts a server that was running on the old ones.
 
 When it prints `GradeView is running with fake data`, you get your terminal back. The servers keep running in the
 background. Open **http://localhost:3000** and:
@@ -65,12 +66,13 @@ background. Open **http://localhost:3000** and:
    Do not use the username/password boxes; they are an old, unused stub.
 2. You land on the **ADMIN** page automatically (it is also in the top bar).
 
-Your email is the only admin on your machine. Nothing you do here touches real data.
+Your email is the only admin on your machine. Nothing you do here touches real data. The API and the website only
+listen on `127.0.0.1`, so nobody else on your network can reach them.
 
 | Command | What it does |
 |---|---|
 | `make mock-up` | Start everything (also after a restart) |
-| `make mock-down` | Stop everything (the fake data is kept) |
+| `make mock-down` | Stop everything `make mock-up` started (the fake data is kept). It never stops other programs. |
 | `make mock-reset` | Stop everything and delete the local fake data (the next `make mock-up` reloads it) |
 
 Editing code: the website reloads by itself when you save. After changing `api/` code, run `make mock-down`
@@ -106,23 +108,28 @@ email as admin (through the `NODE_CONFIG` environment variable); the file itself
 | Problem | Fix |
 |---|---|
 | `Set DEV_ADMIN_EMAIL ... in the .env file` | Run `cp .env.example .env` in the `GradeView` folder and put your email in `DEV_ADMIN_EMAIL`. |
+| `DEV_ADMIN_EMAIL ... is still the example value` or `must be your @berkeley.edu email` | Put your own `@berkeley.edu` address in `DEV_ADMIN_EMAIL` (only berkeley.edu Google accounts can sign in). |
 | `Docker is not running` | Open Docker Desktop and wait until `docker info` works (about 30 seconds), then `make mock-up`. |
 | Docker says `email must be verified` | Docker Desktop is signed in to an unverified account. Sign out (whale icon → Sign out) and rerun; no account is needed. |
 | `The local Redis has a different password` | You changed `REDIS_DB_SECRET`. Run `make mock-reset`, then `make mock-up`. |
+| `The local Redis (...) uses 127.0.0.1:6390, not ...` | You changed `REDIS_PORT` after the local Redis was created. Run `make mock-reset`, then `make mock-up`. |
 | `Port 6390 is in use` | Another program uses that port. Add `REDIS_PORT=6391` to `.env`, run `make mock-reset`, then `make mock-up`. |
-| `port 3000 already in use; assuming the website is running` (or 8000) | If you did not start it with `make mock-up`, quit that program (`lsof -i :3000` shows which one) and rerun. Google sign-in only works on port 3000. |
-| The login page says `You are not a registered student or admin` | You signed in with a different Google account than `DEV_ADMIN_EMAIL`. Fix `.env`, then `make mock-down` and `make mock-up`. |
+| `Port 8000 is used by another program: ...` (or 3000) | `make mock-up` only reuses servers it started itself. Quit the program the message names, or, for the API, add `MOCK_API_PORT=8001` to `.env`. Google sign-in only works on port 3000, so keep port 3000 free for the website. |
+| `... started by an older make mock-up is running` | Run `make mock-down`, then `make mock-up`. |
+| `The API from an earlier make mock-up is still running on port 8000, not on MOCK_API_PORT=...` (or the website) | You changed `MOCK_API_PORT` or `MOCK_WEB_PORT` while the servers ran. Run `make mock-down`, then `make mock-up`. |
+| The login page says `You are not a registered student or admin` | You signed in with a different Google account than `DEV_ADMIN_EMAIL`. Fix `DEV_ADMIN_EMAIL` in `.env` and run `make mock-up` again (it restarts the API when the email changed), then sign in again. |
 | You are sent back to the login page later on | Your Google sign-in expired (after about an hour). Sign in again. |
 | The login page says `An error occurred` | The API stopped. Check `.dev-logs/api.log`, then `make mock-up`. |
-| `make: *** No rule to make target 'mock-up'` | You are not in the `GradeView` folder or not on the branch: `cd GradeView && git switch GV-13/canvas-importer-prototype`. |
+| `make: *** No rule to make target 'mock-up'` | You are not in the `GradeView` folder, or on an old branch: `cd GradeView && git switch main && git pull`. |
+| `Loading the fake data failed` | See `.dev-logs/load.log`. Step 2 ignores `dbcron/.env`, so Canvas importer settings there do not matter. |
 | The same step keeps failing after an interrupted first run | Delete the half-finished install and rerun: for step 2, `rm -rf dbcron/.venv`; for step 3, `rm -rf api/node_modules website/node_modules`. |
-| Something else | Check the logs in `.dev-logs/` (`api.log`, `web.log`, `load.log`, and `npm-api.log` / `npm-web.log` from the first run). |
+| Something else | Check the logs in `.dev-logs/` (`api.log`, `web.log`, `load.log`, and `npm-api.log` / `npm-web.log` from the first run). When `make mock-up` starts a server again, the last run's log is kept as `api.previous.log` / `web.previous.log`. |
 
 ## Team rules
 
 - **Fake data only.** Never point a local setup at a real course, a real Google Sheet, or production.
 - **Never commit secrets.** `.env` files are ignored by git; keep tokens and keys out of code, issues and chat.
-- Get a ticket number (`GV-xx`) from the team before you start. Until PR #57 is merged, branch off
-  `GV-13/canvas-importer-prototype`: `git switch -c GV-20/fix-final-percent` (format `<ticket-id>/<short-description>`).
+- Get a ticket number (`GV-xx`) from the team before you start. Branch off an up-to-date `main`:
+  `git switch main && git pull`, then `git switch -c GV-20/fix-final-percent` (format `<ticket-id>/<short-description>`).
   Title the PR `[GV-20] ...`. Commit messages look like `fix(website): show final percent` (`type(area): what changed`).
   Do not push to `main`.

@@ -1,0 +1,15 @@
+# Development reverse proxy: plain HTTP on port 80, no certificates needed.
+#
+# Selected by docker-compose.dev.yml with
+#   NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/development
+# The image default (docker-compose.yml, production) is ../production/.
+# Never use this template on a public server.
+
+server_tokens off;
+
+server {
+    listen 80;
+    server_name ${NGINX_SERVER_NAME} localhost _;
+
+    include /etc/nginx/snippets/gradeview-locations.conf;
+}

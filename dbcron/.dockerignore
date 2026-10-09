@@ -1,0 +1,35 @@
+# Build context for the dbcron image: an ALLOWLIST. Only the job scripts, the
+# crontab and the requirements are sent; everything else (dbcron/.env, key files,
+# Canvas payload dumps with student data, tests, venvs) stays out.
+# At runtime compose mounts ./dbcron over /dbcron, so dbcron/.env still reaches
+# the container through the volume; it must never be baked into the image.
+*
+!*.py
+!cronjob
+!requirements.txt
+
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials

@@ -9,6 +9,7 @@ Usage (from dbcron/):
   python canvas_to_redis.py --fixtures DIR        # use saved Canvas JSON (always a dry run unless --write-fixtures)
   python canvas_to_redis.py --dump /tmp/out.json  # also save the payload. It contains student names, emails
                                                   # and grades: keep it outside the repo and never commit it.
+  python canvas_to_redis.py --no-dotenv ...       # do not read dbcron/.env; only the process environment counts
 
 Environment (see canvas.env.example): CANVAS_BASE_URL, CANVAS_COURSE_ID, CANVAS_TOKEN,
 CANVAS_TOTAL_POINTS, CANVAS_ASSIGNMENT_POINTS, CANVAS_INCLUDE_FUTURE, CANVAS_RELEASE_ON_DUE,
@@ -121,13 +122,16 @@ def _describe(err):
 
 def main(argv=None):
     """Command-line entry point; returns the process exit code (non-zero on any failure)."""
-    load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--fixtures")
     parser.add_argument("--write-fixtures", action="store_true", help="actually write fixture data to Redis (testing only)")
     parser.add_argument("--dump")
+    parser.add_argument("--no-dotenv", action="store_true",
+                        help="ignore .env files and use only the process environment (make mock-up passes this)")
     args = parser.parse_args(argv)
+    if not args.no_dotenv:
+        load_dotenv()
     if args.fixtures and not args.write_fixtures:
         args.dry_run = True
 

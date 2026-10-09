@@ -1,3 +1,8 @@
+# Cron jobs do not see the container's environment (their settings come from dbcron/.env);
+# this keeps Python from writing __pycache__/ into the ./dbcron bind mount (the checkout).
+PYTHONDONTWRITEBYTECODE=1
 */5 * * * * cd /dbcron && /usr/local/bin/python3 /dbcron/update_db.py >> /var/log/cron.log 2>&1
 */30 * * * * cd /dbcron && /usr/local/bin/python3 /dbcron/update_bins.py >> /var/log/cron.log 2>&1
-6 * * * * cd /dbcron && /usr/local/bin/python3 /dbcron/flush_db.py >> /var/log/cron.log 2>&1
+# Hourly: empty DB0 (drops students who left the sheet) and reload it in the same job. A flush on
+# its own left DB0 empty until the next */5 update, and meanwhile every student got 403.
+6 * * * * cd /dbcron && /usr/local/bin/python3 /dbcron/manual_update_flush.py >> /var/log/cron.log 2>&1

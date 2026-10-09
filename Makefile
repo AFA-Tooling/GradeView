@@ -1,13 +1,33 @@
 -include .env
-.DEFAULT_GOAL := docker
+# A bare `make` only prints the targets. `make docker` is the PRODUCTION stack
+# (HTTPS only, needs the server's Let's Encrypt certificate); on a laptop use
+# `make dev-up` or `make mock-up`.
+.DEFAULT_GOAL := help
 
+help:
+	@echo "GradeView make targets:"
+	@echo "  make mock-up      local stack with fake data (docs/LOCAL_DEV_MOCK.md)"
+	@echo "  make dev-up       local Docker stack over HTTP (docker-compose.dev.yml); dev-down stops it"
+	@echo "  make dev-local    Redis + dbcron in Docker, API and website on the host"
+	@echo "  make proxy-check  nginx -t on both reverse-proxy templates"
+	@echo "  make docker       PRODUCTION stack, HTTPS only, on the server (docs/DEPLOY.md)"
+
+# Install every package and build the website (website/server/build), which make dev-up
+# needs. website/ uses --no-save because its lockfile is out of sync with package.json
+# (see the docker target); the others install exactly what their lockfiles say.
 init:
-	@cd website && npm install
-	@cd api && npm install
-	@cd website/server && npm install
+	@cd website && npm install --no-save
+	@cd api && npm ci
+	@cd website/server && npm ci
 	@cd website && npm run build
 
+# The dev web container serves the host's website/server/build (bind mount), so it
+# answers 404 on every page until the website is built.
 dev-up:
+	@test -s website/server/build/index.html || { \
+		echo "website/server/build/index.html is missing, so the web container would answer 404." >&2; \
+		echo "Build the website first: make init (or: cd website && npm install --no-save && npm run build)." >&2; \
+		exit 1; }
 	@docker compose -f docker-compose.dev.yml up -dV
 
 dev-down:
@@ -15,14 +35,19 @@ dev-down:
 
 # Run GradeView locally with FAKE data (no secrets needed). Needs DEV_ADMIN_EMAIL and
 # REDIS_DB_SECRET in .env (copy .env.example). See docs/LOCAL_DEV_MOCK.md.
+# Optional ports (in .env or the environment): REDIS_PORT, MOCK_API_PORT, MOCK_WEB_PORT.
+# They are passed explicitly because make does not export variables read from .env
+# (API_PORT in .env is the compose stack's, so mock-up uses its own names).
+MOCK_PORTS = REDIS_PORT="$(REDIS_PORT)" MOCK_API_PORT="$(MOCK_API_PORT)" MOCK_WEB_PORT="$(MOCK_WEB_PORT)"
+
 mock-up:
-	@DEV_ADMIN_EMAIL="$(DEV_ADMIN_EMAIL)" REDIS_DB_SECRET="$(REDIS_DB_SECRET)" REDIS_PORT="$(REDIS_PORT)" scripts/mock.sh up
+	@DEV_ADMIN_EMAIL="$(DEV_ADMIN_EMAIL)" REDIS_DB_SECRET="$(REDIS_DB_SECRET)" $(MOCK_PORTS) scripts/mock.sh up
 
 mock-down:
-	@scripts/mock.sh down
+	@$(MOCK_PORTS) scripts/mock.sh down
 
 mock-reset:
-	@scripts/mock.sh reset
+	@$(MOCK_PORTS) scripts/mock.sh reset
 
 dev-local:
 	@bash -c '\
@@ -56,16 +81,61 @@ dev-local:
 	fi; \
 	'
 	@echo "1. Starting Redis and dbcron..."
-	@docker-compose up -d redis dbcron
+	@# dev compose: Redis is published on 127.0.0.1:6379 for the host API (production publishes no Redis port)
+	@docker compose -f docker-compose.dev.yml up -d redis dbcron
 	@echo "2. Waiting for data to be loaded into Redis..."
 	@sleep 5
 	@echo "3. Starting API server..."
-	@cd api && NODE_ENV=development npm run dev &
+	@# Pass the root .env password (the one dev Redis was started with); dotenv in
+	@# the API does not override it with api/.env.
+	@cd api && $(if $(REDIS_DB_SECRET),REDIS_DB_SECRET="$(REDIS_DB_SECRET)") NODE_ENV=development npm run dev &
 	@echo "4. Starting website dev server..."
 	@cd website && REACT_APP_PROXY_SERVER="http://localhost:8000" npm run react
 
-docker:
-	@cd website && npm install && npm run build
+# Check both reverse-proxy templates (production HTTPS, development HTTP) with
+# `nginx -t` inside the image, using a throwaway self-signed certificate.
+proxy-check:
+	@reverseProxy/check-config.sh
+
+# Production preflight for `make docker`: nginx's HTTPS server cannot start
+# without the certificate, and Redis must not use the example password.
+# certbot makes /etc/letsencrypt/live readable by root only, so when the deploy
+# user cannot look inside it the check runs in a throwaway container (as root,
+# same mount as compose) using the reverse proxy's base image.
+PROD_SERVER_NAME = $(or $(NGINX_SERVER_NAME),gradeview.eecs.berkeley.edu)
+PROD_CERT_DIR = /etc/letsencrypt/live/$(PROD_SERVER_NAME)
+PROXY_BASE_IMAGE = $(shell awk '/^FROM /{print $$2; exit}' reverseProxy/Dockerfile)
+
+prod-check:
+ifeq ($(strip $(REDIS_DB_SECRET)),change-me-local-only)
+	@echo "REDIS_DB_SECRET in .env is still the example value from .env.example." >&2
+	@echo "  On a laptop: do not run make docker (the production stack); use make mock-up (fake data) or make dev-up." >&2
+	@echo "  On the server: set a random one first (docs/DEPLOY.md, section 3)." >&2
+	@exit 1
+endif
+	@certs='test -s "$(PROD_CERT_DIR)/fullchain.pem" && test -s "$(PROD_CERT_DIR)/privkey.pem"'; \
+	if sh -c "$$certs" 2>/dev/null; then exit 0; fi; \
+	if [ -d /etc/letsencrypt/live ] && [ ! -x /etc/letsencrypt/live ] && \
+	   docker run --rm --mount type=bind,src=/etc/letsencrypt,dst=/etc/letsencrypt,readonly \
+	     --entrypoint sh "$(PROXY_BASE_IMAGE)" -c "$$certs"; then exit 0; fi; \
+	echo "make docker starts the PRODUCTION stack (docker-compose.yml, HTTPS only), but" >&2; \
+	echo "$(PROD_CERT_DIR)/fullchain.pem and privkey.pem were not found, so nginx would not start." >&2; \
+	echo "  On a laptop: make dev-up (HTTP, docker-compose.dev.yml) or make mock-up (fake data)." >&2; \
+	echo "  On the server: issue the first certificate, see docs/DEPLOY.md section 4." >&2; \
+	exit 1
+
+# website/package-lock.json is out of sync with package.json, so `npm ci` refuses
+# and a plain `npm install` rewrites the tracked lockfile, so the next
+# `git pull --ff-only` that touches it fails on the local change. --no-save
+# installs without writing it (as scripts/mock.sh does).
+# The website is built on the host, which needs Node.js 22: Debian 12's own nodejs (18,
+# npm 9) fails at `npm install` on website/package.json's overrides (docs/DEPLOY.md section 1).
+docker: prod-check
+	@node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' 2>/dev/null || { \
+		echo "make docker builds the website on this machine and needs Node.js 22 (found: $$(node -v 2>/dev/null || echo none))." >&2; \
+		echo "Install it as described in docs/DEPLOY.md, section 1." >&2; \
+		exit 1; }
+	@cd website && npm install --no-save && npm run build
 	@docker compose build
 	@docker compose up -dV
 

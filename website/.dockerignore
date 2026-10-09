@@ -1,0 +1,61 @@
+# Build-context exclusions for the website dev image (website/Dockerfile,
+# `react-scripts start`; compose does not use this image, it builds
+# website/server instead).
+Dockerfile
+.dockerignore
+.git
+**/.DS_Store
+
+# Dependencies are installed by `npm ci`; build output is regenerated
+node_modules
+**/node_modules
+build
+# The production Express server (its own image, website/server/Dockerfile)
+server/
+# The only top-level JSON files the image needs are the npm manifests (a key
+# file dropped next to them must not be sent).
+/*.json
+!/package.json
+!/package-lock.json
+
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
+# Exception: .env.local is tracked in git (so it is not a secret) and is read by
+# Create React App. This image runs the dev server (`react-scripts start`, which
+# also loads src/setupProxy.js), so keep it to behave like a checkout. The
+# production bundle does not depend on it (`react-scripts build` output is
+# identical with and without it). REACT_APP_* values end up in the public
+# bundle, so never put secrets in it.
+!.env.local
+
+*.log
+npm-debug.log*
+
+# Local Python environments and data dumps (Canvas dumps contain student data)
+venv/
+.venv/
+**/__pycache__/
+dumps/

@@ -298,6 +298,38 @@ def test_write_refuses_wrong_course_and_empty_roster(payload):
         write_payload(empty, clients)
 
 
+# ---------- command line ----------
+
+
+@pytest.fixture
+def clean_canvas_env(monkeypatch):
+    for name in ("CANVAS_COURSE_ID", "CANVAS_TOTAL_POINTS", "CANVAS_ASSIGNMENT_POINTS", "CANVAS_CATEGORY_MAP",
+                 "CANVAS_INCLUDE_FUTURE", "CANVAS_RELEASE_ON_DUE"):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_main_no_dotenv_skips_env_files(monkeypatch, capsys, clean_canvas_env):
+    # make mock-up passes --no-dotenv, so CANVAS_* settings in a developer's dbcron/.env
+    # (for example CANVAS_COURSE_ID) cannot change or block the fake-data load.
+    import canvas_to_redis
+
+    def must_not_run(*_args, **_kwargs):
+        raise AssertionError("load_dotenv() ran despite --no-dotenv")
+
+    monkeypatch.setattr(canvas_to_redis, "load_dotenv", must_not_run)
+    assert canvas_to_redis.main(["--fixtures", str(FIXTURES), "--no-dotenv"]) == 0
+    assert "16 students" in capsys.readouterr().out
+
+
+def test_main_loads_dotenv_by_default(monkeypatch, clean_canvas_env):
+    import canvas_to_redis
+
+    calls = []
+    monkeypatch.setattr(canvas_to_redis, "load_dotenv", lambda *a, **k: calls.append(True))
+    assert canvas_to_redis.main(["--fixtures", str(FIXTURES)]) == 0
+    assert calls == [True]
+
+
 # ---------- client safety (review B1/B4/B6/S1/S2) ----------
 
 def test_client_rejects_bad_tokens_and_plain_http():

@@ -34,6 +34,7 @@ services:
     environment:
       - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER:-http://api:8000}
       - PORT=${REACT_APP_PORT}
+      - NODE_ENV=production
     networks:
       - frontend
     command: npm start

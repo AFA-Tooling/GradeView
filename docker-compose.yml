@@ -37,6 +37,8 @@ services:
       # Target of the web container's own /api proxy (nginx sends /api straight to the API).
       - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER:-http://api:8000}
       - PORT=${REACT_APP_PORT}
+      # Express (and its default error pages) in production mode: no stack traces.
+      - NODE_ENV=production
     networks:
       - frontend
     command: npm start

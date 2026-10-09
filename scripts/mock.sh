@@ -125,8 +125,10 @@ install_packages() { # install_packages <dir> <log> <npm arguments...>
 }
 
 wait_for() { # wait_for <name> <url> <text the answer must contain> <pidfile> <pattern> <log>
+  local body
   for _ in $(seq 1 80); do
-    curl -sf --max-time 5 "$2" 2>/dev/null | grep -qF -- "$3" && return 0
+    body="$(curl -sf --max-time 5 "$2" 2>/dev/null || true)"
+    case "$body" in *"$3"*) return 0 ;; esac
     saved_group "$4" "$5" >/dev/null || fail "The $1 stopped while starting (see $6)"
     sleep 3
   done

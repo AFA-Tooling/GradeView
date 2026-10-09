@@ -11,6 +11,7 @@
  */
 const { spawn } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 const request = require('supertest');
@@ -71,17 +72,38 @@ function startServer(cwd) {
     });
 }
 
-const filesOnDisk = () => fs.readdirSync(uploadDir).sort();
+// Like the repo's api/uploads/progressreports, the directory always holds a
+// .GITKEEP, and it is already there when the router is loaded.
+const GITKEEP = '.GITKEEP';
+
+/** Everything in the upload directory except the .GITKEEP placeholder. */
+const filesOnDisk = () =>
+    fs
+        .readdirSync(uploadDir)
+        .filter((name) => name !== GITKEEP)
+        .sort();
 
 const adminUpload = () =>
     request(baseUrl)
         .post('/api/v2/admin/progressreports')
         .set('Authorization', FAKE_ADMIN_AUTH);
 
+/** A hand-written multipart body, for shapes supertest's attach() cannot produce. */
+const rawMultipart = (body) =>
+    adminUpload()
+        .set('Content-Type', 'multipart/form-data; boundary=fakeboundary')
+        .send(body.replace(/\n/g, '\r\n'));
+
+const WRONG_TYPE = {
+    error: 'Invalid file type. Only application/x-concept-map files are allowed.',
+};
+const NO_FILE = { error: 'No file uploaded. Send it in the "schema" field.' };
+
 beforeAll(async () => {
     tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gv-progressreports-'));
     uploadDir = path.join(tmpRoot, 'uploads', 'progressreports');
     fs.mkdirSync(uploadDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadDir, GITKEEP), 'DO NOT DELETE\n');
     baseUrl = await startServer(tmpRoot);
 }, 20000);
 
@@ -91,7 +113,9 @@ afterAll(() => {
 });
 
 beforeEach(() => {
-    for (const name of filesOnDisk()) fs.rmSync(path.join(uploadDir, name));
+    for (const name of filesOnDisk()) {
+        fs.rmSync(path.join(uploadDir, name), { recursive: true, force: true });
+    }
 });
 
 afterEach(() => {
@@ -166,4 +190,246 @@ describe('POST /api/v2/admin/progressreports', () => {
         expect(res.body).toEqual({ error: 'Unexpected file field' }); // multer >= 2.4 wording
         expect(filesOnDisk()).toEqual([]);
     });
+
+    test('rejects a second file in the schema field and removes the first one', async () => {
+        const res = await adminUpload()
+            .attach('schema', Buffer.from('fake one'), 'first.cm')
+            .attach('schema', Buffer.from('fake two'), 'second.cm');
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'Unexpected file field' });
+        expect(filesOnDisk()).toEqual([]);
+    });
+});
+
+describe('POST /api/v2/admin/progressreports with a wrong file type', () => {
+    // Used to throw a ReferenceError (`res` is not defined) inside busboy's
+    // event handler, which took the whole API process down.
+    test('answers 415, stores nothing and keeps serving', async () => {
+        const res = await adminUpload().attach('schema', Buffer.from('fake notes'), 'notes.txt');
+
+        expect(res.status).toBe(415);
+        expect(res.body).toEqual(WRONG_TYPE);
+        expect(filesOnDisk()).toEqual([]);
+
+        const next = await adminUpload().attach('schema', Buffer.from('fake'), 'after.cm');
+        expect(next.status).toBe(201);
+    });
+
+    test.each([
+        ['no extension', 'schema'],
+        ['a bare extension', 'cm'],
+        ['a dotfile', '.cm'],
+        ['a name that is only spaces', ' .cm'],
+    ])('answers 415 for %s (%j)', async (_label, filename) => {
+        const res = await adminUpload().attach('schema', Buffer.from('fake'), filename);
+
+        expect(res.status).toBe(415);
+        expect(res.body).toEqual(WRONG_TYPE);
+        expect(filesOnDisk()).toEqual([]);
+    });
+
+    test('answers 400 when the name sanitizes to nothing', async () => {
+        // sanitize-filename turns the reserved Windows name "con" into ""; writing
+        // to the bare directory path would fail with EISDIR.
+        const res = await adminUpload().attach('schema', Buffer.from('fake'), 'con.cm');
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'Invalid file name.' });
+        expect(filesOnDisk()).toEqual([]);
+    });
+
+    test('answers 400 for a file name over 100 characters', async () => {
+        const res = await adminUpload().attach(
+            'schema',
+            Buffer.from('fake'),
+            `${'a'.repeat(98)}.cm`,
+        );
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'File name too long.' });
+        expect(filesOnDisk()).toEqual([]);
+    });
+});
+
+describe('POST /api/v2/admin/progressreports without a file', () => {
+    // Each of these used to reach `req.file.filename` with req.file undefined
+    // (TypeError) instead of answering the client.
+    test('multipart body with only a text field', async () => {
+        const res = await adminUpload().field('note', 'fake note');
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual(NO_FILE);
+    });
+
+    test('file part with an empty file name', async () => {
+        const res = await rawMultipart(
+            '--fakeboundary\n' +
+                'Content-Disposition: form-data; name="schema"; filename=""\n' +
+                'Content-Type: application/octet-stream\n\n' +
+                'fake\n' +
+                '--fakeboundary--\n',
+        );
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual(NO_FILE);
+        expect(filesOnDisk()).toEqual([]);
+    });
+
+    test('JSON body instead of multipart', async () => {
+        const res = await adminUpload().send({ schema: 'fake.cm' });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual(NO_FILE);
+    });
+
+    test('no body at all', async () => {
+        const res = await adminUpload();
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual(NO_FILE);
+    });
+
+    test('truncated multipart body', async () => {
+        const res = await rawMultipart(
+            '--fakeboundary\n' +
+                'Content-Disposition: form-data; name="schema"; filename="truncated.cm"\n' +
+                'Content-Type: application/octet-stream\n\n' +
+                'fake data without a closing boundary',
+        );
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'Malformed upload request.' });
+        expect(filesOnDisk()).toEqual([]);
+    });
+});
+
+/** Starts a multipart upload over a raw socket, so a test can pause in the middle of the body. */
+function openSlowUpload(boundary) {
+    const { hostname, port } = new URL(baseUrl);
+    let req;
+    const response = new Promise((resolve, reject) => {
+        req = http.request(
+            {
+                hostname,
+                port,
+                method: 'POST',
+                path: '/api/v2/admin/progressreports',
+                headers: {
+                    Authorization: FAKE_ADMIN_AUTH,
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                },
+            },
+            (res) => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    body += chunk;
+                });
+                res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(body) }));
+            },
+        );
+        req.on('error', reject);
+    });
+    const crlf = (text) => text.replace(/\n/g, '\r\n');
+    return {
+        write: (text) => req.write(crlf(text)),
+        end: (text) => req.end(crlf(text)),
+        response,
+    };
+}
+
+async function waitUntil(condition, what) {
+    const deadline = Date.now() + 5000;
+    while (!condition()) {
+        if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+}
+
+describe('concurrent POST /api/v2/admin/progressreports', () => {
+    // The handler used to remember the last stored name on the one shared
+    // UploadHandler instance and unlink that name when a request failed, so a
+    // failing request could delete a file another request had just stored.
+    test('a failing upload that overlaps another one does not delete the other file', async () => {
+        const slow = openSlowUpload('fakeboundary');
+        slow.write(
+            '--fakeboundary\n' +
+                'Content-Disposition: form-data; name="schema"; filename="slow-first.cm"\n' +
+                'Content-Type: application/octet-stream\n\n' +
+                'fake first file, still streaming',
+        );
+        await waitUntil(
+            () => fs.existsSync(path.join(uploadDir, 'slow-first.cm')),
+            'the slow upload to start writing',
+        );
+
+        const kept = Buffer.from('fake schema uploaded while the slow request is open\n');
+        const other = await adminUpload().attach('schema', kept, 'kept.cm');
+        expect(other.status).toBe(201);
+
+        // A second file in the same field makes the slow request fail.
+        slow.end(
+            '\n--fakeboundary\n' +
+                'Content-Disposition: form-data; name="schema"; filename="slow-second.cm"\n' +
+                'Content-Type: application/octet-stream\n\n' +
+                'fake second file\n' +
+                '--fakeboundary--\n',
+        );
+        const failed = await slow.response;
+        expect(failed).toEqual({ status: 400, body: { error: 'Unexpected file field' } });
+
+        await new Promise((resolve) => setTimeout(resolve, 200)); // let any stray unlink land
+        expect(filesOnDisk()).toEqual(['kept.cm']);
+        expect(fs.readFileSync(path.join(uploadDir, 'kept.cm'))).toEqual(kept);
+    });
+
+    test('each request keeps its own file, and failed requests remove only their own', async () => {
+        const good = Array.from({ length: 12 }, (_, i) => ({
+            name: `concurrent-${String(i).padStart(2, '0')}.cm`,
+            content: Buffer.alloc(64 * 1024 + i, String.fromCharCode(97 + i)),
+        }));
+
+        const requests = [];
+        good.forEach(({ name, content }, i) => {
+            requests.push(
+                adminUpload()
+                    .attach('schema', content, name)
+                    .then((res) => ({ kind: 'good', name, content, res })),
+            );
+            if (i % 2 === 0) {
+                // stores its first file, then fails on the second one
+                requests.push(
+                    adminUpload()
+                        .attach('schema', Buffer.alloc(32 * 1024, 'x'), `failing-${i}.cm`)
+                        .attach('schema', Buffer.from('fake'), `failing-${i}-extra.cm`)
+                        .then((res) => ({ kind: 'two-files', res })),
+                );
+            } else {
+                requests.push(
+                    adminUpload()
+                        .attach('schema', Buffer.alloc(MAX_SCHEMA_BYTES + 1, 'y'), `big-${i}.cm`)
+                        .then((res) => ({ kind: 'too-big', res })),
+                );
+            }
+        });
+
+        const results = await Promise.all(requests);
+
+        for (const { kind, name, content, res } of results) {
+            if (kind === 'good') {
+                expect(res.status).toBe(201);
+                expect(res.body).toMatchObject({ fileName: name, originalName: name, size: content.length });
+            } else {
+                expect(res.status).toBe(400);
+                expect(res.body).toEqual({
+                    error: kind === 'two-files' ? 'Unexpected file field' : 'File too large',
+                });
+            }
+        }
+        expect(filesOnDisk()).toEqual(good.map(({ name }) => name).sort());
+        for (const { name, content } of good) {
+            expect(fs.readFileSync(path.join(uploadDir, name))).toEqual(content);
+        }
+    }, 20000);
 });

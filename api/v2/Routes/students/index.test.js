@@ -266,6 +266,23 @@ describe('GET /api/v2/students/grades?email= (legacy nginx rewrite)', () => {
     });
 });
 
+describe('concept-structure Redis load', () => {
+    test('one request opens a fixed number of Redis connections, whatever the class size', async () => {
+        for (let i = 0; i < 60; i += 1) {
+            fakeRedis.seed(`student${100 + i}@berkeley.edu`, {
+                'Legal Name': `Student ${i}`,
+                Assignments: { Labs: { 'Lab 1': i % 6 } },
+            });
+        }
+        const res = await request(app)
+            .get(studentUrl(STUDENT_A, 'concept-structure'))
+            .set('Authorization', TOKENS.studentA);
+        expect(res.status).toBe(200);
+        // roster check (auth) + class entries + max scores + the student's own scores
+        expect(fakeRedis.state.clientsCreated).toBe(4);
+    });
+});
+
 describe('Redis unreachable (connect rejects)', () => {
     beforeEach(() => {
         fakeRedis.state.failConnect = true;

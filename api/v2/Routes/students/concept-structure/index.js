@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMaxScores, getStudentScores, getStudents } from '../../../../lib/redisHelper.mjs';
+import { getMaxScores, getStudentEntries, getStudentScores } from '../../../../lib/redisHelper.mjs';
 import { requestedStudentEmail } from '../../../../lib/authlib.mjs';
 import ProgressReportData from '../../../../assets/progressReport/CS10.json' with { type: 'json' };
 import KeyNotFoundError from '../../../../lib/errors/redis/KeyNotFound.js';
@@ -50,21 +50,13 @@ function once(fn) {
 }
 
 // Creates checkIfTaught(conceptName) for one request: whether ANY student has a grade > 0 for
-// the concept. The roster and every student's scores are read from Redis at most once (on the
-// first call) and reused for every concept, instead of re-reading the whole class per node.
+// the concept. Every student's entry is read from Redis once, over one connection (on the first
+// call), and reused for every concept, instead of re-reading the whole class per node.
 function createTaughtChecker() {
     const loadClassScores = once(async () => {
-        const students = await getStudents();
-        const classScores = [];
-        for (const [, email] of students) {
-            try {
-                classScores.push({ scores: await getStudentScores(email) });
-            } catch (err) {
-                // Skip this student if we can't get their scores
-                classScores.push({ failed: true });
-            }
-        }
-        return classScores;
+        const entries = await getStudentEntries();
+        // The same value getStudentScores(email) returns for an entry that exists.
+        return entries.map(([, entry]) => entry['Assignments']);
     });
 
     return async function checkIfTaught(conceptName) {
@@ -72,10 +64,7 @@ function createTaughtChecker() {
             const classScores = await loadClassScores();
 
             // Check if any student has any grade for this concept
-            for (const { scores: studentScores, failed } of classScores) {
-                if (failed) {
-                    continue;
-                }
+            for (const studentScores of classScores) {
                 try {
                     // Check if this student has any grade > 0 for this concept
                     const hasGrade = Object.values(studentScores).some(category =>

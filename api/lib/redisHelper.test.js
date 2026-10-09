@@ -65,6 +65,7 @@ describe('Redis refuses connections', () => {
     test.each([
         ['getEntry', () => redisHelper.getEntry(STUDENT_A)],
         ['getStudents', () => redisHelper.getStudents()],
+        ['getStudentEntries', () => redisHelper.getStudentEntries()],
         ['getStudentScores', () => redisHelper.getStudentScores(STUDENT_A)],
         ['getMaxScores', () => redisHelper.getMaxScores()],
     ])('%s rejects at once and does not keep reconnecting', async (_, call) => {

@@ -242,15 +242,24 @@ export async function getMaxScores() {
  * @returns {Promise<Array<Array<string>>>} List of [legalName, email]
  */
 export async function getStudents() {
+    const entries = await getStudentEntries();
+    return entries.map(([email, studentData]) => [studentData['Legal Name'], email]);
+}
+
+/**
+ * Reads every student's full entry over one Redis connection.
+ * @returns {Promise<Array<[string, object]>>} List of [email, parsed entry], in KEYS order.
+ * @throws {KeyNotFoundError} if a key disappears between KEYS and GET.
+ */
+export async function getStudentEntries() {
     return withClient(0, async (client) => {
         const keys = await client.keys('*@*');
-        const students = [];
+        const entries = [];
         // Read every student over this one connection instead of opening one per key.
         for (const key of keys) {
-            const studentData = parseEntry(await client.get(key), key, 0);
-            students.push([studentData['Legal Name'], key]);
+            entries.push([key, parseEntry(await client.get(key), key, 0)]);
         }
-        return students;
+        return entries;
     });
 }
 

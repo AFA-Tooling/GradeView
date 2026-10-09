@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getMaxScores, getStudentScores, getStudents } from '../../../../lib/redisHelper.mjs';
+import { requestedStudentEmail } from '../../../../lib/authlib.mjs';
 import ProgressReportData from '../../../../assets/progressReport/CS10.json' with { type: 'json' };
 import KeyNotFoundError from '../../../../lib/errors/redis/KeyNotFound.js';
 import StudentNotEnrolledError from '../../../../lib/errors/redis/StudentNotEnrolled.js';
@@ -268,7 +269,7 @@ function annotateTreeWithMastery(nodes, masteryMap) {
 
 // GET /api/v2/students/:email/concept-structure
 router.get('/', async (req, res, next) => {
-    const { email } = req.params;
+    const email = requestedStudentEmail(req);
     // Each Redis read happens at most once per request and is shared by the steps below.
     const loadMaxScores = once(() => getMaxScores());
     const loadStudentScores = once(() => getStudentScores(email));

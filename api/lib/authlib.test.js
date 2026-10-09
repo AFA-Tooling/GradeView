@@ -7,7 +7,11 @@ jest.mock('./googleAuthHelper.mjs', () => ({
     getEmailFromAuth: jest.fn(require('../test/support/fixtures.js').fakeGetEmailFromAuth),
 }));
 
-const { validateAdminMiddleware, validateAdminOrStudentMiddleware } = require('./authlib.mjs');
+const {
+    requestedStudentEmail,
+    validateAdminMiddleware,
+    validateAdminOrStudentMiddleware,
+} = require('./authlib.mjs');
 const { getEmailFromAuth } = require('./googleAuthHelper.mjs');
 const AuthorizationError = require('./errors/http/AuthorizationError.js').default;
 const UnauthorizedAccessError = require('./errors/http/UnauthorizedAccessError.js').default;
@@ -104,5 +108,23 @@ describe('validateAdminMiddleware', () => {
         const calls = await run(validateAdminMiddleware, makeRequest(header));
         expect(calls).toHaveLength(1);
         expect(calls[0][0]).toBeInstanceOf(errorType);
+    });
+});
+
+describe('requestedStudentEmail', () => {
+    test('a student reads their own verified email, whatever the path casing', async () => {
+        const req = makeRequest(TOKENS.studentA, { email: 'Student01@Berkeley.EDU' });
+        expect(await run(validateAdminOrStudentMiddleware, req)).toEqual([[]]);
+        expect(requestedStudentEmail(req)).toBe(STUDENT_A);
+    });
+
+    test('an admin reads the :email param as written', async () => {
+        const req = makeRequest(TOKENS.admin, { email: 'Student02@Berkeley.edu' });
+        expect(await run(validateAdminOrStudentMiddleware, req)).toEqual([[]]);
+        expect(requestedStudentEmail(req)).toBe('Student02@Berkeley.edu');
+    });
+
+    test('falls back to the :email param when the request was not authorized', () => {
+        expect(requestedStudentEmail(makeRequest(undefined, { email: STUDENT_B }))).toBe(STUDENT_B);
     });
 });

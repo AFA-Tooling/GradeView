@@ -4,11 +4,12 @@ import {
     getStudentScores,
 } from '../../../../lib/redisHelper.mjs';
 import { isAdmin } from '../../../../lib/userlib.mjs';
+import { requestedStudentEmail } from '../../../../lib/authlib.mjs';
 
 const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
-    const { email } = req.params;
+    const email = requestedStudentEmail(req);
     try {
         let studentScores;
         const maxScores = await getMaxScores();

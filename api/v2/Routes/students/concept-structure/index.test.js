@@ -4,6 +4,8 @@
 const express = require('express');
 const request = require('supertest');
 
+jest.mock('dotenv', () => ({ config: jest.fn() }));
+jest.mock('config', () => require('../../../../test/support/fixtures.js').configModule);
 jest.mock('../../../../lib/redisHelper.mjs', () => ({
     getMaxScores: jest.fn(),
     getStudentScores: jest.fn(),

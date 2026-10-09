@@ -70,6 +70,23 @@ export async function validateAdminOrStudentMiddleware(req, _res, next) {
 }
 
 /**
+ * Gets the email whose data a per-student route should read.
+ *
+ * For a student this is their own verified (lowercased) email: the ownership check compares the
+ * path case-insensitively, so the raw :email may differ from it in case, and Redis keys are
+ * case-sensitive. For an admin it is the :email path param as written, since roster keys are
+ * stored as they appear in the grade sheet. Use only behind validateAdminOrStudentMiddleware.
+ * @param {Request} req the authorized request.
+ * @returns {string|undefined} the email to look up.
+ */
+export function requestedStudentEmail(req) {
+    if (req.auth?.role === 'student') {
+        return req.auth.email;
+    }
+    return req.params?.email;
+}
+
+/**
  * Lets only admins through.
  *
  * Calls `next` exactly once: with no arguments for an admin, otherwise with an

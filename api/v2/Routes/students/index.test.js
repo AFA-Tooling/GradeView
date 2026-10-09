@@ -136,11 +136,16 @@ describe.each(PER_STUDENT_ROUTES)('GET /api/v2/students/:email/%s', (route) => {
         expect(getEmailFromAuth).toHaveBeenCalledTimes(1);
     });
 
-    test('student A requesting own data with different casing -> 200', async () => {
+    test('student A requesting own data with different casing -> 200, same data', async () => {
+        const canonical = await request(app)
+            .get(studentUrl(STUDENT_A, route))
+            .set('Authorization', TOKENS.studentA);
         const res = await request(app)
             .get(studentUrl('Student01@Berkeley.EDU', route))
             .set('Authorization', TOKENS.studentA);
         expect(res.status).toBe(200);
+        // Looked up under the verified email, not the path as typed (Redis keys are case-sensitive).
+        expect(res.text).toBe(canonical.text);
     });
 
     test('admin requesting any student -> 200', async () => {
@@ -233,6 +238,7 @@ describe('GET /api/v2/students/grades?email= (legacy nginx rewrite)', () => {
 
     test.each([
         ['student A asking for own email', STUDENT_A, TOKENS.studentA],
+        ['student A asking for own email with different casing', 'Student01@Berkeley.EDU', TOKENS.studentA],
         ['admin asking for student B', STUDENT_B, TOKENS.admin],
     ])('%s -> 200, same body as the path form', async (_, email, token) => {
         const pathForm = await request(app).get(studentUrl(email, 'grades')).set('Authorization', token);

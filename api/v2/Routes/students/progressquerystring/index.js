@@ -7,6 +7,7 @@ import {
     getStudentScores,
 } from '../../../../lib/redisHelper.mjs';
 import ProgressReportData from '../../../../assets/progressReport/CS10.json' with { type: 'json' };
+import { requestedStudentEmail } from '../../../../lib/authlib.mjs';
 
 const router = Router({ mergeParams: true });
 
@@ -57,7 +58,7 @@ async function getMasteryString(userTopicPoints, maxTopicPoints) {
 }
 
 router.get('/', async (req, res) => {
-    const { email } = req.params;
+    const email = requestedStudentEmail(req);
     try {
         const maxScores = await getMaxScores();
         const studentScores = await getStudentScores(email);

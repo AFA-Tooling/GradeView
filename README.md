@@ -7,7 +7,8 @@ This application was created using Node, Express, and React by Connor Bernard at
 ## SPREADSHEET SETUP
 
 - The first column should be the student's name
-- The second column should be the student's email
+- The second column should be the student's email. Emails are stored trimmed and lowercased (students sign in
+  with any capitalization). Two rows with the same email, ignoring case and spaces, get no grades at all.
 - The first row should be the titles of the homework assignments for that column
 - The second row should be the type of assignment
 - The third row should be the maximum amount of points the assignment is out of
@@ -87,7 +88,7 @@ This returns a JSON in the following format:
     {\“Abstraction\“: \“2\“, \“Number Representation\“: \“4\“, \“Iteration\“: \“6\“, \“Domain and Range\“: \“6“, \“Booleans\“: \“6\“, \“Functions\“: \“4\“, \“HOFs I\“: \“12\“}
 }”
 ```
-4. To access a students data, use their email. For example:\
+4. To access a students data, use their email in lowercase. For example:\
 `GET dahluwalia@berkeley.edu`\
 This returns a JSON in the following format:
 ```    

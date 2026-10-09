@@ -5,6 +5,8 @@ import json
 import os
 import redis
 
+from sheet_transform import build_student_entries
+
 load_dotenv()
 
 PORT = int(os.getenv("SERVER_PORT"))
@@ -136,30 +138,17 @@ def update_redis():
         if name_column_key is None:
             raise ValueError("Could not determine name column. Please ensure the spreadsheet has a name column in the first column.")
 
-        for record in records:
-            email = record.pop('Email')
-            # Safely get the legal name using the determined key
-            legal_name = record.pop(name_column_key, None)
-            if legal_name is None:
-                # Last resort: try to get from first column by index
-                first_col_value = list(record.values())[0] if record else None
-                legal_name = first_col_value or "Unknown"
-            
-            if email == "CATEGORY":
-                continue
-            users_to_assignments = { #structure for db entries
-                "Legal Name": legal_name,
-                "Assignments": {}
-            }
+        # Student emails become trimmed, lowercased keys (the API looks students up that way);
+        # rows such as "MAX POINTS" keep their exact key. See sheet_transform.py.
+        entries, row_warnings = build_student_entries(records, categories, concepts, name_column_key)
+        for warning in row_warnings:
+            print(f"  ⚠️  {warning}")
 
-            for category, concept in zip(categories, concepts):
-                if category not in users_to_assignments["Assignments"]:
-                    users_to_assignments["Assignments"][category] = {}
-                users_to_assignments["Assignments"][category][concept] = record[concept]
+        for key, entry in entries.items():
+            redis_client.set(key, json.dumps(entry)) #sets key value for user:other data
 
-            redis_client.set(email, json.dumps(users_to_assignments)) #sets key value for user:other data
-        
-        print(f"✓ Successfully updated Redis database with {len(records)} student records")
+        students = sum(1 for key in entries if "@" in key)
+        print(f"✓ Successfully updated Redis database with {students} student records")
         
     except Exception as e:
         print(f"Error: {e}")

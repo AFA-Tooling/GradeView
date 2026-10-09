@@ -410,6 +410,8 @@ Optionally run the public test at <https://www.ssllabs.com/ssltest/> (expect A o
   `NGINX_ENVSUBST_TEMPLATE_DIR`); the routes are shared in `reverseProxy/snippets/gradeview-locations.conf`.
   After changing them run `make proxy-check`, which runs `nginx -t` on both inside the image with a throwaway
   self-signed certificate.
-- **Images** are pinned (`nginx:1.30.5-alpine3.24`, `redis:7.4.11-alpine3.21`, `node:22.23.3-alpine3.24`,
+- **Images** are pinned (`nginx:1.30.5-alpine3.24`, `redis:7.4.11-bookworm`, `node:22.23.3-alpine3.24`,
   `python:3.12.15-slim-trixie`, and `tiangolo/uwsgi-nginx:python3.11-2026-09-21` for the progress report).
-  Bump the tags deliberately and rebuild with `make docker`.
+  Bump the tags deliberately and rebuild with `make docker`. Redis uses the Debian 12 (bookworm) variant
+  because every Redis 7.4 Alpine image is built on Alpine 3.21, which reaches end of life on 2026-11-01;
+  bookworm gets security updates until 2028.

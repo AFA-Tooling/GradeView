@@ -75,7 +75,7 @@ services:
     # No host port: only nginx (on concept_map_integration) talks to it.
     restart: unless-stopped
   redis:
-    image: redis:7.4.11-alpine3.21
+    image: redis:7.4.11-bookworm
     networks:
       - db
     # No host port: the API and dbcron reach redis:6379 over the internal `db` network.

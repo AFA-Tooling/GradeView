@@ -17,7 +17,14 @@ cd dbcron
 python canvas_to_redis.py --dry-run                         # fetch + transform, write nothing
 python canvas_to_redis.py --fixtures tests/fixtures/canvas_mock  # offline, always a dry run
 python canvas_to_redis.py                                   # write to Redis
-python -m pytest tests/test_canvas_transform.py -q          # tests
+python -m pytest tests/test_canvas_transform.py -q          # importer tests
+```
+
+All dbcron tests (the importer and the Google Sheet jobs, which also need gspread and google-auth), in a venv:
+```bash
+cd dbcron
+pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest tests -q
 ```
 Never point a laptop at a real course. For local work use the mock Canvas
 (`CANVAS_BASE_URL=http://localhost:8080`) and a scratch Redis.
@@ -47,7 +54,7 @@ quantitative data. Students sharing an email get no record (fail closed). Duplic
 admin stats treat "Summary" specially.
 
 ## Before scheduling it (not done yet)
-1. **Cron switch:** in `cronjob`, replace the `update_db` / `update_bins` / `flush_db` lines with one `canvas_to_redis.py`
+1. **Cron switch:** in `cronjob`, replace the `update_db` / `update_bins` / `manual_update_flush` lines with one `canvas_to_redis.py`
    line (for example every 15 minutes). Never run both importers. In the Dockerfile, use `;` instead of `&&` so a failed
    first sync does not stop cron. Rebuild the image, because the crontab is installed at build time.
 2. **Admins:** have the API read `canvas:admins` (cached, synchronous `isAdmin`) plus a break-glass list.

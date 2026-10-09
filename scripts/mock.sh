@@ -19,6 +19,11 @@ REDIS_IMAGE="redis:7.4.11-alpine3.21"   # same as docker-compose.yml
 LOGS="$ROOT/.dev-logs"
 API_PID="$LOGS/api.pid"
 WEB_PID="$LOGS/web.pid"
+# Fingerprint of the settings the running API was started with, so mock-up restarts the API when
+# they change. In practice that is DEV_ADMIN_EMAIL: a changed REDIS_PORT or REDIS_DB_SECRET stops
+# step 1 (make mock-reset) and a changed MOCK_API_PORT stops the port check (make mock-down), since
+# the website's proxy target is fixed when it starts. Holds a hash only.
+API_SETTINGS="$LOGS/api.settings"
 # Only reachable from this machine, not from the rest of the network.
 BIND=127.0.0.1
 
@@ -52,6 +57,19 @@ listening_in_group() { # listening_in_group <port> <pgid>
   done
   return 1
 }
+group_ports() { # group_ports <pgid>: the TCP ports that group listens on ("8000"), empty if none
+  { lsof -nP -a -g "$1" -iTCP -sTCP:LISTEN -Fn 2>/dev/null || true; } \
+    | sed -n 's/^n.*:\([0-9][0-9]*\)$/\1/p' | sort -un | paste -sd ',' - | sed 's/,/, /g'
+}
+not_on_port() { # not_on_port <name> <pgid> <setting> <port>: error text for a server on another port
+  local on
+  on="$(group_ports "$2")"
+  if [ -n "$on" ]; then
+    echo "The $1 from an earlier make mock-up is still running on port $on, not on $3=$4. Run make mock-down first."
+  else
+    echo "The $1 from an earlier make mock-up is still running, but not on $3=$4. Run make mock-down first."
+  fi
+}
 # Servers started by an older mock-up (before the .pid files): node processes listening on the
 # port whose working directory is this checkout's api/ or website/.
 legacy_pids() { # legacy_pids <port> <dir>
@@ -65,6 +83,8 @@ legacy_pids() { # legacy_pids <port> <dir>
 start_server() { # start_server <pidfile> <dir> <log> <command...>
   local pidfile="$1" dir="$2" log="$3"
   shift 3
+  # Keep the last server's log (for example the error that made you rerun make mock-up).
+  if [ -s "$log" ]; then mv -f "$log" "${log%.log}.previous.log"; fi
   set -m   # job control: the background job gets its own process group (id = $!)
   (cd "$dir" && exec nohup "$@") >"$log" 2>&1 </dev/null &
   echo "$!" >"$pidfile"
@@ -72,12 +92,13 @@ start_server() { # start_server <pidfile> <dir> <log> <command...>
 }
 
 stop_server() { # stop_server <name> <pidfile> <pattern> <port> <dir>
-  local name="$1" pidfile="$2" pattern="$3" port="$4" dir="$5" pgid legacy
+  local name="$1" pidfile="$2" pattern="$3" port="$4" dir="$5" pgid legacy on
   if pgid="$(saved_group "$pidfile" "$pattern")"; then
+    on="$(group_ports "$pgid")"   # the port it really uses, which may differ from .env's
     kill -TERM -- "-$pgid" 2>/dev/null || true
     for _ in $(seq 1 20); do group_alive "$pgid" || break; sleep 0.25; done
     if group_alive "$pgid"; then kill -KILL -- "-$pgid" 2>/dev/null || true; fi
-    echo "stopped the $name (port $port)"
+    echo "stopped the $name${on:+ (port $on)}"
   else
     legacy="$(legacy_pids "$port" "$dir")"
     if [ -n "$legacy" ]; then
@@ -94,6 +115,7 @@ stop_server() { # stop_server <name> <pidfile> <pattern> <port> <dir>
 down() {
   stop_server website "$WEB_PID" react-scripts "$WEB_PORT" "$ROOT/website"
   stop_server API "$API_PID" server.js "$API_PORT" "$ROOT/api"
+  rm -f "$API_SETTINGS"
   if ! docker info >/dev/null 2>&1; then
     echo "Docker is not running; the local Redis ($CONTAINER) was not touched"
   elif ! docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
@@ -111,6 +133,9 @@ down() {
 # both files is kept in node_modules/.gradeview-mock-installed.
 manifest_hash() {
   (cd "$1" && cat package.json package-lock.json) | python3 -c 'import hashlib, sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())'
+}
+settings_hash() { # settings_hash <value...>: one hash of all values, so no setting is stored in clear
+  printf '%s\n' "$@" | python3 -c 'import hashlib, sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())'
 }
 packages_current() { # packages_current <dir>
   [ "$(cat "$1/node_modules/.gradeview-mock-installed" 2>/dev/null || true)" = "$(manifest_hash "$1")" ]
@@ -158,16 +183,15 @@ up() {
   # Check the ports before starting anything: only servers started by make mock-up may hold them.
   local api_pgid="" web_pgid=""
   if api_pgid="$(saved_group "$API_PID" server.js)"; then
-    listening_in_group "$API_PORT" "$api_pgid" \
-      || fail "The API from an earlier make mock-up is still running, but not on port $API_PORT. Run make mock-down first."
+    # A changed MOCK_API_PORT stops here: the running website still sends its requests to the old port.
+    listening_in_group "$API_PORT" "$api_pgid" || fail "$(not_on_port API "$api_pgid" MOCK_API_PORT "$API_PORT")"
   elif [ -n "$(legacy_pids "$API_PORT" "$ROOT/api")" ]; then
     fail "An API started by an older make mock-up is running on port $API_PORT. Run make mock-down, then make mock-up."
   elif port_busy "$API_PORT"; then
     fail "Port $API_PORT is used by another program: $(describe_port "$API_PORT"). Quit it, or add MOCK_API_PORT=<free port> to .env, then run make mock-up again."
   fi
   if web_pgid="$(saved_group "$WEB_PID" react-scripts)"; then
-    listening_in_group "$WEB_PORT" "$web_pgid" \
-      || fail "The website from an earlier make mock-up is still running, but not on port $WEB_PORT. Run make mock-down first."
+    listening_in_group "$WEB_PORT" "$web_pgid" || fail "$(not_on_port website "$web_pgid" MOCK_WEB_PORT "$WEB_PORT")"
   elif [ -n "$(legacy_pids "$WEB_PORT" "$ROOT/website")" ]; then
     fail "A website started by an older make mock-up is running on port $WEB_PORT. Run make mock-down, then make mock-up."
   elif port_busy "$WEB_PORT"; then
@@ -175,15 +199,29 @@ up() {
   fi
 
   echo "1/4 Local Redis in Docker (port $REDIS_PORT)"
+  local redis_on="" pong=""
   if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+    # The container keeps the port it was created with (also through docker start).
+    redis_on="$(docker inspect -f '{{range (index .HostConfig.PortBindings "6379/tcp")}}{{.HostIp}}:{{.HostPort}}{{end}}' "$CONTAINER" 2>/dev/null || true)"
+    [ "$redis_on" = "$BIND:$REDIS_PORT" ] \
+      || fail "The local Redis ($CONTAINER) uses ${redis_on:-no port}, not $BIND:$REDIS_PORT (REDIS_PORT in .env). Run 'make mock-reset', then 'make mock-up' again (the fake data is reloaded)."
     docker start "$CONTAINER" >/dev/null
   else
     port_busy "$REDIS_PORT" && fail "Port $REDIS_PORT is in use. Add REDIS_PORT=<free port> to .env and run again."
     docker run -d --name "$CONTAINER" -p "$BIND:$REDIS_PORT:6379" "$REDIS_IMAGE" redis-server --requirepass "$RPW" >/dev/null
   fi
-  sleep 1
-  docker exec "$CONTAINER" redis-cli -a "$RPW" --no-auth-warning PING >/dev/null 2>&1 \
-    || fail "The local Redis has a different password. Run 'make mock-reset', then 'make mock-up' again."
+  # Check the reply, not the exit code: redis-cli exits 0 when Redis answers with an error, such as
+  # NOAUTH for a wrong password or LOADING while it starts (that one is waited out).
+  for _ in $(seq 1 20); do
+    pong="$(docker exec "$CONTAINER" redis-cli -a "$RPW" --no-auth-warning PING 2>/dev/null || true)"
+    case "$pong" in PONG | *NOAUTH* | *WRONGPASS*) break ;; esac
+    sleep 0.5
+  done
+  case "$pong" in
+    PONG) ;;
+    *NOAUTH* | *WRONGPASS*) fail "The local Redis has a different password. Run 'make mock-reset', then 'make mock-up' again." ;;
+    *) fail "The local Redis ($CONTAINER) did not answer${pong:+: $pong}. Check 'docker logs $CONTAINER', then run make mock-up again." ;;
+  esac
 
   echo "2/4 Load the fake course data"
   if [ ! -x "$ROOT/dbcron/.venv/bin/python" ]; then
@@ -213,9 +251,23 @@ up() {
 
   echo "4/4 Start the API (port $API_PORT) and the website (port $WEB_PORT)"
   node_config="$(python3 -c 'import json, sys; print(json.dumps({"redis": {"host": "localhost", "port": int(sys.argv[1])}, "admins": [sys.argv[2]]}))' "$REDIS_PORT" "$ADMIN_EMAIL")"
+  api_settings="$(settings_hash "$node_config" "$RPW" "$API_PORT" "$BIND")"
+  # The API reads its settings only when it starts, so a corrected DEV_ADMIN_EMAIL needs a restart
+  # (see API_SETTINGS at the top for the other settings). An API without a saved fingerprint, for
+  # example one started by an older make mock-up, is restarted once too.
+  if [ -n "$api_pgid" ] && [ "$(cat "$API_SETTINGS" 2>/dev/null || true)" != "$api_settings" ]; then
+    if [ -s "$API_SETTINGS" ]; then
+      echo "    your .env settings changed since the API started (for example DEV_ADMIN_EMAIL); restarting the API"
+    else
+      echo "    the API was started by an older make mock-up (no .dev-logs/api.settings); restarting it once so it uses your current .env"
+    fi
+    stop_server API "$API_PID" server.js "$API_PORT" "$ROOT/api" | sed 's/^/    /'
+    api_pgid=""
+  fi
   if [ -n "$api_pgid" ]; then echo "    the API is already running"; else
     start_server "$API_PID" "$ROOT/api" "$LOGS/api.log" \
       env NODE_ENV=development NODE_CONFIG="$node_config" REDIS_DB_SECRET="$RPW" PORT="$API_PORT" LISTEN_HOST="$BIND" node server.js
+    echo "$api_settings" >"$API_SETTINGS"
   fi
   if [ -n "$web_pgid" ]; then echo "    the website is already running"; else
     start_server "$WEB_PID" "$ROOT/website" "$LOGS/web.log" \

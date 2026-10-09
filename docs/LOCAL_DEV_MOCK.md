@@ -112,16 +112,18 @@ email as admin (through the `NODE_CONFIG` environment variable); the file itself
 | `Docker is not running` | Open Docker Desktop and wait until `docker info` works (about 30 seconds), then `make mock-up`. |
 | Docker says `email must be verified` | Docker Desktop is signed in to an unverified account. Sign out (whale icon → Sign out) and rerun; no account is needed. |
 | `The local Redis has a different password` | You changed `REDIS_DB_SECRET`. Run `make mock-reset`, then `make mock-up`. |
+| `The local Redis (...) uses 127.0.0.1:6390, not ...` | You changed `REDIS_PORT` after the local Redis was created. Run `make mock-reset`, then `make mock-up`. |
 | `Port 6390 is in use` | Another program uses that port. Add `REDIS_PORT=6391` to `.env`, run `make mock-reset`, then `make mock-up`. |
 | `Port 8000 is used by another program: ...` (or 3000) | `make mock-up` only reuses servers it started itself. Quit the program the message names, or, for the API, add `MOCK_API_PORT=8001` to `.env`. Google sign-in only works on port 3000, so keep port 3000 free for the website. |
 | `... started by an older make mock-up is running` | Run `make mock-down`, then `make mock-up`. |
-| The login page says `You are not a registered student or admin` | You signed in with a different Google account than `DEV_ADMIN_EMAIL`. Fix `.env`, then `make mock-down` and `make mock-up`. |
+| `The API from an earlier make mock-up is still running on port 8000, not on MOCK_API_PORT=...` (or the website) | You changed `MOCK_API_PORT` or `MOCK_WEB_PORT` while the servers ran. Run `make mock-down`, then `make mock-up`. |
+| The login page says `You are not a registered student or admin` | You signed in with a different Google account than `DEV_ADMIN_EMAIL`. Fix `DEV_ADMIN_EMAIL` in `.env` and run `make mock-up` again (it restarts the API when the email changed), then sign in again. |
 | You are sent back to the login page later on | Your Google sign-in expired (after about an hour). Sign in again. |
 | The login page says `An error occurred` | The API stopped. Check `.dev-logs/api.log`, then `make mock-up`. |
 | `make: *** No rule to make target 'mock-up'` | You are not in the `GradeView` folder, or on an old branch: `cd GradeView && git switch main && git pull`. |
 | `Loading the fake data failed` | See `.dev-logs/load.log`. Step 2 ignores `dbcron/.env`, so Canvas importer settings there do not matter. |
 | The same step keeps failing after an interrupted first run | Delete the half-finished install and rerun: for step 2, `rm -rf dbcron/.venv`; for step 3, `rm -rf api/node_modules website/node_modules`. |
-| Something else | Check the logs in `.dev-logs/` (`api.log`, `web.log`, `load.log`, and `npm-api.log` / `npm-web.log` from the first run). |
+| Something else | Check the logs in `.dev-logs/` (`api.log`, `web.log`, `load.log`, and `npm-api.log` / `npm-web.log` from the first run). When `make mock-up` starts a server again, the last run's log is kept as `api.previous.log` / `web.previous.log`. |
 
 ## Team rules
 

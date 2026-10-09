@@ -88,7 +88,7 @@ router.get('/:section/:name', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching stats:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch stats' });
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 

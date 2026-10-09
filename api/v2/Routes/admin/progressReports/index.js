@@ -32,7 +32,7 @@ router.get('/', (_, res) => {
 
 router.get('/:schemaName', (_, res) => {
     // We need to have the CM schema parsing endpoint set up to support this.
-    res.status(501);
+    res.status(501).json({ message: 'Not implemented' });
 });
 
 export default router;

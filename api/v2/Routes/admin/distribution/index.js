@@ -217,7 +217,7 @@ router.get('/:section/:name', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching frequency distribution:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch frequency distribution' });
+        res.status(500).json({ error: 'Failed to fetch frequency distribution' });
     }
 });
 

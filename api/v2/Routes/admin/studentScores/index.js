@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Error fetching student scores:', error);
         res.status(500).json({ 
-            error: error.message || 'Failed to fetch student scores',
+            error: 'Failed to fetch student scores',
             students: []
         });
     }
@@ -125,7 +125,7 @@ router.get('/:section/:assignment/:score', async (req, res) => {
     } catch (error) {
         console.error('Error fetching students for score %s on %s:', decodedScore, decodedAssignment, error);
         res.status(500).json({ 
-            error: error.message || 'Failed to fetch students by score',
+            error: 'Failed to fetch students by score',
             students: []
         });
     }

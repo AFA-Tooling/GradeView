@@ -1,6 +1,7 @@
 // Test fixture: the concept-structure route as it was at 11587ee, before the roster was cached
 // per request. ../index.test.js checks that the current route returns byte-identical output for
-// the same data. Only the import paths were changed (this file is one directory deeper).
+// the same data. Only the import paths (this file is one directory deeper) and three unused
+// variables were changed; the calls and their order are the same as before.
 // Not mounted anywhere; do not import it outside tests.
 import { Router } from 'express';
 import { getMaxScores, getStudentScores, getStudents } from '../../../../../lib/redisHelper.mjs';
@@ -49,7 +50,7 @@ async function checkIfTaught(conceptName) {
         const students = await getStudents();
         
         // Check if any student has any grade for this concept
-        for (const [legalName, email] of students) {
+        for (const [, email] of students) {
             try {
                 const studentScores = await getStudentScores(email);
                 
@@ -88,7 +89,7 @@ function checkIfParentTaught(node) {
 async function buildOutline(email) {
     try {
         const maxScores = await getMaxScores();
-        const studentScores = await getStudentScores(email);
+        await getStudentScores(email); // result unused, but the original made this call
         
         // Build tree structure from assignment categories
         const tree = {
@@ -122,7 +123,7 @@ async function buildOutline(email) {
             };
             
             // Add each assignment as a child of the category
-            for (const [assignment, maxScore] of Object.entries(assignments)) {
+            for (const assignment of Object.keys(assignments)) {
                 const assignmentIndex = Object.keys(assignments).indexOf(assignment);
                 // Distribute assignments within the category's week range
                 const assignmentWeek = Math.min(categoryWeek + Math.floor(assignmentIndex / 2), semesterWeeks);

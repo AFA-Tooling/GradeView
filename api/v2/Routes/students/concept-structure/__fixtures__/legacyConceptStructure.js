@@ -1,8 +1,12 @@
+// Test fixture: the concept-structure route as it was at 11587ee, before the roster was cached
+// per request. ../index.test.js checks that the current route returns byte-identical output for
+// the same data. Only the import paths were changed (this file is one directory deeper).
+// Not mounted anywhere; do not import it outside tests.
 import { Router } from 'express';
-import { getMaxScores, getStudentScores, getStudents } from '../../../../lib/redisHelper.mjs';
-import ProgressReportData from '../../../../assets/progressReport/CS10.json' with { type: 'json' };
-import KeyNotFoundError from '../../../../lib/errors/redis/KeyNotFound.js';
-import StudentNotEnrolledError from '../../../../lib/errors/redis/StudentNotEnrolled.js';
+import { getMaxScores, getStudentScores, getStudents } from '../../../../../lib/redisHelper.mjs';
+import ProgressReportData from '../../../../../assets/progressReport/CS10.json' with { type: 'json' };
+import KeyNotFoundError from '../../../../../lib/errors/redis/KeyNotFound.js';
+import StudentNotEnrolledError from '../../../../../lib/errors/redis/StudentNotEnrolled.js';
 
 const router = Router({ mergeParams: true });
 
@@ -38,64 +42,36 @@ async function computeMasteryLevels(userTopicPoints, maxTopicPoints) {
     );
 }
 
-// Returns a promise-returning function that calls `fn` the first time and then hands back the
-// same promise, so a value (or failure) is fetched at most once per request.
-function once(fn) {
-    let promise;
-    return () => {
-        promise ??= fn();
-        return promise;
-    };
-}
-
-// Creates checkIfTaught(conceptName) for one request: whether ANY student has a grade > 0 for
-// the concept. The roster and every student's scores are read from Redis at most once (on the
-// first call) and reused for every concept, instead of re-reading the whole class per node.
-function createTaughtChecker() {
-    const loadClassScores = once(async () => {
+// Check if a concept has been taught (has actual student grades from ANY student)
+async function checkIfTaught(conceptName) {
+    try {
+        // Get all students
         const students = await getStudents();
-        const classScores = [];
-        for (const [, email] of students) {
+        
+        // Check if any student has any grade for this concept
+        for (const [legalName, email] of students) {
             try {
-                classScores.push({ scores: await getStudentScores(email) });
+                const studentScores = await getStudentScores(email);
+                
+                // Check if this student has any grade > 0 for this concept
+                const hasGrade = Object.values(studentScores).some(category => 
+                    Object.keys(category).includes(conceptName) && 
+                    category[conceptName] > 0
+                );
+                if (hasGrade) {
+                    return true;
+                }
             } catch (err) {
                 // Skip this student if we can't get their scores
-                classScores.push({ failed: true });
+                continue;
             }
         }
-        return classScores;
-    });
-
-    return async function checkIfTaught(conceptName) {
-        try {
-            const classScores = await loadClassScores();
-
-            // Check if any student has any grade for this concept
-            for (const { scores: studentScores, failed } of classScores) {
-                if (failed) {
-                    continue;
-                }
-                try {
-                    // Check if this student has any grade > 0 for this concept
-                    const hasGrade = Object.values(studentScores).some(category =>
-                        Object.keys(category).includes(conceptName) &&
-                        category[conceptName] > 0
-                    );
-                    if (hasGrade) {
-                        return true;
-                    }
-                } catch (err) {
-                    // Skip this student if their scores are malformed
-                    continue;
-                }
-            }
-
-            return false;
-        } catch (err) {
-            console.error('Error checking if concept is taught:', err);
-            return false;
-        }
-    };
+        
+        return false;
+    } catch (err) {
+        console.error('Error checking if concept is taught:', err);
+        return false;
+    }
 }
 
 // Check if a parent node has been taught (if ANY of its children have been taught)
@@ -109,12 +85,11 @@ function checkIfParentTaught(node) {
 }
 
 // Build dynamic outline shape from assignment data
-async function buildOutline(loadMaxScores, loadStudentScores, checkIfTaught) {
+async function buildOutline(email) {
     try {
-        const maxScores = await loadMaxScores();
-        // Not used for the shape, but an unreadable student entry falls back to the static outline.
-        await loadStudentScores();
-
+        const maxScores = await getMaxScores();
+        const studentScores = await getStudentScores(email);
+        
         // Build tree structure from assignment categories
         const tree = {
             id: 1,
@@ -269,20 +244,16 @@ function annotateTreeWithMastery(nodes, masteryMap) {
 // GET /api/v2/students/:email/concept-structure
 router.get('/', async (req, res, next) => {
     const { email } = req.params;
-    // Each Redis read happens at most once per request and is shared by the steps below.
-    const loadMaxScores = once(() => getMaxScores());
-    const loadStudentScores = once(() => getStudentScores(email));
-    const checkIfTaught = createTaughtChecker();
     try {
-        const outline = await buildOutline(loadMaxScores, loadStudentScores, checkIfTaught);
-
+        const outline = await buildOutline(email);
+        
         // 2) compute mastery mapping
         let studentScores = {};
         let maxScores = {};
-
+        
         try {
-            maxScores = await loadMaxScores();
-            studentScores = await loadStudentScores();
+            maxScores = await getMaxScores();
+            studentScores = await getStudentScores(email);
         } catch (err) {
             if (
                 err instanceof KeyNotFoundError ||

@@ -3,76 +3,92 @@ import UnauthorizedAccessError from './errors/http/UnauthorizedAccessError.js';
 import { getEmailFromAuth } from './googleAuthHelper.mjs';
 import { isAdmin, isStudent } from './userlib.mjs';
 
+// Route params that name the student whose data is being requested.
+const STUDENT_ROUTE_PARAMS = ['email', 'id'];
+
 /**
- * Validates that the requester is either an admin or a student.
- * @param {Request} req request to validate.
- * @param {*} _
- * @param {Function} next trigger the next middleware / request.
+ * Verifies the request's Google ID token.
+ * @param {Request} req the request to authenticate.
+ * @returns {Promise<string>} the requester's verified, lowercased email.
+ * @throws {AuthorizationError} (401) if the token is missing or invalid.
  */
-export async function validateAdminOrStudentMiddleware(req, _, next) {
-    try {
-        await validateAdminMiddleware(req, _, next);
-    } catch (err) {
-        switch (err.constructor) {
-            case UnauthorizedAccessError:
-                await validateStudentMiddleware(req, _, next);
-                break;
-            default:
-                throw err;
+async function authenticate(req) {
+    const authHeader = req.headers?.authorization;
+    if (!authHeader) {
+        throw new AuthorizationError('no authorization token provided.');
+    }
+    return getEmailFromAuth(authHeader);
+}
+
+/**
+ * Checks that every student named in the route params is the requester.
+ * @param {Request} req the request being authorized.
+ * @param {string} authEmail the requester's verified, lowercased email.
+ * @throws {UnauthorizedAccessError} (403) if the route names someone else.
+ */
+function assertOwnStudentRoute(req, authEmail) {
+    for (const param of STUDENT_ROUTE_PARAMS) {
+        const requested = req.params?.[param];
+        if (requested === undefined) {
+            continue;
+        }
+        if (typeof requested !== 'string' || requested.toLowerCase() !== authEmail) {
+            throw new UnauthorizedAccessError('not permitted');
         }
     }
 }
 
 /**
- * Validates that an admin request is permitted.
- * @param {Request} req the request to validate.
- * @param {*} _
+ * Lets admins through, and students only to their own data.
+ *
+ * The token is verified once and `next` is called exactly once: with no arguments when the
+ * request is allowed, otherwise with an AuthorizationError (401: no or invalid token) or an
+ * UnauthorizedAccessError (403: valid token, but not registered or not the requested student).
+ * On success, `req.auth` is set to `{ email, role }`.
+ * @param {Request} req request to validate.
+ * @param {Response} _res unused.
  * @param {Function} next trigger the next middleware / request.
- * @throws {UnauthorizedAccessError} if the requester is not an admin.
  */
-export async function validateAdminMiddleware(req, _, next) {
-    validateAuthenticatedRequestFormat(req);
-
-    const authEmail = await getEmailFromAuth(req.headers['authorization']);
-    if (!isAdmin(authEmail)) {
-        throw new UnauthorizedAccessError('not permitted');
+export async function validateAdminOrStudentMiddleware(req, _res, next) {
+    let auth;
+    try {
+        const email = await authenticate(req);
+        if (isAdmin(email)) {
+            auth = { email, role: 'admin' };
+        } else {
+            assertOwnStudentRoute(req, email);
+            if (!(await isStudent(email))) {
+                throw new UnauthorizedAccessError('You are not a registered student.');
+            }
+            auth = { email, role: 'student' };
+        }
+    } catch (err) {
+        return next(err);
     }
-
-    next();
+    req.auth = auth;
+    return next();
 }
 
 /**
- * Validates that a student request is permitted.
+ * Lets only admins through.
+ *
+ * Calls `next` exactly once: with no arguments for an admin, otherwise with an
+ * AuthorizationError (401) or an UnauthorizedAccessError (403). On success, `req.auth`
+ * is set to `{ email, role: 'admin' }`.
  * @param {Request} req the request to validate.
- * @param {*} _
+ * @param {Response} _res unused.
  * @param {Function} next trigger the next middleware / request.
- * @throws {AuthorizationError} if the domain is not berkeley.
- * @throws {UnauthorizedAccessError} if the requester is not the route email param.
  */
-export async function validateStudentMiddleware(req, _, next) {
-    validateAuthenticatedRequestFormat(req);
-
-    const { email } = req.params;
-
-    const authEmail = await getEmailFromAuth(req.headers['authorization']);
-    const studentExists = await isStudent(authEmail);
-    if (!studentExists) {
-        throw new AuthorizationError('You are not a registered student.');
+export async function validateAdminMiddleware(req, _res, next) {
+    let email;
+    try {
+        email = await authenticate(req);
+        if (!isAdmin(email)) {
+            throw new UnauthorizedAccessError('not permitted');
+        }
+    } catch (err) {
+        return next(err);
     }
-    if (email && authEmail !== email) {
-        throw new UnauthorizedAccessError('not permitted');
-    }
-    next();
-}
-
-/**
- * Validates that a request has authorization headers.
- * @param {Request} req the request object to validate.
- * @throws {AuthorizationError} if the request does not have an authorization header.
- */
-function validateAuthenticatedRequestFormat(req) {
-    let token = req.headers['authorization'];
-    if (!token) {
-        throw new AuthorizationError('no authorization token provided.');
-    }
+    req.auth = { email, role: 'admin' };
+    return next();
 }

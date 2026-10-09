@@ -30,17 +30,6 @@ export function createApp() {
     // --- Health check (nice for sanity & uptime monitors)
     app.get(['/api/health', '/health'], (_, res) => res.json({ ok: true }));
 
-    // --- Handle the query parameter format directly
-    app.get('/api/v2/students/grades', (req, res, next) => {
-        const email = req.query.email;
-        if (!email) {
-            return res.status(400).json({ message: 'Email parameter required' });
-        }
-        // Rewrite the URL to the path parameter format
-        req.url = `/api/v2/students/${encodeURIComponent(email)}/grades`;
-        next();
-    });
-
     // Mount your real API
     app.use('/api', ApiV2Router);
 

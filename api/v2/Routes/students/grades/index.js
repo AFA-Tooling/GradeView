@@ -8,15 +8,15 @@ import { isAdmin } from '../../../../lib/userlib.mjs';
 const router = Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
-    const { id } = req.params; // the id is the student's email
+    const { email } = req.params;
     try {
         let studentScores;
         const maxScores = await getMaxScores();
-        if (isAdmin(id)) {
+        if (isAdmin(email)) {
             studentScores = maxScores;
         } else {
             // Attempt to get student scores
-            studentScores = await getStudentScores(id);
+            studentScores = await getStudentScores(email);
         }
         return res.status(200).json(
             getStudentScoresWithMaxPoints(studentScores, maxScores)
@@ -25,10 +25,10 @@ router.get('/', async (req, res) => {
         switch (err.name) {
             case 'StudentNotEnrolledError':
             case 'KeyNotFoundError':
-                console.error("Error fetching scores for student with id %s", id, err);
+                console.error("Error fetching scores for student with email %s", email, err);
                 return res.status(200).json();
             default:
-                console.error("Internal service error for student with id %s", id, err);
+                console.error("Internal service error for student with email %s", email, err);
                 return res.status(500).json({ message: "Internal server error." });
         }
     }

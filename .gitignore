@@ -7,6 +7,17 @@
 # Environment variables
 **/*.env
 
+# Credentials: Google service-account keys, OAuth/auth JSON, TLS keys and
+# certificates. Secrets belong in the git-ignored .env files (docs/DEPLOY.md).
+**/*service_account*.json
+**/*service-account*.json
+**/auth/*.json
+*.pem
+*.key
+
+# Usage analytics CSV logs (access logs that include user emails)
+usageAnalytics/logs/
+
 # production
 /website/server/build/
 website/server/build*

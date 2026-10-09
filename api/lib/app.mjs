@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import logger from './logger.mjs';
+import apiErrorHandler from './errorHandler.mjs';
 import ApiV2Router from '../Router.js';
 
 /**
@@ -13,6 +14,7 @@ export function createApp() {
 
     // Critical when running behind Nginx/TLS
     app.set('trust proxy', 1);
+    app.disable('x-powered-by');
 
     app.use(logger);
 
@@ -44,6 +46,9 @@ export function createApp() {
 
     // (Optional) log unknown API routes
     app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));
+
+    // Errors raised outside the API router (e.g. a malformed JSON body).
+    app.use(apiErrorHandler);
 
     return app;
 }

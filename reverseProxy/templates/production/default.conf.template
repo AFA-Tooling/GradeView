@@ -11,8 +11,20 @@
 
 server_tokens off;
 
+# Any other host name, or a request by IP address or without a Host header / SNI:
+# close the connection without an answer (444), and refuse the TLS handshake on
+# 443 (no certificate needed), so only ${NGINX_SERVER_NAME} is ever served.
+server {
+    listen 80 default_server;
+    listen 443 ssl default_server;
+    server_name _;
+    ssl_reject_handshake on;
+    return 444;
+}
+
 # Port 80: only the ACME HTTP-01 challenge (certbot --webroot) is served over
-# plain HTTP. Everything else is redirected to HTTPS.
+# plain HTTP. Everything else is redirected to HTTPS on the configured name (not
+# the client's Host header).
 server {
     listen 80;
     server_name ${NGINX_SERVER_NAME};
@@ -22,7 +34,7 @@ server {
     }
 
     location / {
-        return 301 https://$host$request_uri;
+        return 301 https://${NGINX_SERVER_NAME}$request_uri;
     }
 }
 

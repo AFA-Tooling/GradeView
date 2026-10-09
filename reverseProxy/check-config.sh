@@ -36,7 +36,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$name" \
 # compose network, point them at localhost so `nginx -t` can run.
 hosts="--add-host gradeview-web:127.0.0.1 --add-host gradeview-api:127.0.0.1 --add-host dtgui-progress-report:127.0.0.1"
 
-render_and_test='/docker-entrypoint.d/20-envsubst-on-templates.sh >/dev/null && nginx -t -q && cat /etc/nginx/conf.d/default.conf'
+render_and_test='/docker-entrypoint.d/20-envsubst-on-templates.sh >/dev/null && nginx -t -q && cat /etc/nginx/conf.d/default.conf /etc/nginx/snippets/gradeview-locations.conf'
 
 echo "== production template (image default)"
 # shellcheck disable=SC2086
@@ -61,7 +61,13 @@ reject() { # reject <label> <config> <fixed string>
 }
 
 expect prod "$prod" "server_name $name;"
-expect prod "$prod" "return 301 https://\$host\$request_uri;"
+expect prod "$prod" "return 301 https://$name\$request_uri;"
+reject prod "$prod" "https://\$host"
+expect prod "$prod" "listen 80 default_server;"
+expect prod "$prod" "listen 443 ssl default_server;"
+expect prod "$prod" "ssl_reject_handshake on;"
+expect prod "$prod" "client_max_body_size 6m;"
+expect dev "$dev" "client_max_body_size 6m;"
 expect prod "$prod" "ssl_certificate     /etc/letsencrypt/live/$name/fullchain.pem;"
 expect prod "$prod" "listen 443 ssl;"
 expect prod "$prod" "http2 on;"

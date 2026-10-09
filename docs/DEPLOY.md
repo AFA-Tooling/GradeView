@@ -215,6 +215,10 @@ curl -sI http://gradeview.eecs.berkeley.edu/some/path | grep -iE '^HTTP|^locatio
 #   HTTP/1.1 301 Moved Permanently
 #   Location: https://gradeview.eecs.berkeley.edu/some/path
 
+# Other host names get no answer (nginx closes the connection; curl prints 000)
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: example.com' http://gradeview.eecs.berkeley.edu/
+#   000
+
 curl -sI https://gradeview.eecs.berkeley.edu/ | grep -iE '^HTTP|^server|^strict-transport|^x-content-type|^referrer-policy'
 #   HTTP/2 200
 #   server: nginx                          (no version number)

@@ -1,5 +1,16 @@
 -include .env
-.DEFAULT_GOAL := docker
+# A bare `make` only prints the targets. `make docker` is the PRODUCTION stack
+# (HTTPS only, needs the server's Let's Encrypt certificate); on a laptop use
+# `make dev-up` or `make mock-up`.
+.DEFAULT_GOAL := help
+
+help:
+	@echo "GradeView make targets:"
+	@echo "  make mock-up      local stack with fake data (docs/LOCAL_DEV_MOCK.md)"
+	@echo "  make dev-up       local Docker stack over HTTP (docker-compose.dev.yml); dev-down stops it"
+	@echo "  make dev-local    Redis + dbcron in Docker, API and website on the host"
+	@echo "  make proxy-check  nginx -t on both reverse-proxy templates"
+	@echo "  make docker       PRODUCTION stack, HTTPS only, on the server (docs/DEPLOY.md)"
 
 init:
 	@cd website && npm install
@@ -61,7 +72,9 @@ dev-local:
 	@echo "2. Waiting for data to be loaded into Redis..."
 	@sleep 5
 	@echo "3. Starting API server..."
-	@cd api && NODE_ENV=development npm run dev &
+	@# Pass the root .env password (the one dev Redis was started with); dotenv in
+	@# the API does not override it with api/.env.
+	@cd api && $(if $(REDIS_DB_SECRET),REDIS_DB_SECRET="$(REDIS_DB_SECRET)") NODE_ENV=development npm run dev &
 	@echo "4. Starting website dev server..."
 	@cd website && REACT_APP_PROXY_SERVER="http://localhost:8000" npm run react
 
@@ -70,7 +83,33 @@ dev-local:
 proxy-check:
 	@reverseProxy/check-config.sh
 
-docker:
+# Production preflight for `make docker`: nginx's HTTPS server cannot start
+# without the certificate, and Redis must not use the example password.
+# certbot makes /etc/letsencrypt/live readable by root only, so when the deploy
+# user cannot look inside it the check runs in a throwaway container (as root,
+# same mount as compose) using the reverse proxy's base image.
+PROD_SERVER_NAME = $(or $(NGINX_SERVER_NAME),gradeview.eecs.berkeley.edu)
+PROD_CERT_DIR = /etc/letsencrypt/live/$(PROD_SERVER_NAME)
+PROXY_BASE_IMAGE = $(shell awk '/^FROM /{print $$2; exit}' reverseProxy/Dockerfile)
+
+prod-check:
+ifeq ($(strip $(REDIS_DB_SECRET)),change-me-local-only)
+	@echo "REDIS_DB_SECRET in .env is still the example value from .env.example." >&2
+	@echo "Set a random one first (docs/DEPLOY.md, section 3)." >&2
+	@exit 1
+endif
+	@certs='test -s "$(PROD_CERT_DIR)/fullchain.pem" && test -s "$(PROD_CERT_DIR)/privkey.pem"'; \
+	if sh -c "$$certs" 2>/dev/null; then exit 0; fi; \
+	if [ -d /etc/letsencrypt/live ] && [ ! -x /etc/letsencrypt/live ] && \
+	   docker run --rm --mount type=bind,src=/etc/letsencrypt,dst=/etc/letsencrypt,readonly \
+	     --entrypoint sh "$(PROXY_BASE_IMAGE)" -c "$$certs"; then exit 0; fi; \
+	echo "make docker starts the PRODUCTION stack (docker-compose.yml, HTTPS only), but" >&2; \
+	echo "$(PROD_CERT_DIR)/fullchain.pem and privkey.pem were not found, so nginx would not start." >&2; \
+	echo "  On a laptop: make dev-up (HTTP, docker-compose.dev.yml) or make mock-up (fake data)." >&2; \
+	echo "  On the server: issue the first certificate, see docs/DEPLOY.md section 4." >&2; \
+	exit 1
+
+docker: prod-check
 	@cd website && npm install && npm run build
 	@docker compose build
 	@docker compose up -dV

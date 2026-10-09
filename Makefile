@@ -56,7 +56,8 @@ dev-local:
 	fi; \
 	'
 	@echo "1. Starting Redis and dbcron..."
-	@docker-compose up -d redis dbcron
+	@# dev compose: Redis is published on 127.0.0.1:6379 for the host API (production publishes no Redis port)
+	@docker compose -f docker-compose.dev.yml up -d redis dbcron
 	@echo "2. Waiting for data to be loaded into Redis..."
 	@sleep 5
 	@echo "3. Starting API server..."

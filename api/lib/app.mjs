@@ -30,6 +30,20 @@ export function createApp() {
     // --- Health check (nice for sanity & uptime monitors)
     app.get(['/api/health', '/health'], (_, res) => res.json({ ok: true }));
 
+    // --- Legacy grades URL: GET /api/v2/students/grades?email=X
+    // An nginx rule added in b9304b0 (and possibly still in the production TLS config, which is
+    // not in this repo) proxies /api/v2/students/<email>/grades to this form. Rewrite it back to
+    // the path form so it goes through the same students router, and so the same
+    // validateAdminOrStudentMiddleware, as every other per-student request.
+    app.get('/api/v2/students/grades', (req, res, next) => {
+        const { email } = req.query;
+        if (typeof email !== 'string' || email.length === 0) {
+            return res.status(400).json({ message: 'Email parameter required' });
+        }
+        req.url = `/api/v2/students/${encodeURIComponent(email)}/grades`;
+        return next();
+    });
+
     // Mount your real API
     app.use('/api', ApiV2Router);
 

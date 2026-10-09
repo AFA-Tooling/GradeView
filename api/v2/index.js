@@ -14,6 +14,8 @@ const router = Router();
 //   /isadmin    any valid Berkeley token (401 otherwise): answers { isAdmin }
 //   /admin/**   admins only: validateAdminMiddleware runs before every admin sub-router
 //   /students   the list is admins only; /students/:email/** is admins or that student
+//               (the legacy /students/grades?email=X is rewritten to /students/X/grades in
+//               lib/app.mjs before it reaches this router, so it gets the same check)
 router.use('/login', LoginRouter);
 router.use('/bins', BinsRouter);
 router.use('/isadmin', IsAdminRouter);

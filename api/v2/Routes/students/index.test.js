@@ -198,20 +198,23 @@ describe('responses that carry data', () => {
     });
 });
 
-describe('GET /api/v2/students/grades?email= (query-string shim removed)', () => {
+// The old nginx rule (b9304b0) proxies /api/v2/students/<email>/grades to this form; the API
+// rewrites it back to the path form, so it gets exactly the same authorization.
+describe('GET /api/v2/students/grades?email= (legacy nginx rewrite)', () => {
     const oldUrl = (email) => `/api/v2/students/grades?email=${encodeURIComponent(email)}`;
 
-    test('no token -> 401', async () => {
+    test('no token -> 401, before any Redis read', async () => {
         const res = await request(app).get(oldUrl(STUDENT_B));
         expect(res.status).toBe(401);
         expectSafeErrorBody(res, STUDENT_B);
         expect(fakeRedis.state.clientsCreated).toBe(0);
     });
 
-    test('malformed token -> 401', async () => {
-        const res = await request(app).get(oldUrl(STUDENT_B)).set('Authorization', 'garbage');
+    test.each([['garbage'], ['Bearer not-a-real-token']])('malformed or unknown token %p -> 401', async (header) => {
+        const res = await request(app).get(oldUrl(STUDENT_B)).set('Authorization', header);
         expect(res.status).toBe(401);
         expectSafeErrorBody(res, STUDENT_B);
+        expect(fakeRedis.state.clientsCreated).toBe(0);
     });
 
     test('student A asking for student B -> 403, no data', async () => {
@@ -220,16 +223,40 @@ describe('GET /api/v2/students/grades?email= (query-string shim removed)', () =>
         expectSafeErrorBody(res, STUDENT_A, STUDENT_B);
     });
 
-    test('student A asking for own email -> 403 (the path no longer exists for students)', async () => {
-        const res = await request(app).get(oldUrl(STUDENT_A)).set('Authorization', TOKENS.studentA);
+    test('a path in the email cannot reach another route', async () => {
+        const res = await request(app)
+            .get(oldUrl(`${STUDENT_A}/../${STUDENT_B}`))
+            .set('Authorization', TOKENS.studentA);
         expect(res.status).toBe(403);
-        expectSafeErrorBody(res, STUDENT_A);
+        expectSafeErrorBody(res, STUDENT_A, STUDENT_B);
     });
 
-    test('admin asking for student B -> 404, no data', async () => {
-        const res = await request(app).get(oldUrl(STUDENT_B)).set('Authorization', TOKENS.admin);
-        expect(res.status).toBe(404);
-        expect(res.body).toEqual({ message: 'Not found' });
+    test.each([
+        ['student A asking for own email', STUDENT_A, TOKENS.studentA],
+        ['admin asking for student B', STUDENT_B, TOKENS.admin],
+    ])('%s -> 200, same body as the path form', async (_, email, token) => {
+        const pathForm = await request(app).get(studentUrl(email, 'grades')).set('Authorization', token);
+        const res = await request(app).get(oldUrl(email)).set('Authorization', token);
+        expect(res.status).toBe(200);
+        expect(res.text).toBe(pathForm.text);
+        expect(res.body.Projects['Project 1']).toEqual(expect.objectContaining({ max: 10 }));
+    });
+
+    test('valid Berkeley user not on the roster -> 403 (not 500)', async () => {
+        const res = await request(app).get(oldUrl(OUTSIDER)).set('Authorization', TOKENS.outsider);
+        expect(res.status).toBe(403);
+        expect(res.body).toEqual({ message: 'You are not a registered student.' });
+    });
+
+    test.each([
+        ['/api/v2/students/grades'],
+        ['/api/v2/students/grades?email='],
+        [`/api/v2/students/grades?email=${STUDENT_A}&email=${STUDENT_B}`],
+    ])('%s -> 400 without a single email', async (url) => {
+        const res = await request(app).get(url).set('Authorization', TOKENS.studentA);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ message: 'Email parameter required' });
+        expect(fakeRedis.state.clientsCreated).toBe(0);
     });
 });
 

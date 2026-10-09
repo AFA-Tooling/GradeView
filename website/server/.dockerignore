@@ -1,3 +1,32 @@
+# Build-context exclusions for the web image (Express server for the React build).
+# build/ is NOT excluded: the image serves it (make docker / npm run build in
+# website/ moves the React output to website/server/build).
 Dockerfile
 .dockerignore
+.git
+**/.DS_Store
+
+# Dependencies are installed by `npm ci` in the image
 node_modules
+**/node_modules
+
+# Secrets: env files, keys, certificates
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.pem
+*.key
+**/*.pem
+**/*.key
+
+*.log
+npm-debug.log*
+
+# Local Python environments and data dumps (Canvas dumps contain student data)
+venv/
+.venv/
+**/__pycache__/
+dumps/

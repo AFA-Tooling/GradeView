@@ -1,0 +1,38 @@
+# Build-context exclusions for the website dev image (website/Dockerfile,
+# `react-scripts start`; compose does not use this image, it builds
+# website/server instead).
+Dockerfile
+.dockerignore
+.git
+**/.DS_Store
+
+# Dependencies are installed by `npm ci`; build output is regenerated
+node_modules
+**/node_modules
+build
+server/build
+
+# Secrets: env files, keys, certificates
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.pem
+*.key
+**/*.pem
+**/*.key
+# .env.local is tracked in git (so it is not secret) and Create React App reads
+# it for both `start` and `build`; keep it so the image behaves like a checkout.
+# Anything in it that starts with REACT_APP_ ends up in the public JS bundle.
+!.env.local
+
+*.log
+npm-debug.log*
+
+# Local Python environments and data dumps (Canvas dumps contain student data)
+venv/
+.venv/
+**/__pycache__/
+dumps/

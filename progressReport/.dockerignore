@@ -1,7 +1,35 @@
-venv/
-__pycache__/
-
+# Not needed in the image
 .dockerignore
 .gitignore
 .gitattributes
 README.md
+.git
+.idea/
+.vscode/
+**/.DS_Store
+
+# Local Python environments and caches
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+dumps/
+
+# Generated at runtime by parser.py (keep the directory itself)
+data/*
+!data/.gitkeep
+
+# Secrets: never send env files, keys or certificates to the Docker daemon
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.pem
+*.key
+**/*.pem
+**/*.key

@@ -1,0 +1,38 @@
+# Build-context exclusions for the dbcron image.
+# At runtime compose mounts ./dbcron over /dbcron, so dbcron/.env still reaches
+# the container through the volume; it must never be baked into the image.
+Dockerfile
+.dockerignore
+.git
+**/.DS_Store
+
+# Local Python environments and caches
+venv/
+.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets: env files, keys, certificates
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.pem
+*.key
+*.p12
+**/*.pem
+**/*.key
+**/*.p12
+# Root-level JSON here is a service-account key or a Canvas payload dump with
+# student data (git-ignored for the same reason); the image needs none of it.
+/*.json
+
+# Canvas importer dumps and logs (student data)
+dumps/
+*.log
+
+# Tests and their fixtures are not needed to run the jobs
+tests/

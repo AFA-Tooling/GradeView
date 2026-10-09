@@ -1,3 +1,53 @@
+# Build-context exclusions for the API image.
+# At runtime compose mounts ./api over /api, so api/.env and other local files
+# still reach the container through the volume; they must never be baked into
+# the image itself.
 Dockerfile
 .dockerignore
+.git
+.gitignore
+**/.DS_Store
+.vscode/
+.idea/
+
+# Dependencies are installed by `npm ci` in the image
 node_modules
+**/node_modules
+
+# Secrets: env files, keys, certificates, service-account JSON
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.pem
+*.key
+*.p12
+**/*.pem
+**/*.key
+**/*.p12
+# The only root-level JSON files the image needs are the npm manifests
+# (config/*.json and assets/**/*.json live in subdirectories and are kept).
+/*.json
+!/package.json
+!/package-lock.json
+
+# Uploaded files (progress reports) are runtime data; keep only the directory
+uploads/**
+!uploads/progressreports/.GITKEEP
+
+# Logs, test output, tests
+*.log
+npm-debug.log*
+logs/
+coverage/
+**/*.test.js
+**/*.test.mjs
+**/__tests__/
+
+# Local Python environments and data dumps (Canvas dumps contain student data)
+venv/
+.venv/
+**/__pycache__/
+dumps/

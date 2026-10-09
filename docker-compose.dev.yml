@@ -1,6 +1,7 @@
 version: '3.8'
-# Local development stack (make dev-up). Plain HTTP, and every published port
-# is bound to 127.0.0.1 so nothing is reachable from the rest of the network.
+# Local development stack (make dev-up). Plain HTTP, and by default every
+# published port is bound to 127.0.0.1 so nothing is reachable from the rest of
+# the network (DEV_PROXY_BIND in .env can change the proxy's binding).
 services:
   reverseProxy:
     container_name: gradeview-reverse-proxy
@@ -16,8 +17,10 @@ services:
       - frontend
       - concept_map_integration
     ports:
-      # host address:port for the dev proxy (default http://localhost:80)
-      - ${REVERSE_PROXY_LISTEN:-127.0.0.1:80}:80
+      # host address:port for the dev proxy (default http://localhost:80).
+      # The old REVERSE_PROXY_LISTEN variable (0.0.0.0:80 in old .env files) is
+      # deliberately not read, so stale values cannot expose the proxy.
+      - ${DEV_PROXY_BIND:-127.0.0.1:80}:80
     depends_on:
       - web
       - api
@@ -29,7 +32,7 @@ services:
     volumes:
       - ./website/server/build:/website/build
     environment:
-      - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER}
+      - REACT_APP_PROXY_SERVER=${REACT_APP_PROXY_SERVER:-http://api:8000}
       - PORT=${REACT_APP_PORT}
     networks:
       - frontend

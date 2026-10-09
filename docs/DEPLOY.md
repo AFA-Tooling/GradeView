@@ -99,6 +99,11 @@ The `default` network comes with `default-allow-ssh` (tcp:22 from 0.0.0.0/0) and
 35.235.240.0/20 if other VMs need them. After that the list above may only show 22 from 35.235.240.0/20,
 80/443 from 0.0.0.0/0, and internal ranges.
 
+If you are moving from an old VM ("Moving from the old server" in section 3), check that IAP SSH still
+reaches the old VM before you delete or tighten anything: it needs a rule allowing tcp:22 from
+35.235.240.0/20 on the old VM's network (the `gradeview-allow-iap-ssh` rule above only covers VMs tagged
+`gradeview`). Do the copy first, then remove the old rules.
+
 Admins then connect with `gcloud compute ssh <VM_NAME> --zone=<ZONE> --tunnel-through-iap`; they need the
 IAP-secured Tunnel User role (`roles/iap.tunnelResourceAccessor`) on the project or the VM.
 

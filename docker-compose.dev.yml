@@ -41,8 +41,13 @@ services:
     restart: unless-stopped
   api:
     container_name: gradeview-api
-    image: ${CI_REGISTRY_IMAGE:-gradeview}/server:${API_VERSION:-development}
-    build: ./api
+    # Own image name: the production image (docker-compose.yml, gradeview/server) has no
+    # dev dependencies.
+    image: ${CI_REGISTRY_IMAGE:-gradeview}/server-dev:${API_VERSION:-development}
+    build:
+      context: ./api
+      # The dev stage keeps the dev dependencies that `npm run dev` (nodemon) needs.
+      target: dev
     volumes:
       - ./api:/api
       - /api/node_modules

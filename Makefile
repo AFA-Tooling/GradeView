@@ -12,13 +12,22 @@ help:
 	@echo "  make proxy-check  nginx -t on both reverse-proxy templates"
 	@echo "  make docker       PRODUCTION stack, HTTPS only, on the server (docs/DEPLOY.md)"
 
+# Install every package and build the website (website/server/build), which make dev-up
+# needs. website/ uses --no-save because its lockfile is out of sync with package.json
+# (see the docker target); the others install exactly what their lockfiles say.
 init:
-	@cd website && npm install
-	@cd api && npm install
-	@cd website/server && npm install
+	@cd website && npm install --no-save
+	@cd api && npm ci
+	@cd website/server && npm ci
 	@cd website && npm run build
 
+# The dev web container serves the host's website/server/build (bind mount), so it
+# answers 404 on every page until the website is built.
 dev-up:
+	@test -s website/server/build/index.html || { \
+		echo "website/server/build/index.html is missing, so the web container would answer 404." >&2; \
+		echo "Build the website first: make init (or: cd website && npm install --no-save && npm run build)." >&2; \
+		exit 1; }
 	@docker compose -f docker-compose.dev.yml up -dV
 
 dev-down:
@@ -100,7 +109,8 @@ PROXY_BASE_IMAGE = $(shell awk '/^FROM /{print $$2; exit}' reverseProxy/Dockerfi
 prod-check:
 ifeq ($(strip $(REDIS_DB_SECRET)),change-me-local-only)
 	@echo "REDIS_DB_SECRET in .env is still the example value from .env.example." >&2
-	@echo "Set a random one first (docs/DEPLOY.md, section 3)." >&2
+	@echo "  On a laptop: do not run make docker (the production stack); use make mock-up (fake data) or make dev-up." >&2
+	@echo "  On the server: set a random one first (docs/DEPLOY.md, section 3)." >&2
 	@exit 1
 endif
 	@certs='test -s "$(PROD_CERT_DIR)/fullchain.pem" && test -s "$(PROD_CERT_DIR)/privkey.pem"'; \

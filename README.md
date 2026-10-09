@@ -48,8 +48,12 @@ On a laptop, use one of these from the root directory (copy `.env.example` to `.
 - `make mock-up`: Redis in Docker with **fake** students and grades, and the API and website on your machine.
   No project secrets needed. See [docs/LOCAL_DEV_MOCK.md](docs/LOCAL_DEV_MOCK.md).
 - `make dev-up`: the whole stack in Docker over plain HTTP (`docker-compose.dev.yml`, ports bound to
-  127.0.0.1); `make dev-down` stops it. It needs `REDIS_DB_SECRET` in `.env`, and Redis only gets data
-  if `dbcron/.env` points at a grade sheet, so for fake data use `make mock-up`.
+  127.0.0.1); `make dev-down` stops it. Build the website first with `make init` (the web container
+  serves `website/server/build` and answers 404 without it; `make dev-up` stops with a message until it
+  exists). It needs `REDIS_DB_SECRET` in `.env`, and Redis only gets data if `dbcron/.env` has the grade
+  sheet settings and a Google service account (`SERVICE_ACCOUNT_CREDENTIALS`, see
+  [docs/DEPLOY.md](docs/DEPLOY.md) section 3), so for fake data use `make mock-up`. It also publishes
+  127.0.0.1:80, :6379 and :8080, so those ports must be free.
 
 Do not run a plain `docker compose build` / `docker compose up` (or `make docker`) on a laptop:
 `docker-compose.yml` is the **production** stack. It serves HTTPS only and needs the server's
@@ -62,10 +66,10 @@ and updates).
 
 ### LOCALLY WITH NODE
 
-1. __[First use only]:__ In the root directory run `make init`
-2. In the root directory run `make npm` to start the service
-
-Note: Running these will start both an api server as well as a website
+- `make mock-up` (above) runs the API and the website with Node on your machine, with fake data.
+- `make dev-local` runs Redis and dbcron in Docker and the API and the website on your machine
+  (it needs the same `dbcron/.env` as `make dev-up`).
+- `make init` installs every package (without rewriting the tracked lockfiles) and builds the website.
 
 ## Database
 

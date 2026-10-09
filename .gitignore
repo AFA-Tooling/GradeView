@@ -31,5 +31,5 @@ website/build/
 /dbcron/*.json
 /dbcron/dumps/
 
-# Local dev logs from scripts/dev_mock_up.sh
+# Local dev logs and pid files from scripts/mock.sh (make mock-up)
 /.dev-logs/

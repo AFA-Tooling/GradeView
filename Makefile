@@ -26,14 +26,19 @@ dev-down:
 
 # Run GradeView locally with FAKE data (no secrets needed). Needs DEV_ADMIN_EMAIL and
 # REDIS_DB_SECRET in .env (copy .env.example). See docs/LOCAL_DEV_MOCK.md.
+# Optional ports (in .env or the environment): REDIS_PORT, MOCK_API_PORT, MOCK_WEB_PORT.
+# They are passed explicitly because make does not export variables read from .env
+# (API_PORT in .env is the compose stack's, so mock-up uses its own names).
+MOCK_PORTS = REDIS_PORT="$(REDIS_PORT)" MOCK_API_PORT="$(MOCK_API_PORT)" MOCK_WEB_PORT="$(MOCK_WEB_PORT)"
+
 mock-up:
-	@DEV_ADMIN_EMAIL="$(DEV_ADMIN_EMAIL)" REDIS_DB_SECRET="$(REDIS_DB_SECRET)" REDIS_PORT="$(REDIS_PORT)" scripts/mock.sh up
+	@DEV_ADMIN_EMAIL="$(DEV_ADMIN_EMAIL)" REDIS_DB_SECRET="$(REDIS_DB_SECRET)" $(MOCK_PORTS) scripts/mock.sh up
 
 mock-down:
-	@scripts/mock.sh down
+	@$(MOCK_PORTS) scripts/mock.sh down
 
 mock-reset:
-	@scripts/mock.sh reset
+	@$(MOCK_PORTS) scripts/mock.sh reset
 
 dev-local:
 	@bash -c '\

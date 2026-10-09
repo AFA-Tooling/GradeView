@@ -23,9 +23,12 @@ server/build
 *.key
 **/*.pem
 **/*.key
-# .env.local is tracked in git (so it is not secret) and Create React App reads
-# it for both `start` and `build`; keep it so the image behaves like a checkout.
-# Anything in it that starts with REACT_APP_ ends up in the public JS bundle.
+# Exception: .env.local is tracked in git (so it is not a secret) and is read by
+# Create React App. This image runs the dev server (`react-scripts start`, which
+# also loads src/setupProxy.js), so keep it to behave like a checkout. The
+# production bundle does not depend on it (`react-scripts build` output is
+# identical with and without it). REACT_APP_* values end up in the public
+# bundle, so never put secrets in it.
 !.env.local
 
 *.log

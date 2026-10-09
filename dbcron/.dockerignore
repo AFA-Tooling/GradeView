@@ -1,38 +1,35 @@
-# Build-context exclusions for the dbcron image.
+# Build context for the dbcron image: an ALLOWLIST. Only the job scripts, the
+# crontab and the requirements are sent; everything else (dbcron/.env, key files,
+# Canvas payload dumps with student data, tests, venvs) stays out.
 # At runtime compose mounts ./dbcron over /dbcron, so dbcron/.env still reaches
 # the container through the volume; it must never be baked into the image.
-Dockerfile
-.dockerignore
-.git
-**/.DS_Store
+*
+!*.py
+!cronjob
+!requirements.txt
 
-# Local Python environments and caches
-venv/
-.venv/
-**/__pycache__/
-*.pyc
-.pytest_cache/
-
-# Secrets: env files, keys, certificates
-.env
-.env.*
-*.env
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
 **/.env
 **/.env.*
 **/*.env
-*.pem
-*.key
-*.p12
 **/*.pem
 **/*.key
 **/*.p12
-# Root-level JSON here is a service-account key or a Canvas payload dump with
-# student data (git-ignored for the same reason); the image needs none of it.
-/*.json
-
-# Canvas importer dumps and logs (student data)
-dumps/
-*.log
-
-# Tests and their fixtures are not needed to run the jobs
-tests/
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials

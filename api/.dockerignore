@@ -1,53 +1,61 @@
-# Build-context exclusions for the API image.
-# At runtime compose mounts ./api over /api, so api/.env and other local files
-# still reach the container through the volume; they must never be baked into
-# the image itself.
-Dockerfile
-.dockerignore
-.git
-.gitignore
-**/.DS_Store
-.vscode/
-.idea/
-
-# Dependencies are installed by `npm ci` in the image
-node_modules
-**/node_modules
-
-# Secrets: env files, keys, certificates, service-account JSON
-.env
-.env.*
-*.env
-**/.env
-**/.env.*
-**/*.env
-*.pem
-*.key
-*.p12
-**/*.pem
-**/*.key
-**/*.p12
-# The only root-level JSON files the image needs are the npm manifests
-# (config/*.json and assets/**/*.json live in subdirectories and are kept).
-/*.json
-!/package.json
-!/package-lock.json
-
+# Build context for the API image: an ALLOWLIST. Everything is excluded except
+# what `node server.js` needs; a new top-level directory must be added below.
+# At runtime compose mounts ./api over /api, so api/.env, a local
+# config/production.json and other local files still reach the container through
+# the volume; they must never be baked into the image itself (images are tagged
+# for a registry).
+*
+!package.json
+!package-lock.json
+!*.js
+!*.mjs
+!*.cjs
+!lib/
+!v2/
+!assets/
+# Only the tracked node-config files. config/local*.json, config/production*.json
+# and anything else in config/ stay out (they may hold secrets).
+!config/default.json
+!config/development.json
+!config/mime.mjs
 # Uploaded files (progress reports) are runtime data; keep only the directory
-uploads/**
 !uploads/progressreports/.GITKEEP
 
-# Logs, test output, tests
-*.log
-npm-debug.log*
-logs/
-coverage/
+# Tests and test fixtures
 **/*.test.js
 **/*.test.mjs
 **/__tests__/
+**/__fixtures__/
 
-# Local Python environments and data dumps (Canvas dumps contain student data)
-venv/
-.venv/
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
+
+# Never needed in the image
+**/node_modules
+**/.DS_Store
+**/*.log
 **/__pycache__/
-dumps/
+**/dumps/

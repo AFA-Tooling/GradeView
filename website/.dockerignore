@@ -10,19 +10,39 @@ Dockerfile
 node_modules
 **/node_modules
 build
-server/build
+# The production Express server (its own image, website/server/Dockerfile)
+server/
+# The only top-level JSON files the image needs are the npm manifests (a key
+# file dropped next to them must not be sent).
+/*.json
+!/package.json
+!/package-lock.json
 
-# Secrets: env files, keys, certificates
-.env
-.env.*
-*.env
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
 **/.env
 **/.env.*
 **/*.env
-*.pem
-*.key
 **/*.pem
 **/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
 # Exception: .env.local is tracked in git (so it is not a secret) and is read by
 # Create React App. This image runs the dev server (`react-scripts start`, which
 # also loads src/setupProxy.js), so keep it to behave like a checkout. The

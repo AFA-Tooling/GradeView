@@ -1,35 +1,43 @@
-# Not needed in the image
-.dockerignore
-.gitignore
-.gitattributes
-README.md
-.git
-.idea/
-.vscode/
-**/.DS_Store
-
-# Local Python environments and caches
-venv/
-.venv/
-__pycache__/
-**/__pycache__/
-*.pyc
-.pytest_cache/
-*.log
-dumps/
-
+# Build context for the progress report image: an ALLOWLIST. Only the Flask app,
+# its uwsgi config, requirements, meta/ and templates/ are sent; a new file or
+# directory the app needs must be added below.
+*
+!*.py
+!uwsgi.ini
+!requirements.txt
+!Source.gv
+!meta/
+!templates/
 # Generated at runtime by parser.py (keep the directory itself)
-data/*
 !data/.gitkeep
 
-# Secrets: never send env files, keys or certificates to the Docker daemon
-.env
-.env.*
-*.env
+# Credentials, wherever they are: env files, TLS and signing keys, SSH keys,
+# Google service-account / OAuth client JSON (the root .gitignore patterns and
+# more) and package-registry tokens.
 **/.env
 **/.env.*
 **/*.env
-*.pem
-*.key
 **/*.pem
 **/*.key
+**/*.p12
+**/*.pfx
+**/*.p8
+**/*.jks
+**/id_rsa*
+**/id_ecdsa*
+**/id_ed25519*
+**/*service_account*.json
+**/*service-account*.json
+**/*credentials*.json
+**/client_secret*.json
+**/auth/*.json
+**/secrets/
+**/.npmrc
+**/.pypirc
+**/.netrc
+**/.git-credentials
+
+# Never needed in the image
+**/.DS_Store
+**/__pycache__/
+**/*.pyc

@@ -42,13 +42,22 @@ __NOTE: If your API server's origin is different from your live website's origin
 
 ### LOCALLY WITH DOCKER
 
-1. In the root directory run `make dev-up`
+On a laptop, use one of these from the root directory (copy `.env.example` to `.env` first):
 
-OR
+- `make mock-up`: Redis in Docker with **fake** students and grades, and the API and website on your machine.
+  No project secrets needed. See [docs/LOCAL_DEV_MOCK.md](docs/LOCAL_DEV_MOCK.md).
+- `make dev-up`: the whole stack in Docker over plain HTTP (`docker-compose.dev.yml`, ports bound to
+  127.0.0.1); `make dev-down` stops it. It needs `REDIS_DB_SECRET` in `.env`, and Redis only gets data
+  if `dbcron/.env` points at a grade sheet, so for fake data use `make mock-up`.
 
-1. Navigate to the root directory
-2. Build a dockerfile with `docker-compose build`
-3. Run the dockerfile with `docker-compose start` (or `docker-compose up` to see console output in console)
+Do not run a plain `docker compose build` / `docker compose up` (or `make docker`) on a laptop:
+`docker-compose.yml` is the **production** stack. It serves HTTPS only and needs the server's
+Let's Encrypt certificate and a real `REDIS_DB_SECRET`.
+
+### IN PRODUCTION
+
+Follow [docs/DEPLOY.md](docs/DEPLOY.md) (server, firewall, configuration files, certificates, `make docker`
+and updates).
 
 ### LOCALLY WITH NODE
 

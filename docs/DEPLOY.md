@@ -22,9 +22,36 @@ are reachable only on the internal Docker networks (`frontend`, `db`, `concept_m
 - The DNS record for `gradeview.eecs.berkeley.edu` is managed by **EECS IT**. We keep the same name; if the
   server (or its public IP) changes, ask EECS IT to point the record at the new server **before** requesting a
   certificate, then check from any machine: `dig +short gradeview.eecs.berkeley.edu`.
-- On the server install: Docker Engine with the Compose plugin (`docker compose version`), `git`, `make`,
-  Node.js 22 LTS and npm (`make docker` builds the React site on the host), and `certbot`
-  (`sudo apt install certbot`, or the snap).
+- On the server (a fresh Debian 12 VM; see section 2 for the Google Cloud side) install the tools below.
+  Do **not** use Debian's own `docker.io` / `docker-compose` or `nodejs` / `npm` packages: Debian 12's
+  `docker.io` (20.10) has no `docker compose` and `docker-compose` is the old v1, and its Node.js 18 with
+  npm 9 stops `make docker` at the website's `npm install` (`Invalid comparator`).
+
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y ca-certificates curl git make ufw certbot
+
+  # Docker Engine + Compose plugin from Docker's apt repository (docs.docker.com/engine/install/debian)
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+  sudo apt-get update
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # Node.js 22 (make docker builds the React site on the host) from NodeSource
+  curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
+  sudo bash /tmp/nodesource_setup.sh
+  sudo apt-get install -y nodejs
+
+  docker compose version   # Docker Compose version v2.x or newer
+  node --version           # v22.x (make docker stops with a message on anything older)
+  certbot --version        # Debian 12: certbot 2.1.0 (see section 6)
+  ```
+
+  Instead of NodeSource you can install Node 22 for the deploy user only with
+  [nvm](https://github.com/nvm-sh/nvm) (`nvm install` in `~/GradeView` reads `.nvmrc`).
 - Start Docker at boot, so the containers come back after a reboot (they all have
   `restart: unless-stopped`): `sudo systemctl enable --now docker`.
 - The deploy user runs `docker compose` and `make docker`. Either add it to the `docker` group
@@ -42,20 +69,65 @@ are reachable only on the internal Docker networks (`frontend`, `db`, `concept_m
 
 ## 2. Firewall
 
-Only **80/tcp and 443/tcp** may be open to the internet. **SSH (22/tcp)** must be limited to the
-networks the admins use (for example the campus VPN range EECS IT gives you), with key-based login only
-(`PasswordAuthentication no` in `/etc/ssh/sshd_config`).
+Only **80/tcp and 443/tcp** may be open to the internet. Admins reach **SSH (22/tcp)** through Google's
+**IAP TCP forwarding** (`gcloud compute ssh --tunnel-through-iap`), whose connections arrive from
+**35.235.240.0/20**, so SSH is allowed only from that range, with key-based login only
+(`PasswordAuthentication no` in `/etc/ssh/sshd_config`). The VM sits behind two firewalls and both must say
+the same: the **VPC firewall** in Google Cloud (the real perimeter) and **ufw** on the VM.
 
-Example with `ufw` (add the SSH rule first so you do not lock yourself out):
+### VPC firewall and static IP (Google Cloud)
+
+Run these from a machine with `gcloud` access to the project (replace the `<...>` placeholders):
+
+```bash
+# Tag the VM, so the two rules below apply to it only
+gcloud compute instances add-tags <VM_NAME> --zone=<ZONE> --tags=gradeview
+# HTTP and HTTPS from anywhere (80 is needed for certbot and the redirect to HTTPS)
+gcloud compute firewall-rules create gradeview-allow-web --network=<NETWORK> --direction=INGRESS \
+  --action=ALLOW --rules=tcp:80,tcp:443 --source-ranges=0.0.0.0/0 --target-tags=gradeview
+# SSH only through IAP
+gcloud compute firewall-rules create gradeview-allow-iap-ssh --network=<NETWORK> --direction=INGRESS \
+  --action=ALLOW --rules=tcp:22 --source-ranges=35.235.240.0/20 --target-tags=gradeview
+# Review every ingress rule that can reach the VM
+gcloud compute firewall-rules list --filter="network:<NETWORK> AND direction=INGRESS" \
+  --format="table(name,sourceRanges.list(),allowed[].map().firewall_rule().list(),targetTags.list())"
+```
+
+The `default` network comes with `default-allow-ssh` (tcp:22 from 0.0.0.0/0) and `default-allow-rdp`
+(tcp:3389 from 0.0.0.0/0), which apply to **every** VM in the network. Delete them
+(`gcloud compute firewall-rules delete default-allow-ssh default-allow-rdp`), or restrict them to
+35.235.240.0/20 if other VMs need them. After that the list above may only show 22 from 35.235.240.0/20,
+80/443 from 0.0.0.0/0, and internal ranges.
+
+Admins then connect with `gcloud compute ssh <VM_NAME> --zone=<ZONE> --tunnel-through-iap`; they need the
+IAP-secured Tunnel User role (`roles/iap.tunnelResourceAccessor`) on the project or the VM.
+
+EECS IT points `gradeview.eecs.berkeley.edu` at the VM's external IP, so that address must never change.
+Reserve it (this promotes the VM's current ephemeral address) before you send it to EECS IT, or attach an
+already reserved one:
+
+```bash
+gcloud compute instances describe <VM_NAME> --zone=<ZONE> \
+  --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
+gcloud compute addresses create gradeview-ip --region=<REGION> --addresses=<THAT_IP>
+```
+
+### ufw on the VM
+
+Add the SSH rule first so you do not lock yourself out (`ufw` was installed in section 1):
 
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow from <ADMIN_CIDR> to any port 22 proto tcp
+sudo ufw allow from 35.235.240.0/20 to any port 22 proto tcp   # IAP
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw enable
+sudo ufw status verbose
 ```
+
+If admins also SSH in directly from a fixed network (for example the campus VPN range EECS IT gives you),
+add both a VPC rule and `sudo ufw allow from <ADMIN_CIDR> to any port 22 proto tcp` for it.
 
 > **Docker bypasses ufw.** Ports published by Docker (`ports:` in compose) are opened with iptables rules
 > that run before ufw's, so a ufw "deny" does not protect them. That is why the production compose file
@@ -76,11 +148,10 @@ value without printing it (GNU `sed`, as on the server):
 ```bash
 cp .env.example .env
 sed -i "s/^REDIS_DB_SECRET=.*/REDIS_DB_SECRET=$(openssl rand -hex 32)/" .env
-# dbcron needs the same value: create dbcron/.env first (next section), then copy the line over
-sed -i '/^REDIS_DB_SECRET=/d' dbcron/.env && grep '^REDIS_DB_SECRET=' .env >> dbcron/.env
 ```
 
-If you ever change `REDIS_DB_SECRET`, change it in both files and run `make docker` again.
+dbcron needs the same value; the next section copies it into `dbcron/.env`. If you ever change
+`REDIS_DB_SECRET`, change it in both files and run `make docker` again.
 
 | Variable | Required | Notes |
 |---|---|---|
@@ -111,12 +182,51 @@ value must be here:
 | `SERVICE_ACCOUNT_CREDENTIALS` | **required** for the Google Sheet jobs | service-account JSON on one line. Do not leave key files in `dbcron/`. |
 | `ADMIN_DBINDEX`, `CANVAS_*` | Canvas importer only | see `dbcron/canvas.env.example` |
 
+Once `dbcron/.env` exists (copied from the old server, see [Moving from the old server](#moving-from-the-old-server),
+or written by hand), copy the root `.env`'s Redis password into it. This replaces an old
+`REDIS_DB_SECRET` line and starts a new line if the file does not end with one:
+
+```bash
+if [ -f dbcron/.env ]; then
+  sed -i '/^REDIS_DB_SECRET=/d' dbcron/.env
+  [ -z "$(tail -c 1 dbcron/.env)" ] || echo >> dbcron/.env
+  grep '^REDIS_DB_SECRET=' .env >> dbcron/.env
+else
+  echo "Create dbcron/.env first." >&2
+fi
+```
+
 ### `api/.env` (optional in Docker)
 
 Also arrives through the `./api` volume. In Docker the API gets `REDIS_DB_SECRET` from compose, and
 `make dev-local` passes the root `.env` value to the API it runs on the host (dotenv does not override variables
 that are already set), so a `REDIS_DB_SECRET` in this file is ignored in both cases. The file only matters for
 other variables the API reads.
+
+### Moving from the old server
+
+A fresh clone lacks two things the old server has. Copy them before the first `make docker`, over IAP and
+straight from VM to VM, so they never land on your laptop's disk:
+
+- `dbcron/.env`: the Sheet settings and `SERVICE_ACCOUNT_CREDENTIALS` (the repository only has
+  `dbcron/canvas.env.example`). Copy `api/.env` the same way if the old server has one.
+- `api/uploads/progressreports/`: the progress reports admins uploaded. They are runtime data in the `./api`
+  volume, not in git or the image, so without this step the list starts empty.
+
+Run a plain `gcloud compute ssh <VM> --zone=<ZONE> --tunnel-through-iap` to each VM once first, so gcloud has
+set up your SSH key. `<OLD_VM>`, `<NEW_VM>`, `<ZONE>` and `<OLD_DIR>` (the old checkout) are placeholders:
+
+```bash
+gcloud compute ssh <OLD_VM> --zone=<ZONE> --tunnel-through-iap -- 'cat <OLD_DIR>/dbcron/.env' \
+  | gcloud compute ssh <NEW_VM> --zone=<ZONE> --tunnel-through-iap -- 'umask 077 && cat > ~/GradeView/dbcron/.env'
+gcloud compute ssh <OLD_VM> --zone=<ZONE> --tunnel-through-iap -- 'tar -C <OLD_DIR>/api/uploads -cf - progressreports' \
+  | gcloud compute ssh <NEW_VM> --zone=<ZONE> --tunnel-through-iap -- 'tar -C ~/GradeView/api/uploads -xf -'
+```
+
+Then copy the new `REDIS_DB_SECRET` into `dbcron/.env` (block above): the new Redis uses the new random
+password, not the old one. If the old service-account key was disabled, or may have been exposed, create a new
+key for that service account, put it in `SERVICE_ACCOUNT_CREDENTIALS` and disable the old key. Once the DNS
+record points at the new server and it works, delete these files from the old VM (or delete the old VM).
 
 ### Permissions
 
@@ -175,6 +285,14 @@ copied from the Sheet/Canvas). This also matters when moving from the old `redis
 `redis:7.4` image: an RDB file written by a newer Redis cannot be loaded by 7.4. If you start Redis without
 `-V` and its log says `Can't handle RDB format version`, run `docker compose up -d --renew-anon-volumes redis`.
 
+`-V` does not delete the replaced anonymous volumes (the API's old `node_modules`, about 100 MB, and the old
+Redis data), so every deploy leaves some behind. Remove them now and then:
+
+```bash
+docker volume ls -f dangling=true    # volumes no container uses (check nothing else on the server needs them)
+docker volume prune -f               # Docker 23+: removes only those unused anonymous volumes
+```
+
 ## 6. Renewal
 
 Switch the certificate's renewal method to **webroot**, so renewals go through the running nginx (port 80 serves
@@ -184,10 +302,17 @@ Switch the certificate's renewal method to **webroot**, so renewals go through t
 sudo certbot reconfigure --cert-name gradeview.eecs.berkeley.edu --webroot -w /var/www/certbot
 ```
 
-(`certbot reconfigure` needs certbot 2.3 or newer. On older versions edit
-`/etc/letsencrypt/renewal/gradeview.eecs.berkeley.edu.conf`: set `authenticator = webroot` and, under
-`[renewalparams]`, `webroot_path = /var/www/certbot,` plus a `[[webroot_map]]` section with
-`gradeview.eecs.berkeley.edu = /var/www/certbot`.)
+`certbot reconfigure` needs certbot 2.3 or newer. **Debian 12's `certbot` package is 2.1.0**, which answers
+`unrecognized arguments: reconfigure`; there, edit `/etc/letsencrypt/renewal/gradeview.eecs.berkeley.edu.conf`
+by hand instead (`sudo nano ...`). In `[renewalparams]`, change `authenticator = standalone` to
+`authenticator = webroot`, then add these lines at the **end of the file**, after all other
+`[renewalparams]` keys (`[[webroot_map]]` opens a subsection, so nothing of `[renewalparams]` may follow it):
+
+```ini
+webroot_path = /var/www/certbot,
+[[webroot_map]]
+gradeview.eecs.berkeley.edu = /var/www/certbot
+```
 
 nginx only reads certificates when it starts or reloads, so add a deploy hook. certbot runs every script in this
 directory after each successful renewal:

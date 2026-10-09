@@ -128,7 +128,13 @@ endif
 # and a plain `npm install` rewrites the tracked lockfile, so the next
 # `git pull --ff-only` that touches it fails on the local change. --no-save
 # installs without writing it (as scripts/mock.sh does).
+# The website is built on the host, which needs Node.js 22: Debian 12's own nodejs (18,
+# npm 9) fails at `npm install` on website/package.json's overrides (docs/DEPLOY.md section 1).
 docker: prod-check
+	@node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' 2>/dev/null || { \
+		echo "make docker builds the website on this machine and needs Node.js 22 (found: $$(node -v 2>/dev/null || echo none))." >&2; \
+		echo "Install it as described in docs/DEPLOY.md, section 1." >&2; \
+		exit 1; }
 	@cd website && npm install --no-save && npm run build
 	@docker compose build
 	@docker compose up -dV

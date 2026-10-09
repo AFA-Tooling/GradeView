@@ -1,5 +1,5 @@
 /**
- * Upload tests for POST /api/v2/admin/progressreports (multer disk storage).
+ * Tests for POST and GET /api/v2/admin/progressreports (multer disk storage).
  *
  * The upload chain (lib/uploadHandler.mjs -> config/mime.mjs -> the ESM-only
  * `mime` package) is native ESM. jest.config.cjs only transforms `*.js`, so
@@ -86,6 +86,11 @@ const filesOnDisk = () =>
 const adminUpload = () =>
     request(baseUrl)
         .post('/api/v2/admin/progressreports')
+        .set('Authorization', FAKE_ADMIN_AUTH);
+
+const adminList = () =>
+    request(baseUrl)
+        .get('/api/v2/admin/progressreports')
         .set('Authorization', FAKE_ADMIN_AUTH);
 
 /** A hand-written multipart body, for shapes supertest's attach() cannot produce. */
@@ -432,4 +437,38 @@ describe('concurrent POST /api/v2/admin/progressreports', () => {
             expect(fs.readFileSync(path.join(uploadDir, name))).toEqual(content);
         }
     }, 20000);
+});
+
+describe('GET /api/v2/admin/progressreports', () => {
+    test('lists nothing when only .GITKEEP is in the directory', async () => {
+        // Used to list .GITKEEP as an empty name ("").
+        const res = await adminList();
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual([]);
+    });
+
+    test('lists uploaded schemas without their extension, after uploads too', async () => {
+        fs.writeFileSync(path.join(uploadDir, 'stray-notes.txt'), 'fake');
+        fs.mkdirSync(path.join(uploadDir, 'folder.cm'));
+
+        for (const name of ['week-2.cm', 'cs10.fall.cm']) {
+            const up = await adminUpload().attach('schema', Buffer.from('fake'), name);
+            expect(up.status).toBe(201);
+            // Used to answer 500 once an upload had added `undefined` to the list.
+            const res = await adminList();
+            expect(res.status).toBe(200);
+        }
+
+        const res = await adminList();
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual(['cs10.fall', 'week-2']);
+    });
+
+    test('rejects requests without admin auth', async () => {
+        const res = await request(baseUrl).get('/api/v2/admin/progressreports');
+
+        expect(res.status).toBe(403);
+    });
 });

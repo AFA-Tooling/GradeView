@@ -21,7 +21,7 @@
     "es-main": "^1.2.0",
     "express": "^5.2.1",
     "express-rate-limit": "^7.4.0",
-    "google-auth-library": "^9.15.1",
+    "google-auth-library": "^10.9.1",
     "mime": "^4.0.4",
     "morgan": "^1.12.1",
     "multer": "^2.4.0",

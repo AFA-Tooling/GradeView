@@ -32,6 +32,9 @@ services:
   web:
     container_name: gradeview-web
     image: ${CI_REGISTRY_IMAGE:-gradeview}/web:${WEB_VERSION:-development}
+    # The image serves website/server/build, which is git-ignored: `make docker` builds the
+    # React site on the host first. A plain `docker compose build` on a fresh checkout makes
+    # an image without it, and every page answers 404.
     build: ./website/server
     environment:
       # Target of the web container's own /api proxy (nginx sends /api straight to the API).

@@ -270,6 +270,10 @@ docker compose ps
 `REDIS_DB_SECRET` is still the example value (section 3). certbot makes `live/` readable by root only, so when
 the deploy user cannot look inside it, the check runs in a short-lived container (this needs Docker access).
 
+Always deploy with `make docker`, not a bare `docker compose build` / `docker compose up --build`: the web image
+copies the React build from `website/server/build` (git-ignored), which only `make docker` creates, so without
+it every page answers 404.
+
 `make docker` installs the website's packages with `npm install --no-save`, so the tracked
 `website/package-lock.json` is not rewritten and the next `git pull --ff-only` still applies (that lockfile is
 out of sync with `package.json`, so `npm ci` would refuse). If an older `make docker` already rewrote it

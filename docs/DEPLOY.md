@@ -151,7 +151,7 @@ already has a valid certificate for this name (same server, same domain), skip t
 ```bash
 cd ~/GradeView
 git pull --ff-only   # on updates: get the new code first (deploy from main)
-make docker          # checks, npm install + build of website/ on the host, docker compose build, up -dV
+make docker          # checks, npm install --no-save + build of website/ on the host, docker compose build, up -dV
 docker compose ps
 ```
 
@@ -159,6 +159,12 @@ docker compose ps
 `/etc/letsencrypt/live/<NGINX_SERVER_NAME>/fullchain.pem` or `privkey.pem` is missing (do section 4 first) or if
 `REDIS_DB_SECRET` is still the example value (section 3). certbot makes `live/` readable by root only, so when
 the deploy user cannot look inside it, the check runs in a short-lived container (this needs Docker access).
+
+`make docker` installs the website's packages with `npm install --no-save`, so the tracked
+`website/package-lock.json` is not rewritten and the next `git pull --ff-only` still applies (that lockfile is
+out of sync with `package.json`, so `npm ci` would refuse). If an older `make docker` already rewrote it
+(`git status` lists `website/package-lock.json` as modified), discard that change before pulling:
+`git checkout -- website/package-lock.json`.
 
 Every service has `restart: unless-stopped`: after a reboot or a Docker restart the whole stack comes back by
 itself (Docker must be enabled at boot, section 1). After `docker compose down` or `docker compose stop`

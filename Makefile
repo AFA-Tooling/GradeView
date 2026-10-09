@@ -109,8 +109,12 @@ endif
 	echo "  On the server: issue the first certificate, see docs/DEPLOY.md section 4." >&2; \
 	exit 1
 
+# website/package-lock.json is out of sync with package.json, so `npm ci` refuses
+# and a plain `npm install` rewrites the tracked lockfile, so the next
+# `git pull --ff-only` that touches it fails on the local change. --no-save
+# installs without writing it (as scripts/mock.sh does).
 docker: prod-check
-	@cd website && npm install && npm run build
+	@cd website && npm install --no-save && npm run build
 	@docker compose build
 	@docker compose up -dV
 

@@ -64,6 +64,11 @@ dev-local:
 	@echo "4. Starting website dev server..."
 	@cd website && REACT_APP_PROXY_SERVER="http://localhost:8000" npm run react
 
+# Check both reverse-proxy templates (production HTTPS, development HTTP) with
+# `nginx -t` inside the image, using a throwaway self-signed certificate.
+proxy-check:
+	@reverseProxy/check-config.sh
+
 docker:
 	@cd website && npm install && npm run build
 	@docker compose build

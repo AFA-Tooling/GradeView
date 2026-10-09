@@ -1,0 +1,11 @@
+# The image only needs the Dockerfile, templates/ and snippets/.
+# Never send certificates, keys or env files to the Docker daemon.
+*
+!Dockerfile
+!templates/
+!snippets/
+**/*.pem
+**/*.key
+**/.env
+**/.env.*
+**/*.env

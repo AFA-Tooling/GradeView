@@ -4,6 +4,9 @@ services:
     container_name: gradeview-reverse-proxy
     image: ${CI_REGISTRY_IMAGE:-gradeview}/reverse-proxy:${REVERSE_PROXY_VERSION:-development}
     build: ./reverseProxy
+    environment:
+      # Must match the certificate name under /etc/letsencrypt/live/.
+      - NGINX_SERVER_NAME=${NGINX_SERVER_NAME:-gradeview.eecs.berkeley.edu}
     volumes:
       - ${SOCKETS_DIR:-/dev/null}:/run/sockets
       - /etc/letsencrypt:/etc/letsencrypt:ro

@@ -7,12 +7,15 @@ services:
     volumes:
       - ${SOCKETS_DIR:-/dev/null}:/run/sockets
     environment:
-      - REVERSE_PROXY_LISTEN=${REVERSE_PROXY_LISTEN:-0.0.0.0:80}
+      # HTTP-only template; the image default is the production HTTPS template.
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/development
+      - NGINX_SERVER_NAME=${NGINX_SERVER_NAME:-gradeview.eecs.berkeley.edu}
     networks:
       - frontend
       - concept_map_integration
     ports:
-      - 80:80
+      # host address:port for the dev proxy (default http://localhost:80)
+      - ${REVERSE_PROXY_LISTEN:-127.0.0.1:80}:80
     depends_on:
       - web
       - api

@@ -2,13 +2,28 @@ import config from 'config';
 import dotenv from 'dotenv';
 import MisformedKeyError from './errors/redis/MisformedKeyError.js';
 import KeyNotFoundError from './errors/redis/KeyNotFound.js';
+import RedisTimeoutError from './errors/redis/RedisTimeout.js';
 import StudentNotEnrolledError from './errors/redis/StudentNotEnrolled.js';
 import { createClient } from 'redis';
 
 dotenv.config();
 
+// How long to wait for the TCP connection to Redis before giving up.
+export const REDIS_CONNECT_TIMEOUT_MS = 2000;
+
+// Upper bound for one helper call (connect plus all of its commands), for a Redis that accepts
+// the connection but does not answer (frozen, paused or overloaded). Can be overridden with the
+// `redis.operationTimeoutMs` config key.
+export const DEFAULT_REDIS_OPERATION_TIMEOUT_MS = 10000;
+
 /**
  * Gets an authenticated Redis client.
+ *
+ * Every helper here opens a short-lived client per call, so the client must fail fast: with
+ * node-redis's default reconnect strategy `connect()` never settles while Redis is unreachable,
+ * which leaves the request hanging (the auth middleware never calls next()) and the client
+ * retrying forever. Without reconnects, `connect()` rejects (and an in-flight command is rejected
+ * if the connection drops), so the caller closes the client and the request gets a 500.
  * @param {number} databaseIndex the index the entry is stored in.
  * @returns {RedisClient} Redis client.
  */
@@ -16,11 +31,59 @@ export function getClient(databaseIndex = 0) {
     const client = createClient({
         url: `redis://${config.get('redis.username')}:${process.env.REDIS_DB_SECRET}` +
             `@${config.get('redis.host')}:${config.get('redis.port')}/${databaseIndex}`,
+        socket: {
+            connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
+            reconnectStrategy: false,
+        },
     });
     client.on('error', (err) => {
         console.error('Redis error: ', err);
     });
     return client;
+}
+
+/**
+ * @returns {number} the time limit for one helper call, in milliseconds.
+ */
+function operationTimeoutMs() {
+    const configured = config.has('redis.operationTimeoutMs') ?
+        Number(config.get('redis.operationTimeoutMs')) : NaN;
+    return Number.isFinite(configured) && configured > 0 ?
+        configured : DEFAULT_REDIS_OPERATION_TIMEOUT_MS;
+}
+
+/**
+ * Opens a client, runs `operation` with it, and always closes it again.
+ *
+ * If connecting plus `operation` takes longer than the operation timeout, the client is torn
+ * down (which rejects its pending connect or commands) and a RedisTimeoutError is thrown, so a
+ * request never waits on Redis indefinitely.
+ * @template T
+ * @param {number} databaseIndex the index of the database to use.
+ * @param {function(RedisClient): Promise<T>} operation the work to do with the connected client.
+ * @returns {Promise<T>} what `operation` returned.
+ * @throws {RedisTimeoutError} if Redis did not answer in time.
+ */
+async function withClient(databaseIndex, operation) {
+    const client = getClient(databaseIndex);
+    const timeoutMs = operationTimeoutMs();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+        timedOut = true;
+        closeClient(client);
+    }, timeoutMs);
+    try {
+        await client.connect();
+        return await operation(client);
+    } catch (err) {
+        if (timedOut) {
+            throw new RedisTimeoutError(timeoutMs, databaseIndex);
+        }
+        throw err;
+    } finally {
+        clearTimeout(timer);
+        await closeClient(client);
+    }
 }
 
 /**
@@ -31,13 +94,9 @@ export function getClient(databaseIndex = 0) {
  * @throws {KeyNotFoundError} if the key is not in the database.
  */
 export async function getEntry(key, databaseIndex = 0) {
-    const client = getClient(databaseIndex);
-    try {
-        await client.connect();
-        return parseEntry(await client.get(key), key, databaseIndex);
-    } finally {
-        await closeClient(client);
-    }
+    return withClient(databaseIndex, async (client) => (
+        parseEntry(await client.get(key), key, databaseIndex)
+    ));
 }
 
 /**
@@ -59,6 +118,9 @@ function parseEntry(raw, key, databaseIndex) {
 
 /**
  * Closes a client without masking an error that is already propagating.
+ *
+ * Uses disconnect() rather than quit(): every command has been answered (or abandoned) when
+ * this runs, and quit() waits for Redis to answer QUIT, which a frozen Redis never does.
  * @param {RedisClient} client the client to close.
  */
 async function closeClient(client) {
@@ -66,13 +128,9 @@ async function closeClient(client) {
         return;
     }
     try {
-        await client.quit();
+        await client.disconnect();
     } catch {
-        try {
-            await client.disconnect();
-        } catch {
-            // Already closed.
-        }
+        // Already closed.
     }
 }
 
@@ -184,9 +242,7 @@ export async function getMaxScores() {
  * @returns {Promise<Array<Array<string>>>} List of [legalName, email]
  */
 export async function getStudents() {
-    const client = getClient();
-    try {
-        await client.connect();
+    return withClient(0, async (client) => {
         const keys = await client.keys('*@*');
         const students = [];
         // Read every student over this one connection instead of opening one per key.
@@ -195,9 +251,7 @@ export async function getStudents() {
             students.push([studentData['Legal Name'], key]);
         }
         return students;
-    } finally {
-        await closeClient(client);
-    }
+    });
 }
 
 

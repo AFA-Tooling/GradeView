@@ -266,6 +266,38 @@ describe('GET /api/v2/students/grades?email= (legacy nginx rewrite)', () => {
     });
 });
 
+describe('Redis unreachable (connect rejects)', () => {
+    beforeEach(() => {
+        fakeRedis.state.failConnect = true;
+    });
+
+    test.each(PER_STUDENT_ROUTES)('student request for %s -> 500 without details, no client left open', async (route) => {
+        const res = await request(app)
+            .get(studentUrl(STUDENT_A, route))
+            .set('Authorization', TOKENS.studentA);
+        expect(res.status).toBe(500);
+        expect(res.body).toEqual({ message: 'Internal server error.' });
+        expectSafeErrorBody(res, STUDENT_A);
+        expect(fakeRedis.state.clientsCreated).toBeGreaterThan(0);
+    });
+
+    test.each(PER_STUDENT_ROUTES)('admin request for %s -> 500 without details', async (route) => {
+        const res = await request(app)
+            .get(studentUrl(STUDENT_B, route))
+            .set('Authorization', TOKENS.admin);
+        expect(res.status).toBe(500);
+        expectSafeErrorBody(res, STUDENT_B);
+    });
+
+    test('Redis clients are created with reconnects disabled and a connect timeout', async () => {
+        await request(app).get(studentUrl(STUDENT_A, 'grades')).set('Authorization', TOKENS.studentA);
+        expect(fakeRedis.state.lastClientOptions.socket).toEqual({
+            connectTimeout: expect.any(Number),
+            reconnectStrategy: false,
+        });
+    });
+});
+
 describe('5xx responses are generic', () => {
     test('Redis failure while checking the roster -> 500 without details', async () => {
         fakeRedis.state.failGet = (key) => key === STUDENT_A;

@@ -8,6 +8,10 @@ const state = {
     openClients: 0,
     // (key, databaseIndex) => boolean; GET of a matching key rejects like a dropped connection.
     failGet: null,
+    // true: connect() rejects, like a client with reconnects disabled when Redis is unreachable.
+    failConnect: false,
+    // The options of the last createClient call.
+    lastClientOptions: null,
 };
 
 function database(index) {
@@ -22,9 +26,10 @@ function databaseIndexFromUrl(url = '') {
     return match ? Number(match[1]) : 0;
 }
 
-function createClient({ url } = {}) {
-    const databaseIndex = databaseIndexFromUrl(url);
+function createClient(options = {}) {
+    const databaseIndex = databaseIndexFromUrl(options.url);
     state.clientsCreated += 1;
+    state.lastClientOptions = options;
     let open = false;
 
     const ensureOpen = () => {
@@ -46,6 +51,9 @@ function createClient({ url } = {}) {
             return client;
         },
         async connect() {
+            if (state.failConnect) {
+                throw new Error('simulated connection failure: connect ECONNREFUSED 127.0.0.1:6379');
+            }
             open = true;
             state.openClients += 1;
         },
@@ -77,6 +85,8 @@ const fakeRedis = {
         state.clientsCreated = 0;
         state.openClients = 0;
         state.failGet = null;
+        state.failConnect = false;
+        state.lastClientOptions = null;
     },
     // Stores `value` as JSON, like the dbcron jobs do.
     seed(key, value, databaseIndex = 0) {
